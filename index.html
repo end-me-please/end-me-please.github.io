@@ -1,0 +1,59 @@
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="style.css">
+    </head>
+    <body>
+        <div class="title">
+        <h1>welcome</h1>
+        <h2>not much to see here</h2>
+        </div>
+        <canvas id="cubespin" width="200" height="200"></canvas>
+        <div class="list">
+        <ul>
+            <li>
+                <a href="index.html">literally this page</a>
+            </li>
+        </ul>
+        </div>
+
+
+<script type="importmap">
+{
+    "imports": {
+    "three": "https://unpkg.com/three/build/three.module.js"
+    }
+}
+</script>
+<script type="module">
+
+    import {Scene, PerspectiveCamera, WebGLRenderer, BoxGeometry, Mesh, MeshBasicMaterial} from 'three';
+
+    const scene = new Scene();
+    const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new WebGLRenderer({ canvas: document.querySelector('#cubespin') });
+
+    const geometry = new BoxGeometry();
+    const material = new MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+    const cube = new Mesh(geometry, material);
+    scene.add(cube);
+    
+    camera.position.z = 2.5;
+
+    
+
+
+    //animate
+    const animate = () => {
+        requestAnimationFrame(animate);
+        cube.rotation.x += 0.01;
+        cube.rotation.y += 0.02;
+        renderer.render(scene, camera);
+    };
+    animate();
+
+
+
+</script>
+
+    </body>
+</html>
