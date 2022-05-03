@@ -1,17 +1,22 @@
 <html>
-    <head></head>
+    <head>
+        <title>Turtles</title>
+        <link rel="stylesheet" type="text/css" href="../style.css">
+    </head>
 
     <body>
         <!--input textarea and a canvas with dark gray default color, button to render-->
-        <canvas id="canvas" width="640" height="640" style="background-color: #cccccc;"></canvas>
-        <p>available instructions: left,right,up,down, move</p>
-        <p>turnl and turnr also exist (allows diagonal moves)</p>
+        <canvas class="genericCanvas" id="canvas" width="640" height="640"></canvas>
+        <p>available instructions: move [x,y]; wait [time]</p>
         <textarea id="input" rows="10" cols="50"></textarea>
     </br>
         <button id="spawn">Spawn</button>
 
+    <script src="./turtle_ai.js"></script>
+
     <script>
-        
+        //import AI from turtle_ai.js file
+
         class tile{
             constructor(type,x,y){
                 this.type = type;
@@ -33,10 +38,6 @@
                 this.payload = null;
             }
             update(){
-                if(this.payload&&!this.changed){
-                    this.payload.update();
-                }
-                this.changed=false;
             };
             render(){
                 if(this.payload){this.payload.render();}
@@ -74,34 +75,52 @@
                 this.getTile(x,y).highlighted=true;
             }
 
-
             getNeighbors(tile){
                 let neighbors = [];
                 //all 8 neighbors
-                for(let x=1;x>=-1;x-=1)
-                {
-                    for(let y=-1;y<=1;y++)
-                    {
-                        if(x==0&&y==0)
-                        {
-                            continue;
-                        }
-                        let neighborX = tile.x+x;
-                        let neighborY = tile.y+y;
-                        //if out of bounds, null
-                        if(neighborX<0||neighborX>=this.width||neighborY<0||neighborY>=this.height)
-                        {
-                            neighbors.push(null);
-                        }
-                        else
-                        {
-                            neighbors.push(this.getTile(neighborX,neighborY));
-                        }
+                //direction "0" is up, from there clockwise
+                for(let direction=0;direction<8;direction++){
+                    let x = tile.x;
+                    let y = tile.y;
+                    switch(direction){
+                        case 0:
+                            y--;
+                            break;
+                        case 1:
+                            x++;
+                            y--;
+                            break;
+                        case 2:
+                            x++;
+                            break;
+                        case 3:
+                            x++;
+                            y++;
+                            break;
+                        case 4:
+                            y++;
+                            break;
+                        case 5:
+                            x--;
+                            y++;
+                            break;
+                        case 6:
+                            x--;
+                            break;
+                        case 7:
+                            x--;
+                            y--;
+                            break;
+                    }
+                    if(x>=0&&x<this.width&&y>=0&&y<this.height){
+                        neighbors.push(this.getTile(x,y));
+                    } else {
+                        neighbors.push(null);
                     }
                 }
+
                 return neighbors;
             }
-
 
             //render the world to given canvas, empty tiles are rendered as gray, others as red
             render(){
@@ -122,7 +141,7 @@
                         }
                         else
                         {
-                            ctx.fillStyle = "gray";
+                            ctx.fillStyle = "darkgray";
                             ctx.fillRect(x*10,y*10,10,10);
                             if(this.tiles[x][y].highlighted)
                         {
@@ -137,66 +156,9 @@
             }
 
         }
-        class AI{
-            constructor(code,world,robot){
-                this.code=code.split("\n").map(l=>l.trim());
-                this.world = world;
-                this.robot = robot;
-                this.state={};
-                this.line=0;
-            }
-            tick(){
-                let shouldMove = false;
-                let moveDir=this.robot.rotation;
-                    //console.log("code cycle "+this.line+" "+this.code[this.line]);
-                    let line=this.code[this.line];
-                    //switch up,down,left,right
-                    switch(line){
-                        case "turnl":
-                            moveDir = (moveDir+1)%8;
-                            break;
-                        case "turnr":
-                            moveDir = (moveDir+7)%8;
-                            break;
-                        case "up":
-                            moveDir=3;
-                            break;
-                        case "down":
-                            moveDir=4;
-                            break;
-                        case "right":
-                            moveDir=1;
-                            break;
-                        case "left":
-                            moveDir=6;
-                            break;
-                        case "move":
-                            shouldMove = true;
-                            break;
-                        case "":
-                            break;
-                        default:
-                            //console.log("Invalid instruction: "+line);
-                            break;
-                    }
-
-                    this.line++;
-                    if(this.line>=this.code.length)
-                    {
-                        this.line=0;
-                    }
-                this.robot.rotation = moveDir;
-                if(shouldMove)
-                {
-                    this.robot.move(moveDir);
-                }
-                
-
-            }
-
-        }
-
         
+        
+
 
         class Robot {
             constructor(x, y, id, world,ai="") {
@@ -204,52 +166,111 @@
                 this.world = world;
                 this.x = x;
                 this.y = y;
+                this.targetX = x;
+                this.targetY = y;
                 this.id = id;
-                //add robot to world
                 this.ai=new AI(ai,world,this);
-                this.world.getTile(this.x, this.y).enter(this);
             }
+
             get tile(){
-                return this.world.getTile(this.x,this.y);
+                return this.world.getTile(Math.floor(this.x),Math.floor(this.y));
             }
             update(){
                 this.ai.tick();
-            }
-
-            //move in a direction, returns true if successful, false if blocked
-            //direction 0-7, use getNeighbors
-            move(direction){
-                
-                let neighbors = this.world.getNeighbors(this.tile);
-                neighbors.forEach(element => {
-                    if(element!=null)
-                    {
-                        this.world.highlight(element.x,element.y);
-                    }
-                });
-
-                let neighbor = neighbors[direction];
-                if(neighbor!=null&&!neighbor.blocked)
-                {
-                    neighbor.enter(this);
-                    this.tile.leave();
-                    this.x = neighbor.x;
-                    this.y = neighbor.y;
-                    return true;
+                //if distance to target is less than 1, set current position to target
+                let distance = Math.sqrt(Math.pow(this.targetX-this.x,2)+Math.pow(this.targetY-this.y,2));
+                if(distance<1){
+                    this.x=this.targetX;
+                    this.y=this.targetY;
+                    return;
                 }
-                return false;
+                //get angle to target
+                let angle = Math.atan2(this.targetY-this.y,this.targetX-this.x);
+                //set rotation to angle
+                this.rotation = angle;
+                //move forward
+                let textX=Math.floor(2*(this.x+Math.cos(angle)))/2;
+                let testY=Math.floor(2*(this.y+Math.sin(angle)))/2;
+                if(!this.world.getTile(Math.floor(textX),Math.floor(testY)).blocked){
+                    this.x = textX;
+                    this.y = testY;
+                }
             }
 
+            move(targetX,targetY){
+                //math.max/min with world bounds
+                this.targetX = Math.max(0,Math.min(targetX,this.world.width-1));
+                this.targetY = Math.max(0,Math.min(targetY,this.world.height-1));
+            }
+            render(){
+                let ctx = this.world.canvas.getContext("2d");
+                ctx.fillStyle = "blue";
+                ctx.beginPath();
+                ctx.arc(this.x*10+5,this.y*10+5,5,0,2*Math.PI);
+                ctx.fill();
+                ctx.fillStyle = "red";
+                ctx.beginPath();
+                ctx.arc(this.x*10+5,this.y*10+5,2,0,2*Math.PI);
+                ctx.fill();
+                ctx.fillStyle = "black";
+                ctx.beginPath();
+                ctx.arc(this.x*10+5,this.y*10+5,1,0,2*Math.PI);
+                ctx.fill();
+                ctx.fillStyle = "black";
+                ctx.beginPath();
+                ctx.arc(this.x*10+5,this.y*10+5,0.5,0,2*Math.PI);
+                ctx.fill();
+                ctx.fillStyle = "black";
+                ctx.beginPath();
+                ctx.arc(this.x*10+5,this.y*10+5,0.25,0,2*Math.PI);
+                ctx.fill();
+                ctx.fillStyle = "black";
+                ctx.beginPath();
+                ctx.arc(this.x*10+5,this.y*10+5,0.125,0,2*Math.PI);
+                ctx.fill();
+                ctx.fillStyle = "black";
+                ctx.beginPath();
+                ctx.arc(this.x*10+5,this.y*10+5,0.0625,0,2*Math.PI);
+                ctx.fill();
+                ctx.fillStyle = "black";
+                ctx.beginPath();
+                ctx.arc(this.x*10+5,this.y*10+5,0.03125,0,2*Math.PI);
+                ctx.fill();
+                ctx.fillStyle = "black";
+                ctx.beginPath();
+                ctx.arc(this.x*10+5,this.y*10+5,0.015625,0,2*Math.PI);
+                ctx.fill();
+
+                //draw a dotted line from current position to target
+                ctx.strokeStyle = "black";
+                ctx.beginPath();
+                ctx.moveTo(this.x*10+5,this.y*10+5);
+                ctx.lineTo(this.targetX*10+5,this.targetY*10+5);
+                ctx.setLineDash([5,5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+
+            }
         }
         //canvas
         let canvas = document.getElementById("canvas");
         const world=new World(64,64,canvas);
+        let turtles=[];
+
         function globalTick(){
             //console.log("update");
-            let startTime = Date.now();
+            let startTime=Date.now();
+
+            //call update on all turtles
+            world.render();
+            for(let turtle of turtles){
+                turtle.update();
+                turtle.render();
+            }
+
             world.update();
             //console.log("render");
-            world.render();
             console.log(Date.now()-startTime);  
         };
         setInterval(globalTick,100);
@@ -259,7 +280,7 @@
         document.getElementById("spawn").addEventListener("click",function(){
             let ai = document.getElementById("input").value;
             let robot = new Robot(50,50,0,world,ai);
-
+            turtles.push(robot);
         });
 
 
