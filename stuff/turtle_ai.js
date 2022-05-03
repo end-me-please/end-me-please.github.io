@@ -14,6 +14,9 @@ class AI{
             let line=this.code[this.line];
             let tokens=line.split(" ");
             let command=tokens.shift();
+            if(Object.keys(instructions).indexOf(command)==-1){
+                return;
+            }
             instructions[command](this.robot,tokens);
             this.line++;
             if(this.line>=this.code.length)

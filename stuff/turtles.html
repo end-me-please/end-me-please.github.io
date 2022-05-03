@@ -204,42 +204,23 @@
             }
             render(){
                 let ctx = this.world.canvas.getContext("2d");
-                ctx.fillStyle = "blue";
+                //draw a small turtle
+                ctx.save();	
+                ctx.translate(this.x*10+5,this.y*10+5);
+                ctx.rotate(this.rotation);
+                //draw tortoise
                 ctx.beginPath();
-                ctx.arc(this.x*10+5,this.y*10+5,5,0,2*Math.PI);
+                ctx.moveTo(0,0);
+                ctx.lineTo(0,10);
+                ctx.lineTo(10,10);
+                ctx.lineTo(10,0);
+                ctx.lineTo(0,0);
+                ctx.fillStyle = "green";
                 ctx.fill();
-                ctx.fillStyle = "red";
-                ctx.beginPath();
-                ctx.arc(this.x*10+5,this.y*10+5,2,0,2*Math.PI);
-                ctx.fill();
-                ctx.fillStyle = "black";
-                ctx.beginPath();
-                ctx.arc(this.x*10+5,this.y*10+5,1,0,2*Math.PI);
-                ctx.fill();
-                ctx.fillStyle = "black";
-                ctx.beginPath();
-                ctx.arc(this.x*10+5,this.y*10+5,0.5,0,2*Math.PI);
-                ctx.fill();
-                ctx.fillStyle = "black";
-                ctx.beginPath();
-                ctx.arc(this.x*10+5,this.y*10+5,0.25,0,2*Math.PI);
-                ctx.fill();
-                ctx.fillStyle = "black";
-                ctx.beginPath();
-                ctx.arc(this.x*10+5,this.y*10+5,0.125,0,2*Math.PI);
-                ctx.fill();
-                ctx.fillStyle = "black";
-                ctx.beginPath();
-                ctx.arc(this.x*10+5,this.y*10+5,0.0625,0,2*Math.PI);
-                ctx.fill();
-                ctx.fillStyle = "black";
-                ctx.beginPath();
-                ctx.arc(this.x*10+5,this.y*10+5,0.03125,0,2*Math.PI);
-                ctx.fill();
-                ctx.fillStyle = "black";
-                ctx.beginPath();
-                ctx.arc(this.x*10+5,this.y*10+5,0.015625,0,2*Math.PI);
-                ctx.fill();
+
+                ctx.restore();
+
+
 
                 //draw a dotted line from current position to target
                 ctx.strokeStyle = "black";
