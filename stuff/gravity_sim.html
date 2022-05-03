@@ -1,0 +1,363 @@
+<html>
+    <head>
+        
+
+    </head>
+<body>
+        <canvas id="myCanvas"></canvas>
+        //deltatime slider from 0 to 5
+        //step is 0.1
+        <input type="range" min="0" max="10" value="0.02" step="0.01" id="deltaTime">
+
+
+
+<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+
+<script type="importmap">
+{
+    "imports": {
+    "three": "https://unpkg.com/three/build/three.module.js"
+    }
+}
+</script>
+
+
+
+
+<script type="module">
+
+var deltaTimeMultiplier = 0.1;
+
+import { OrbitControls } from "https://threejs.org/examples/jsm/controls/OrbitControls.js";
+
+import * as THREE from 'three';      
+const scene = new THREE.Scene();
+
+
+
+//extend cube to support velocity with update(deltaTime)
+//also support application of acceleration towards an absolute coordinate vector
+class Cube extends THREE.Mesh {
+    constructor(geometry, material) {
+        super(geometry, material);
+        this.velocity = new THREE.Vector3(0, 0, 0);
+        this.mass=1;
+        this.drawCounter=0;
+        this.oldDrawPos=this.position.clone();
+    }
+    update(deltaTime) {
+        
+        this.drawCounter++;
+        //reset if it reaches 20
+        if(this.drawCounter>20){
+            this.drawCounter=0;
+            this.oldDrawPos=this.position.clone();
+        }
+        this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
+        
+        if(this.drawCounter==19){
+        //draw a line between old and new pos
+        //create a blue LineBasicMaterial
+        let lmaterial = new THREE.LineBasicMaterial({
+            color: 0x0000ff
+        });
+        //create a BufferGeometry between source and this
+        let lgeometry = new THREE.BufferGeometry().setFromPoints([this.oldDrawPos, this.position]);
+        const line = new THREE.Line( lgeometry, lmaterial );
+        scene.add(line);
+        //set timeout to remove
+        setTimeout(()=>{
+            scene.remove(line);
+        },3000);
+    }
+        
+
+
+        //loop through every Cube in scene
+
+
+        for (let i = 0; i < scene.children.length; i++) {
+            let other = scene.children[i];
+            if (other instanceof Cube) {
+                if (other != this) {
+                    //call applyGravity on other
+                    //if other is closer than 3 units, add it's mass to this.mass and combine momentum
+                    if (this.position.distanceTo(other.position) < this.scale.x) {
+                        
+                        //get velocity difference
+                        let deltaVelocity = this.velocity.clone().sub(other.velocity);
+                        //scale by mass ratio
+                        deltaVelocity.multiplyScalar(this.mass / (this.mass + other.mass));
+                        //add to this.velocity
+                        this.velocity.add(deltaVelocity);
+
+
+                        this.mass += other.mass;
+                        
+                        //add 25% of other size
+                        this.scale.add(other.scale.clone().multiplyScalar(0.5));
+
+                        //remove other cube from scene
+                        scene.remove(other);
+                        //remove other from cubes
+                        cubes.splice(cubes.indexOf(other), 1);
+
+
+                    }
+                    other.applyGravity(this, deltaTime);
+
+
+                }
+            }
+        }
+    }
+    //method to apply gravity between source and target (this)
+    //magnitude is the force of gravity, determined by masses
+    applyGravity(source,deltaTime) {
+
+        //calculate distance
+        let distance = source.position.clone().sub(this.position);
+        //determine gravitational force using Newton's law of universal gravitation
+        let magnitude = 6.67408e-11 * (source.mass * this.mass) / Math.pow(distance.length(),2);
+        //divide by mass to get acceleration
+        let acceleration = distance.clone().normalize().multiplyScalar(magnitude / this.mass);
+        //multiply by deltaTime to get velocity
+        this.velocity.add(acceleration.clone().multiplyScalar(deltaTime));
+    }
+} 
+
+//black hole object, has a radius, position, and gravity scalar
+//it's update(deltatime) applies acceleration to every cube in the scene
+//fancy light bending effects
+class BlackHole extends THREE.Mesh {
+    constructor(geometry, material) {
+        super(geometry, material);
+        this.radius = 1;
+        this.mass = 150000000000;
+    }
+    update(deltaTime) {
+        //loop through all cubes in scene
+        for (let i = 0; i < scene.children.length; i++) {
+            let other = scene.children[i];
+            if (other instanceof Cube) {
+                //apply gravity to every cube
+                other.applyGravity(this, deltaTime);
+                //swallow cubes that are too close and add mass to own mass
+                if (other.position.distanceTo(this.position) < this.radius) {
+                    scene.remove(other);
+                    this.mass += other.mass;
+                    cubes.splice(cubes.indexOf(other), 1);
+                    //increase radius by 10%
+                    this.radius *= 1.1;
+                }
+            }
+        }
+    }
+}
+
+//add stars to background
+var stars = [];	
+for (var i = 0; i < 300; i++) {
+    var star = new THREE.Mesh(
+        new THREE.SphereGeometry(0.5, 32, 32),
+        new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.5
+        })
+    );
+    star.position.x = Math.random() * 1000 - 500;
+    star.position.y = Math.random() * 1000 - 500;
+    star.position.z = Math.random() * 1000 - 500;
+    scene.add(star);
+    stars.push(star);
+}
+
+//scene background gray
+scene.background = new THREE.Color(0x0f0f0f);
+
+
+//blackhole with radius 3, position is 6 units above origin
+//refracting transparent material
+
+const blackHole = new BlackHole(
+    new THREE.SphereGeometry(3, 32, 32),
+    new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        transparent: true,
+        opacity: 0.7,
+        refractionRatio: 0.95
+    })
+);
+blackHole.position.y = 0;
+blackHole.radius = 1;
+scene.add(blackHole);
+
+
+
+
+//draw wireframe cube on myCanvas
+const geometry = new THREE.BoxGeometry(1, 1, 1);
+//green wireframe material
+const material = new THREE.MeshBasicMaterial({color: 0x00ff00, wireframe: true});
+
+const cubes = [];
+
+for (let i = 0; i < 15; i++) {
+    const cube = new Cube(geometry, material);
+    //position should be random, but always further away from blackhole than 40 units
+    //spread the cubes out in a circle, calculated by i
+    cube.position.x = Math.cos(i / 15 * 2 * Math.PI) * 24;
+    cube.position.y = Math.sin(i / 15 * 2 * Math.PI) * 24;
+    cube.position.z = Math.random() * 0.1 - 0.05;
+    //calculate velocity tanget to blackhole
+    let distance = cube.position.clone().sub(blackHole.position);
+    let magnitude = 6.67408e-11 * (cube.mass * blackHole.mass) / Math.pow(distance.length(),2);
+    
+    let acceleration = distance.clone().normalize().multiplyScalar(magnitude / cube.mass);
+    
+    //rotate velocity by 90 degrees
+    cube.velocity.add(acceleration.clone().multiplyScalar(16).applyAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2));
+    scene.add(cube);
+    cubes.push(cube);
+    cube.mass=1000000;    
+}
+
+//add 1 cube, 15 units away in x direction from blackhole, moving with 3 m/s in z direction
+//const cube = new Cube(geometry, material);
+//cube.position.x = 15;
+//cube.position.y = 0;
+//cube.position.z = 0;
+//cube.velocity.x = 0;
+//cube.velocity.y = 0;
+//cube.velocity.z = 1;
+//cube mass is 5000
+//cube.mass = 5000;
+//cubes.push(cube);
+//scene.add(cube);
+
+
+
+
+//define camera
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.z = 5;
+camera.position.x=0.5;
+camera.position.y=0.5;
+
+//camera controls
+const controls = new OrbitControls(camera, document.getElementById('myCanvas'));
+controls.enableDamping = true;
+controls.dampingFactor = 0.25;
+controls.enableZoom = true;
+//wasd
+controls.keys = {
+    LEFT: 65,
+    UP: 87,
+    RIGHT: 68,
+    BOTTOM: 83
+};
+
+/*
+//add 2 cubes, one at origin, one at (5,5,5)
+const cube1 = new Cube(geometry, material);
+cube1.position.x = 0;
+cube1.position.y = 0;
+cube1.position.z = 0;
+cube1.mass = 1000000;
+cubes.push(cube1);
+scene.add(cube1);
+//add second cube
+const cube2 = new Cube(geometry, material);
+cube2.position.x = 5;
+cube2.position.y = 5;
+cube2.position.z = 5;
+cube2.mass = 10;
+cubes.push(cube2);
+scene.add(cube2);
+*/
+
+
+
+
+
+//draw scene on myCanvas
+const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('#myCanvas') });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.render(scene, camera);
+
+//update loop and provide deltatime
+let deltaTime=0;
+let lastTimestamp=Date.now();
+function animate() {
+    let timestamp=Date.now()
+    requestAnimationFrame(animate);
+    deltaTime=(timestamp-lastTimestamp)/(1000/60);
+    //deltaTime=1;
+    lastTimestamp=timestamp;
+
+    //adjust deltatime
+    deltaTime*=deltaTimeMultiplier;
+    
+    //call physics
+    update(deltaTime);
+
+    renderer.render(scene, camera);
+}
+animate();
+
+
+//physics update function, has deltatime argument
+//calculate force vector as gravity around 0,0,0
+//apply force vector to cube position
+function update(deltaTime) {
+
+//update cube rotation
+
+//update every child in scene if it is cube
+    for (let i = 0; i < scene.children.length; i++) {
+        let child = scene.children[i];
+        if (child instanceof Cube) {
+            child.update(deltaTime);
+     
+        child.rotation.x += 0.01*deltaTime;
+        child.rotation.y += 0.01*deltaTime;
+
+        child.update(deltaTime);
+        }
+    }
+//update black hole
+blackHole.update(deltaTime);
+}
+
+
+//when F is pressed, shoot a cube in camera direction
+document.addEventListener('keydown', function(event) {
+    if (event.keyCode === 70) {
+        const cube = new Cube(geometry, material);
+        cube.position.copy(camera.position);
+        //get camera rotation manually, calculate vector and use as direction for shooting
+        const rotation = camera.rotation.clone();
+        const direction = new THREE.Vector3(0, 0, -1);
+        direction.applyQuaternion(rotation);
+        cube.velocity = direction.multiplyScalar(10);
+        cube.mass=1;
+        scene.add(cube);
+        cubes.push(cube);
+    }
+}
+);
+
+
+
+//receive deltatime slider value from html
+//attach event on load
+window.addEventListener('load', function() {
+    document.querySelector('#deltaTime').addEventListener('input', function(e) {
+        deltaTimeMultiplier = e.target.value;
+    });
+});
+</script>
+
+</body>
+</html>
