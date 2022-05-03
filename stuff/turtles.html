@@ -222,7 +222,6 @@
                 {
                     neighbor.enter(this);
                     this.tile.leave();
-
                     this.x = neighbor.x;
                     this.y = neighbor.y;
                     return true;
@@ -233,7 +232,7 @@
         }
         //canvas
         let canvas = document.getElementById("canvas");
-        const world=new World(100,100,canvas);
+        const world=new World(64,64,canvas);
         function globalTick(){
             //console.log("update");
             let startTime = Date.now();
