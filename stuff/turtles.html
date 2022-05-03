@@ -211,7 +211,10 @@
                 
                 let neighbors = this.world.getNeighbors(this.tile);
                 neighbors.forEach(element => {
-                    this.world.highlight(element.x,element.y);
+                    if(element!=null)
+                    {
+                        this.world.highlight(element.x,element.y);
+                    }
                 });
 
                 let neighbor = neighbors[direction];
