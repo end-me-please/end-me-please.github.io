@@ -4,6 +4,8 @@
     <body>
         <!--input textarea and a canvas with dark gray default color, button to render-->
         <canvas id="canvas" width="640" height="640" style="background-color: #cccccc;"></canvas>
+        <p>available instructions: left,right,up,down, move</p>
+        <p>turnl and turnr also exist (allows diagonal moves)</p>
         <textarea id="input" rows="10" cols="50"></textarea>
     </br>
         <button id="spawn">Spawn</button>
@@ -17,6 +19,7 @@
                 this.x = x;
                 this.y = y;
                 this.highlighted=false;
+                this.changed=false;
             }
             get blocked(){
                 let blocked=(this.payload!=null)||(this.type=="wall");
@@ -24,14 +27,16 @@
             }
             enter(payload){
                 this.payload = payload;
+                this.changed=true;
             }
             leave(){
                 this.payload = null;
             }
             update(){
-                
-                if(this.payload){
-                    this.payload.update();}
+                if(this.payload&&!this.changed){
+                    this.payload.update();
+                }
+                this.changed=false;
             };
             render(){
                 if(this.payload){this.payload.render();}
@@ -147,6 +152,12 @@
                     let line=this.code[this.line];
                     //switch up,down,left,right
                     switch(line){
+                        case "turnl":
+                            moveDir = (moveDir+1)%8;
+                            break;
+                        case "turnr":
+                            moveDir = (moveDir+7)%8;
+                            break;
                         case "up":
                             moveDir=3;
                             break;
@@ -241,7 +252,7 @@
             world.render();
             console.log(Date.now()-startTime);  
         };
-        setInterval(globalTick,1000/60);
+        setInterval(globalTick,100);
 
         //spawn robot on button click using input box string as AI
         
