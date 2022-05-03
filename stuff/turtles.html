@@ -1,0 +1,258 @@
+<html>
+    <head></head>
+
+    <body>
+        <!--input textarea and a canvas with dark gray default color, button to render-->
+        <canvas id="canvas" width="640" height="640" style="background-color: #cccccc;"></canvas>
+        <textarea id="input" rows="10" cols="50"></textarea>
+    </br>
+        <button id="spawn">Spawn</button>
+
+    <script>
+        
+        class tile{
+            constructor(type,x,y){
+                this.type = type;
+                this.payload = null;
+                this.x = x;
+                this.y = y;
+                this.highlighted=false;
+            }
+            get blocked(){
+                let blocked=(this.payload!=null)||(this.type=="wall");
+                return blocked;
+            }
+            enter(payload){
+                this.payload = payload;
+            }
+            leave(){
+                this.payload = null;
+            }
+            update(){
+                
+                if(this.payload){
+                    this.payload.update();}
+            };
+            render(){
+                if(this.payload){this.payload.render();}
+            };
+        }
+        class World{
+            constructor(width,height, canvas)
+            {
+                this.canvas = canvas;
+                this.width = width;
+                this.height = height;
+                this.tiles = [];
+                for(let x=0;x<width;x++)
+                {
+                    this.tiles[x] = [];
+                    for(let y=0;y<height;y++)
+                    {
+                        this.tiles[x][y] = new tile("empty",x,y);
+                    }
+                }
+            }
+            update(){
+                for(let x=0;x<this.width;x++)
+                {
+                    for(let y=0;y<this.height;y++)
+                    {
+                        this.tiles[x][y].update();
+                    }
+                }
+            }
+            getTile(x,y){
+                return this.tiles[x][y];
+            }
+            highlight(x,y){
+                this.getTile(x,y).highlighted=true;
+            }
+
+
+            getNeighbors(tile){
+                let neighbors = [];
+                //all 8 neighbors
+                for(let x=1;x>=-1;x-=1)
+                {
+                    for(let y=-1;y<=1;y++)
+                    {
+                        if(x==0&&y==0)
+                        {
+                            continue;
+                        }
+                        let neighborX = tile.x+x;
+                        let neighborY = tile.y+y;
+                        //if out of bounds, null
+                        if(neighborX<0||neighborX>=this.width||neighborY<0||neighborY>=this.height)
+                        {
+                            neighbors.push(null);
+                        }
+                        else
+                        {
+                            neighbors.push(this.getTile(neighborX,neighborY));
+                        }
+                    }
+                }
+                return neighbors;
+            }
+
+
+            //render the world to given canvas, empty tiles are rendered as gray, others as red
+            render(){
+                let canvas=this.canvas;
+                let ctx = canvas.getContext("2d");
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                for(let x=0;x<this.width;x++)
+                {
+                    for(let y=0;y<this.height;y++)
+                    {
+                        //draw tile
+
+                        let tile = this.tiles[x][y];
+                        if(tile.blocked)
+                        {
+                            ctx.fillStyle = "red";
+                            ctx.fillRect(x*10,y*10,10,10);
+                        }
+                        else
+                        {
+                            ctx.fillStyle = "gray";
+                            ctx.fillRect(x*10,y*10,10,10);
+                            if(this.tiles[x][y].highlighted)
+                        {
+                            ctx.fillStyle = "green";
+                            ctx.fillRect(x*10,y*10,10,10);
+                            this.tiles[x][y].highlighted=false;
+                        }
+                        }
+
+                    }
+                }
+            }
+
+        }
+        class AI{
+            constructor(code,world,robot){
+                this.code=code.split("\n").map(l=>l.trim());
+                this.world = world;
+                this.robot = robot;
+                this.state={};
+                this.line=0;
+            }
+            tick(){
+                let shouldMove = false;
+                let moveDir=this.robot.rotation;
+                    //console.log("code cycle "+this.line+" "+this.code[this.line]);
+                    let line=this.code[this.line];
+                    //switch up,down,left,right
+                    switch(line){
+                        case "up":
+                            moveDir=3;
+                            break;
+                        case "down":
+                            moveDir=4;
+                            break;
+                        case "right":
+                            moveDir=1;
+                            break;
+                        case "left":
+                            moveDir=6;
+                            break;
+                        case "move":
+                            shouldMove = true;
+                            break;
+                        case "":
+                            break;
+                        default:
+                            //console.log("Invalid instruction: "+line);
+                            break;
+                    }
+
+                    this.line++;
+                    if(this.line>=this.code.length)
+                    {
+                        this.line=0;
+                    }
+                this.robot.rotation = moveDir;
+                if(shouldMove)
+                {
+                    this.robot.move(moveDir);
+                }
+                
+
+            }
+
+        }
+
+        
+
+        class Robot {
+            constructor(x, y, id, world,ai="") {
+                this.rotation = 0;
+                this.world = world;
+                this.x = x;
+                this.y = y;
+                this.id = id;
+                //add robot to world
+                this.ai=new AI(ai,world,this);
+                this.world.getTile(this.x, this.y).enter(this);
+            }
+            get tile(){
+                return this.world.getTile(this.x,this.y);
+            }
+            update(){
+                this.ai.tick();
+            }
+
+            //move in a direction, returns true if successful, false if blocked
+            //direction 0-7, use getNeighbors
+            move(direction){
+                
+                let neighbors = this.world.getNeighbors(this.tile);
+                neighbors.forEach(element => {
+                    this.world.highlight(element.x,element.y);
+                });
+
+                let neighbor = neighbors[direction];
+                if(neighbor!=null&&!neighbor.blocked)
+                {
+                    neighbor.enter(this);
+                    this.tile.leave();
+
+                    this.x = neighbor.x;
+                    this.y = neighbor.y;
+                    return true;
+                }
+                return false;
+            }
+
+        }
+        //canvas
+        let canvas = document.getElementById("canvas");
+        const world=new World(100,100,canvas);
+        function globalTick(){
+            //console.log("update");
+            let startTime = Date.now();
+            world.update();
+            //console.log("render");
+            world.render();
+            console.log(Date.now()-startTime);  
+        };
+        setInterval(globalTick,1000/60);
+
+        //spawn robot on button click using input box string as AI
+        
+        document.getElementById("spawn").addEventListener("click",function(){
+            let ai = document.getElementById("input").value;
+            let robot = new Robot(50,50,0,world,ai);
+
+        });
+
+
+
+
+    </script>
+    </body>
+
+</html>
