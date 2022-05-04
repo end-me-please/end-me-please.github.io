@@ -4,46 +4,44 @@ class ScriptAI {
         this.world = world;
         this.robot = robot;
         this.state={};
-        this.line=0;
+        this.vars.counter=0;
         parent=this;
     }
     
     vars = {
-        get counter(){return parent.line},
+        counter:0,
         get randX(){return Math.floor(Math.random()*parent.world.width)},
         get randY(){return Math.floor(Math.random()*parent.world.height)},
-        set counter(v){parent.line=v},
     }
-    tick(){
-
-
+    tick(){        
         if(this.state.timeoutUntil>Date.now()){
             return;
         }
         //set thisX and thisY
         this.vars.thisX=this.robot.x;
         this.vars.thisY=this.robot.y;
-
-            let line=this.code[this.line];
-            let tokens=line.split(" ");
+        
+            let line=this.code[this.vars.counter];
+            let tokens=(line+"").split(" ");
             let command=tokens.shift();
             if(Object.keys(instructions).indexOf(command)==-1){
                 return;
             }
             tokens=this.tokenReplacer(tokens);
             instructions[command](this.robot,tokens);
-            this.line++;
-            if(this.line>=this.code.length)
+            //console.log(line);
+            this.vars.counter++;
+            if(this.vars.counter>=this.code.length)
             {
-                this.line=0;
+                this.vars.counter=0;
             }
-    }
-
-    tokenReplacer(tokens){
-        for(let i=0;i<tokens.length;i++){
-            let token=tokens[i];
-            //allow $rand(num)
-            if(token.startsWith("$rand(")){
+        }
+        
+        tokenReplacer(tokens){
+            for(let i=0;i<tokens.length;i++){
+                let token=tokens[i];
+                //allow $rand(num)
+                if(token.startsWith("$rand(")){
                 let num=token.substring(6,token.length-1);
                 tokens[i]=Math.floor(Math.random()*num);
             }
@@ -91,7 +89,13 @@ let instructions = {
     add: addFunction,
     sub: subtractFunction,
     mul: multiplyFunction,
+    div: divideFunction,
+    greaterThan: greaterThanFunction,
+    lessThan: lessThanFunction,
+    equal: equalsFunction,
+    notEqual: notEqualsFunction,
     locate: locateFunction,
+    eat: eatFunction,
 }
 
 function moveFunction(robot,args){
@@ -172,5 +176,66 @@ function locateFunction(robot,args){
     //console.log("x: "+closestX+"  y: "+closestY);
 }
 
+function divideFunction(robot,args){
+    let varName = args[0];
+    let varValue = args[1];
+    //parse as int
+    varValue = parseInt(varValue);
+    robot.ai.vars[varName]/=varValue;
+}
+function eatFunction(robot,args){
+    //x and y relative to robot, convert to absolute
+    //then call consume on coodinates
+    let x = parseInt(args[0]);
+    let y = parseInt(args[1]);
+    let x1=robot.x+x;
+    let y1=robot.y+y;
+    robot.consume(x1,y1);
+    //console.log("eat");
+}
+function greaterThanFunction(robot,args){
+    //arg1 is target variable name, 2 and 3 are values
+    let varName = args[0];
+    let varValue = args[1];
+    let varValue2 = args[2];
+    //parse as int
+    varValue = parseInt(varValue);
+    varValue2 = parseInt(varValue2);
+    //set varName to boolean result as 1 or 0
+    robot.ai.vars[varName]=(varValue>varValue2)?1:0;
+}
+function lessThanFunction(robot,args){
+        //arg1 is target variable name, 2 and 3 are values
+        let varName = args[0];
+        let varValue = args[1];
+        let varValue2 = args[2];
+        //parse as int
+        varValue = parseInt(varValue);
+        varValue2 = parseInt(varValue2);
+        //set varName to boolean result as 1 or 0
+        robot.ai.vars[varName]=(varValue<varValue2)?1:0;
+}
+function equalsFunction(robot,args){
+        //arg1 is target variable name, 2 and 3 are values
+        let varName = args[0];
+        let varValue = args[1];
+        let varValue2 = args[2];
+        //parse as int
+        varValue = parseInt(varValue);
+        varValue2 = parseInt(varValue2);
+        //set varName to boolean result as 1 or 0
+        robot.ai.vars[varName]=(varValue==varValue2)?1:0;
+}
+function notEqualsFunction(robot,args){
+        //arg1 is target variable name, 2 and 3 are values
+        let varName = args[0];
+        let varValue = args[1];
+        let varValue2 = args[2];
+        //parse as int
+        varValue = parseInt(varValue);
+        varValue2 = parseInt(varValue2);
+        //set varName to boolean result as 1 or 0
+        robot.ai.vars[varName]=(varValue!=varValue2)?1:0;
+    }
 
 
