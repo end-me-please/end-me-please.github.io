@@ -85,6 +85,14 @@
                 //floor
                 x = Math.floor(x);
                 y = Math.floor(y);
+                //check NaN
+                if(isNaN(x)||isNaN(y)){
+                    return {x:x,y:y,blocked:true};
+                }
+                //check bounds
+                if(x<0||x>=this.width||y<0||y>=this.height){
+                    return {x:x,y:y,blocked:true};
+                }
                 return this.tiles[x][y];
             }
             highlight(x,y){
@@ -295,7 +303,15 @@
             
 
         };
-        setInterval(globalTick,100);
+        //setInterval(globalTick,100);
+
+        //animation loop
+        function animate(time){
+            requestAnimationFrame(animate);
+            globalTick();
+        }
+        requestAnimationFrame(animate);
+
 
         //spawn robot on button click using input box string as AI
         
