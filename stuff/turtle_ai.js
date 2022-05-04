@@ -141,6 +141,10 @@ function locateFunction(robot,args){
     let closestY=99;
     for(let i=-8;i<8;i++){
         for(let j=-8;j<8;j++){
+            //check bounds
+            if(robot.x+i<0||robot.x+i>=robot.world.width||robot.y+j<0||robot.y+j>=robot.world.height){
+                continue;
+            }
             if(robot.ai.getRelativeTile(i,j)){
                 //check if closer to 0,0 than current closest
                 if(Math.abs(i)+Math.abs(j)<Math.abs(closestX)+Math.abs(closestY)){
@@ -165,7 +169,7 @@ function locateFunction(robot,args){
     
     robot.ai.vars[xVarName]=closestX;
     robot.ai.vars[yVarName]=closestY;
-    console.log("x: "+closestX+"  y: "+closestY);
+    //console.log("x: "+closestX+"  y: "+closestY);
 }
 
 
