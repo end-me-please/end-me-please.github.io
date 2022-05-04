@@ -48,3 +48,15 @@ body {
     height:57%;
     border: 3px solid #0f0;
 }
+
+#info {
+    position: absolute;
+    top: 20%;
+    right: 25%;
+    width: 13%;
+    height: 30%;
+    padding: 1%;
+    border: 3px solid #0f0;
+    background-color: darkgray;
+}
+

@@ -9,8 +9,23 @@
         <canvas class="genericCanvas" id="canvas" width="640" height="640"></canvas>
         <p>available instructions: move [x,y]; wait [time]</p>
         <textarea id="input" rows="10" cols="50"></textarea>
-    </br>
         <button id="spawn">Spawn</button>
+        <div id="info">
+            <p>turtle count: <span id="turtleCount"></span></p>
+            <p>world update: <span id="worldUpdate">
+            </span></p>
+            <p>world render: <span id="worldRender">
+            </span></p>
+            <p>turtle update: <span id="turtleUpdate">
+            </span></p>
+            <p>turtle render: <span id="turtleRender">
+            </span></p>
+            <p>total time: <span id="totalTime">
+            </span></p>
+        </div>
+    
+    </br>
+
 
     <script src="./turtle_ai.js"></script>
 
@@ -28,6 +43,14 @@
             }
             get blocked(){
                 let blocked=(this.payload!=null)||(this.type=="wall");
+                
+                //iterate through turtles and check if they are on this tile
+                for(let i=0;i<turtles.length;i++){
+                    if(turtles[i].tile.x==this.x&&turtles[i].tile.y==this.y){
+                        return true;
+                    }
+                }
+
                 return blocked;
             }
             enter(payload){
@@ -189,10 +212,13 @@
                 //set rotation to angle
                 this.rotation = angle;
                 //move forward
-                let textX=Math.floor(2*(this.x+Math.cos(angle)))/2;
-                let testY=Math.floor(2*(this.y+Math.sin(angle)))/2;
-                if(!this.world.getTile(Math.floor(textX),Math.floor(testY)).blocked){
-                    this.x = textX;
+                let stepsize = 1;
+                let angleAccuracy = 2;
+                let testX=Math.floor(angleAccuracy*(this.x+(stepsize*Math.cos(angle))))/angleAccuracy;
+                let testY=Math.floor(angleAccuracy*(this.y+(stepsize*Math.sin(angle))))/angleAccuracy;
+                let testTile = this.world.getTile(Math.floor(testX),Math.floor(testY));
+                if((testTile.x==this.tile.x&&testTile.y==this.tile.y)||!this.world.getTile(Math.floor(testX),Math.floor(testY)).blocked){
+                    this.x = testX;
                     this.y = testY;
                 }
             }
@@ -204,25 +230,17 @@
             }
             render(){
                 let ctx = this.world.canvas.getContext("2d");
-                //draw a small turtle
-                ctx.save();	
-                ctx.translate(this.x*10+5,this.y*10+5);
-                ctx.rotate(this.rotation);
-                //draw tortoise
-                ctx.beginPath();
-                ctx.moveTo(0,0);
-                ctx.lineTo(0,10);
-                ctx.lineTo(10,10);
-                ctx.lineTo(10,0);
-                ctx.lineTo(0,0);
+                //draw a small green turtle
                 ctx.fillStyle = "green";
+                ctx.beginPath();
+                ctx.arc(this.x*10+5,this.y*10+5,5,0,2*Math.PI);
                 ctx.fill();
-
-                ctx.restore();
 
 
 
                 //draw a dotted line from current position to target
+                //reduced alpha
+                ctx.globalAlpha = 0.5;
                 ctx.strokeStyle = "black";
                 ctx.beginPath();
                 ctx.moveTo(this.x*10+5,this.y*10+5);
@@ -230,6 +248,7 @@
                 ctx.setLineDash([5,5]);
                 ctx.stroke();
                 ctx.setLineDash([]);
+                ctx.globalAlpha = 1;
 
 
             }
@@ -240,19 +259,48 @@
         let turtles=[];
 
         function globalTick(){
-            //console.log("update");
-            let startTime=Date.now();
-
+            let startTime=window.performance.now();            
             //call update on all turtles
+
+            //world render time
+            let worldRenderTime=window.performance.now();
             world.render();
+            worldRenderTime=window.performance.now()-worldRenderTime;
+            //turtle update time
+            let turtleUpdateTime=window.performance.now();
             for(let turtle of turtles){
                 turtle.update();
+            }
+            turtleUpdateTime=window.performance.now()-turtleUpdateTime;
+            //turtle render time
+            let turtleRenderTime=window.performance.now();
+            for(let turtle of turtles){
                 turtle.render();
             }
-
+            turtleRenderTime=window.performance.now()-turtleRenderTime;
+            //world update time
+            let worldUpdateTime=window.performance.now();
             world.update();
-            //console.log("render");
-            console.log(Date.now()-startTime);  
+            worldUpdateTime=window.performance.now()-worldUpdateTime;
+            
+            let totalTime=window.performance.now()-startTime;
+            //output the times
+            //round to 2 decimal places
+            worldRenderTime=Math.round(worldRenderTime*100)/100;
+            turtleUpdateTime=Math.round(turtleUpdateTime*100)/100;
+            turtleRenderTime=Math.round(turtleRenderTime*100)/100;
+            worldUpdateTime=Math.round(worldUpdateTime*100)/100;
+            totalTime=Math.round(totalTime*100)/100;
+
+
+            document.getElementById("turtleCount").innerHTML=turtles.length+" turtles";
+            document.getElementById("worldRender").innerHTML=worldRenderTime+"ms";
+            document.getElementById("turtleUpdate").innerHTML=turtleUpdateTime+"ms";
+            document.getElementById("turtleRender").innerHTML=turtleRenderTime+"ms";
+            document.getElementById("worldUpdate").innerHTML=worldUpdateTime+"ms";
+            document.getElementById("totalTime").innerHTML=totalTime+"ms";
+            
+
         };
         setInterval(globalTick,100);
 
@@ -260,7 +308,8 @@
         
         document.getElementById("spawn").addEventListener("click",function(){
             let ai = document.getElementById("input").value;
-            let robot = new Robot(50,50,0,world,ai);
+            //spawn at random position
+            let robot = new Robot(Math.random()*world.width,Math.random()*world.height,turtles.length,world,ai);
             turtles.push(robot);
         });
 
