@@ -30,8 +30,6 @@
     <script src="./turtle_ai.js"></script>
 
     <script>
-        //import AI from turtle_ai.js file
-
         class tile{
             constructor(type,x,y){
                 this.type = type;
@@ -53,17 +51,9 @@
 
                 return blocked;
             }
-            enter(payload){
-                this.payload = payload;
-                this.changed=true;
-            }
-            leave(){
-                this.payload = null;
-            }
             update(){
             };
             render(){
-                if(this.payload){this.payload.render();}
             };
         }
         class World{
@@ -192,7 +182,7 @@
                 this.targetX = x;
                 this.targetY = y;
                 this.id = id;
-                this.ai=new AI(ai,world,this);
+                this.ai=new ScriptAI(ai,world,this);
             }
 
             get tile(){
