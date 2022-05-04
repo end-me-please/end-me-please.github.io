@@ -82,6 +82,9 @@
                 }
             }
             getTile(x,y){
+                //floor
+                x = Math.floor(x);
+                y = Math.floor(y);
                 return this.tiles[x][y];
             }
             highlight(x,y){

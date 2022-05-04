@@ -8,7 +8,7 @@ class ScriptAI {
         this.line=0;
     }
     tick(){
-        this.area=getSubgrid();
+        this.area=this.getSubgrid();
         if(this.state.timeoutUntil>Date.now()){
             return;
         }
