@@ -7,7 +7,7 @@
     <body>
         <!--input textarea and a canvas with dark gray default color, button to render-->
         <canvas class="genericCanvas" id="canvas" width="640" height="640"></canvas>
-        <p>available instructions: move [x,y]; wait [time]</p>
+        </br>
         <textarea id="input" rows="10" cols="50"></textarea>
         <button id="spawn">Spawn</button>
         <div id="info">
@@ -23,13 +23,52 @@
             <p>total time: <span id="totalTime">
             </span></p>
         </div>
-    
     </br>
+    <p>example:</p>
+<textarea id="example" rows="10" cols="50" readonly>locate xloc yloc
+set targetX $thisX
+set targetY $thisY
+add targetX $xloc
+add targetY $yloc
+add targetX $rand(2)
+add targetY $rand(2)
+sub targetX $rand(2)
+sub targetY $rand(2)
+move $targetX $targetY
+locate eatx eaty
+notEqual xnull $eatx 0
+notEqual ynull $eaty 0
+set skip $xnull
+add skip $ynull
+add counter $skip
+set counter -1
+set tgtx $eatx
+set tgtx $eatx
+set tgty $eaty
+add tgtx $thisX
+add tgty $thisY
+eat $eatx $eaty
+move $tgtx $tgty
+move $tgtx $tgty</textarea>
+
+<textarea id="example2" rows="10" cols="50" readonly>set tgtx $thisX
+set tgty $thisY
+locate enx eny
+div enx 4
+div eny 4
+sub tgtx $enx
+sub tgty $eny
+move $tgtx $tgty
+</textarea>
 
 
+
+    
     <script src="./turtle_ai.js"></script>
 
+
     <script>
+
 
 
 
@@ -246,14 +285,14 @@
                 //use array.find
                 let targetTurtle=turtles.find(turtle=>{
                     let distance = Math.sqrt(Math.pow(targetX-turtle.x,2)+Math.pow(targetY-turtle.y,2));
-                    if(distance<1.5){
+                    if(distance<2){
                         return true;
                     }
                 });
                 //if found, subtract 5 life and transfer to this
                 if(targetTurtle){
                     this.life+=4;
-                    targetTurtle.life-=5;
+                    targetTurtle.life-=6;
                     //if target turtle is dead, remove from array
                     if(targetTurtle.life<=0){
                         turtles.splice(turtles.indexOf(targetTurtle),1);
@@ -320,7 +359,7 @@
             }
         }
         //canvas
-        let canvas = document.getElementById("canvas");
+        //let canvas = document.getElementById("canvas");
         const world=new World(64,64,canvas);
         let turtles=[];
 
@@ -331,6 +370,7 @@
             //world render time
             let worldRenderTime=window.performance.now();
             world.render();
+            //apply bloom to world canvas
             worldRenderTime=window.performance.now()-worldRenderTime;
             //turtle update time
             let turtleUpdateTime=window.performance.now();
@@ -386,7 +426,24 @@
             let robot = new Robot(Math.random()*world.width,Math.random()*world.height,turtles.length,world,ai);
             turtles.push(robot);
         });
+        
 
+        document.addEventListener("DOMContentLoaded",function(){
+            //get example from textarea
+            let example = document.getElementById("example").value;
+            //get example2
+            let example2 = document.getElementById("example2").value;
+            //spawn 35 example2 robots
+            for(let i=0;i<35;i++){
+                let robot = new Robot(Math.random()*world.width,Math.random()*world.height,turtles.length,world,example2);
+                turtles.push(robot);
+            }
+            //spawn 10 example robots
+            for(let i=0;i<10;i++){
+                let robot = new Robot(Math.random()*world.width,Math.random()*world.height,turtles.length,world,example);
+                turtles.push(robot);
+            }
+        });
 
 
 
