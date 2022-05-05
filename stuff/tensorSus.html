@@ -8,10 +8,11 @@
     <body>
         <h3>escape</h3>
         <p>move with WASD, don't let the impostor get you</p>
-        <canvas class="genericCanvas" id="canvas" width="800" height="600"></canvas>
+        <canvas class="genericCanvas" id="canvas" width="640px" height="640px"></canvas>
 
-        <!---<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>--->
-        
+        <!--<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>-->
+        <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+        <script src="./tensorSus_player.js"></script>
         <script>
             class Tile{
                 constructor(x,y,type,world){
@@ -29,7 +30,7 @@
                     if(this.type == 1){
                         ctx.fillStyle = "rgb(250,100,50)";
                     }
-                    ctx.fillRect(this.x*this.world.tileSize,this.y*this.world.tileSize,this.world.tileSize,this.world.tileSize);
+                    ctx.fillRect((this.x)*this.world.tileSize,(this.y)*this.world.tileSize,this.world.tileSize,this.world.tileSize);
                 }
 
             }
@@ -44,18 +45,31 @@
                 //generate a maze first
                 let maze=genMaze(this.width,this.height);
                 console.log(maze);
-                //convert the maze to tiles
-                this.tiles = [];
-                for(let i=0;i<this.width;i++){
-                    for(let j=0;j<this.height;j++){
-                        this.tiles.push(new Tile(i,j,(maze[i][j]?1:0),this));
-                    }
+                this.tiles=maze;
+
+                let playerX=Math.floor(Math.random()*width);
+                let playerY=Math.floor(Math.random()*height);
+
+                while(this.tiles[playerX][playerY] != 0){
+                    playerX = Math.floor(Math.random()*width);
+                    playerY = Math.floor(Math.random()*height);
                 }
-                this.players = [];
-                this.impostors = [];
+
+                this.player = new Player(playerX,playerY,this,"blue",true);
+                this.players=[this.player];
+
+                //add an impostor
+                let impostorX=Math.floor(Math.random()*width);
+                let impostorY=Math.floor(Math.random()*height);
+                let impostor = new Player(impostorX,impostorY,this,"red",false);
+                this.players.push(impostor);
+                //initialize the player in empty space
             }
             tick(){
-
+                //call .update() on all players
+                for(let i=0;i<this.players.length;i++){
+                    this.players[i].update();
+                }
             }
             draw(){
                 let ctx = this.canvas.getContext("2d");
@@ -71,111 +85,216 @@
                 }
             }
         }     
+        //add on load event listener
+        window.addEventListener("load",function(){
+            let canvas = document.getElementById("canvas");
+            const world=new World(document.getElementById("canvas"),64,64);
+            let tick = function(){
+                //world.tick();
+                //world.draw();
+                //drawViewport(canvas, [[0,0,0,0],[1,1,1,0],[0,0,0,0],[0,0,0,0]])
 
-        const world=new World(document.getElementById("canvas"),64,64);
-        //animate loop
-        function animate(){
-            world.draw();
-            requestAnimationFrame(animate);
-        }
-        animate();
+                drawViewport(canvas,world.player.getViewport());
+                requestAnimationFrame(tick);
+            }
+            tick();
+
+            //add keydown event listener
+            window.addEventListener("keydown",function(e){
+                if(e.key=="w"){
+                    world.player.step(1,true);
+                }
+                if(e.key=="s"){
+                    world.player.step(2,true);
+                }
+                if(e.key=="a"){
+                    world.player.step(3,true);
+                }
+                if(e.key=="d"){
+                    world.player.step(4,true);
+                }
+            });
+        });
+        
+
+
+
+        
+        function drawViewport(canvas,viewport){
+            let ctx = canvas.getContext("2d");
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            for(let i=0;i<viewport.length;i++){
+                for(let j=0;j<viewport[i].length;j++){
+                    if(viewport[i][j]==0){
+                        ctx.fillStyle = "rgb(200,200,200)";
+                    }
+                    if(viewport[i][j]==1){
+                        ctx.fillStyle = "rgb(250,100,50)";
+                    }
+                    if(viewport[i][j]==2){
+                        ctx.fillStyle = "rgb(0,100,0)";
+                    }
+                    if(viewport[i][j]==3){
+                        ctx.fillStyle = "rgb(100,0,0)";
+                    }
+                    ctx.fillRect(i*canvas.width/viewport.length,j*canvas.height/viewport[i].length,canvas.width/viewport.length,canvas.height/viewport[i].length);
+                    }
+                }
+            }
 
 
         //maze generation function, returns a 2d array of true/false values
         function genMaze(width,height){
+            width=width/2;
+            height=height/2;
             let maze = [];
+            //initialize the maze
             for(let i=0;i<width;i++){
                 maze.push([]);
                 for(let j=0;j<height;j++){
                     maze[i].push(false);
                 }
             }
-            //start at a random position
-            const mazeSegments = [
-                [
-                    [true,false,true,true],
-                    [true,false,false,false],
-                    [true,false,false,false],
-                    [true,false,true,true]
-                ],
-                [
-                    [true,true,true,true],
-                    [false,false,false,false],
-                    [false,false,false,false],
-                    [true,true,true,true]
-                ],
-                [
-                    [true,true,true,true],
-                    [false,false,true,false],
-                    [false,false,true,false],
-                    [true,true,true,true]
-                ],
-                [
-                    [true,true,true,false],
-                    [false,true,false,false],
-                    [false,true,false,false],
-                    [true,true,true,false]
-                ],
-            ];
-            let lastX = Math.floor(Math.random()*width);
-            let lastY = Math.floor(Math.random()*height);
-            //repeat 15 times
-            for(let i=0;i<15;i++){
-                let segment = mazeSegments[Math.floor(Math.random()*mazeSegments.length)];
-                //rotate the segment array
-                let newSegment = [];
-                //repeat a random number of times
-                for(let r=0;r<Math.floor(Math.random()*4)+1;r++){
-                for(let j=0;j<segment[0].length;j++){
-                    newSegment.push([]);
-                    for(let k=0;k<segment.length;k++){
-                        newSegment[j].push(segment[k][j]);
-                    }
-                }
-                segment = newSegment;
-            }
-
-                //pick a random position, or add 4 in random direction to last position
-                let x = lastX;
-                let y = lastY;
-                let dir = Math.floor(Math.random()*4);
-                if(dir == 0){
-                    x+=4
-                }
-                if(dir == 1){
-                    x-=4
-                }
-                if(dir == 2){
-                    y+=4
-                }
-                if(dir == 3){
-                    y-=4
-                }
-                //check if the position is valid
-                if(x<0||x>=width||y<0||y>=height){
-                    //randomly pick another position
-                    x = Math.floor(Math.random()*width);
-                    y = Math.floor(Math.random()*height);
-                }
-                //set last position to current position
-                lastX = x;
-                lastY = y;
-
-                //apply
-                for(let j=0;j<segment.length;j++){
-                    for(let k=0;k<segment[0].length;k++){
-                        maze[x+k][y+j] = segment[j][k];
-                    }
-                
-                }
-            }
-
-            //randomly select maze segment, upscale by 2, rotate randomly, and place in maze
+            let gridWidth = Math.floor(width/4);
+            let gridHeight = Math.floor(height/4);
             
+            //draw horizontal lines with spacing gridHeight
+            for(let i=0;i<width;i+=gridWidth){
+                for(let j=0;j<height;j++){	
+                    maze[i][j] = true;
+                }
+            }
+            //draw vertical lines with spacing gridWidth
+            for(let i=0;i<width;i++){
+                for(let j=0;j<height;j+=gridHeight){	
+                    maze[i][j] = true;
+                }
+            }
+            //randomly remove 5x5 squares of the maze
+            for(let i=0;i<30;i++){
+                let x = Math.floor(Math.random()*width);
+                let y = Math.floor(Math.random()*height);
+                for(let j=0;j<10;j++){
+                    for(let k=0;k<10;k++){
+                        //if the square is in the maze, remove it
+                        if(x+j>=0 && x+j<width && y+k>=0 && y+k<height){
+                            maze[x+j][y+k] = false;
+                        }
+                    }
+                }
+            }
 
+            maze=iterate(maze,"1234/3");
+            maze=iterate(maze,"1234/3");
+            maze=iterate(maze,"46/123456789");            
+            maze=iterate(maze,"46/1234");
+            maze=iterate(maze,"1234/1234");
+            maze=iterate(maze,"1234/1234");
+            maze=iterate(maze,"/123");
+            maze=iterate(maze,"123/123");
+            maze=iterate(maze,"4/123456789");
+            maze=iterate(maze,"123456789/123456789");
+            maze=iterate(maze,"123456789/123456789");
+            maze=iterate(maze,"/123");
+            maze=iterate(maze,"2/");
+            maze=iterate(maze,"1/12");
+            maze=iterate(maze,"/23456789");
+            maze=iterate(maze,"123456789/123456789");
+            maze=iterate(maze,"123456789/123456789");
+            maze=iterate(maze,"/23456789");
+            maze=iterate(maze,"9/23");
+            maze=iterate(maze,"9/12");
+            maze=iterate(maze,"1/12");
+            maze=iterate(maze,"1/1");
+            maze=iterate(maze,"/123456789");
+            
+            //enclose the maze in walls
+            for(let i=0;i<width;i++){
+                maze[i][0]=true;
+                maze[i][height-1]=true;
+            }
+            for(let i=0;i<height;i++){
+                maze[0][i]=true;
+                maze[width-1][i]=true;
+            }
 
-            return maze;
+            width=width*2;
+            height=height*2;
+            //upscale the maze
+            let newMaze = [];
+            for(let i=0;i<width;i++){
+                newMaze.push([]);
+                for(let j=0;j<height;j++){
+                    newMaze[i].push(false);
+                }
+            }
+            for(let i=0;i<width;i++){
+                for(let j=0;j<height;j++){
+                    if(maze[Math.floor(i/2)][Math.floor(j/2)]){
+                        newMaze[i][j] = true;
+                    }
+                }
+            }
+            //if less than 30% of the maze is filled, try again
+            let filled = 0;for(let i=0;i<width;i++){for(let j=0;j<height;j++){if(newMaze[i][j]){filled++;}}}if(filled<width*height*0.05){return genMaze(width,height);}return newMaze;
         }
+
+
+        //cellular automata iteration function, interprets rulestring and returns a 2d array of true/false values
+        function iterate(maze,ruleString){
+            let newMaze = [];
+            for(let i=0;i<maze.length;i++){
+                newMaze.push([]);
+                for(let j=0;j<maze[i].length;j++){
+                    newMaze[i][j] = false;
+                }
+            }
+            //iterate through the maze
+            for(let i=0;i<maze.length;i++){
+                for(let j=0;j<maze[i].length;j++){
+                    let neighbors = 0;
+                    if(i>0 && maze[i-1][j]){
+                        neighbors++;
+                    }
+                    if(i<maze.length-1 && maze[i+1][j]){
+                        neighbors++;
+                    }
+                    if(j>0 && maze[i][j-1]){
+                        neighbors++;
+                    }
+                    if(j<maze[i].length-1 && maze[i][j+1]){
+                        neighbors++;
+                    }
+
+                    //interpret the rule string in B/S notation, separated by /
+                    let rule = ruleString.split("/");
+                    let birthRule = rule[0];
+                    let surviveRule = rule[1];
+                    //check if the cell should be alive or dead
+                    if(maze[i][j]){
+                        if(surviveRule.includes(neighbors.toString())){
+                            newMaze[i][j] = true;
+                        } else {
+                            newMaze[i][j] = false;
+                        }
+                    } else {
+                    if(birthRule.includes(neighbors.toString())){
+                            newMaze[i][j] = true;
+                        }
+                    }
+
+                }
+            }
+
+        
+        return newMaze;
+        }
+
+
+
+
+
+
         </script>
     </body>
 </html>
