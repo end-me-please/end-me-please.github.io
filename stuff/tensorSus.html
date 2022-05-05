@@ -1,15 +1,14 @@
 <html>
     <head>
         <title>Tensor Sus</title>
+        
+        <link rel="stylesheet" type="text/css" href="../style.css">    
+    
     </head>
     <body>
-        <h1>Tensor Sus</h1>
         <h3>escape</h3>
         <p>move with WASD, don't let the impostor get you</p>
-        <canvas id="canvas" width="800" height="600"></canvas>
-
-
-
+        <canvas class="genericCanvas" id="canvas" width="800" height="600"></canvas>
 
         <!---<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>--->
         
@@ -19,7 +18,7 @@
                     this.world = world;
                     this.x = x;
                     this.y = y;
-                    this.type = parseInt(type);            
+                    this.type = type;
                 }
                 draw(ctx){
                     //color gray for type 0
@@ -28,7 +27,7 @@
                     }
                     //color brown for type 1
                     if(this.type == 1){
-                        ctx.fillStyle = "rgb(150,100,50)";
+                        ctx.fillStyle = "rgb(250,100,50)";
                     }
                     ctx.fillRect(this.x*this.world.tileSize,this.y*this.world.tileSize,this.world.tileSize,this.world.tileSize);
                 }
@@ -44,11 +43,12 @@
                 //initialize the world
                 //generate a maze first
                 let maze=genMaze(this.width,this.height);
+                console.log(maze);
                 //convert the maze to tiles
                 this.tiles = [];
                 for(let i=0;i<this.width;i++){
                     for(let j=0;j<this.height;j++){
-                        this.tiles.push(new Tile(i,j,maze[i][j],this));
+                        this.tiles.push(new Tile(i,j,(maze[i][j]?1:0),this));
                     }
                 }
                 this.players = [];
@@ -72,52 +72,108 @@
             }
         }     
 
-        const world=new World(document.getElementById("canvas"),20,20);
+        const world=new World(document.getElementById("canvas"),64,64);
         //animate loop
         function animate(){
             world.draw();
             requestAnimationFrame(animate);
         }
-
+        animate();
 
 
         //maze generation function, returns a 2d array of true/false values
         function genMaze(width,height){
             let maze = [];
-            for(let i = 0; i < width; i++){
-                maze[i] = [];
-                for(let j = 0; j < height; j++){
-                    maze[i][j] = true;
+            for(let i=0;i<width;i++){
+                maze.push([]);
+                for(let j=0;j<height;j++){
+                    maze[i].push(false);
                 }
             }
-            let stack = [];
-            let current = {x:Math.floor(Math.random()*width),y:Math.floor(Math.random()*height)};
-            maze[current.x][current.y] = false;
-            stack.push(current);
-            while(stack.length > 0){
-                let neighbors = [];
-                if(current.x > 0 && maze[current.x-1][current.y]){
-                    neighbors.push({x:current.x-1,y:current.y});
+            //start at a random position
+            const mazeSegments = [
+                [
+                    [true,false,true,true],
+                    [true,false,false,false],
+                    [true,false,false,false],
+                    [true,false,true,true]
+                ],
+                [
+                    [true,true,true,true],
+                    [false,false,false,false],
+                    [false,false,false,false],
+                    [true,true,true,true]
+                ],
+                [
+                    [true,true,true,true],
+                    [false,false,true,false],
+                    [false,false,true,false],
+                    [true,true,true,true]
+                ],
+                [
+                    [true,true,true,false],
+                    [false,true,false,false],
+                    [false,true,false,false],
+                    [true,true,true,false]
+                ],
+            ];
+            let lastX = Math.floor(Math.random()*width);
+            let lastY = Math.floor(Math.random()*height);
+            //repeat 15 times
+            for(let i=0;i<15;i++){
+                let segment = mazeSegments[Math.floor(Math.random()*mazeSegments.length)];
+                //rotate the segment array
+                let newSegment = [];
+                //repeat a random number of times
+                for(let r=0;r<Math.floor(Math.random()*4)+1;r++){
+                for(let j=0;j<segment[0].length;j++){
+                    newSegment.push([]);
+                    for(let k=0;k<segment.length;k++){
+                        newSegment[j].push(segment[k][j]);
+                    }
                 }
-                if(current.x < width-1 && maze[current.x+1][current.y]){
-                    neighbors.push({x:current.x+1,y:current.y});
+                segment = newSegment;
+            }
+
+                //pick a random position, or add 4 in random direction to last position
+                let x = lastX;
+                let y = lastY;
+                let dir = Math.floor(Math.random()*4);
+                if(dir == 0){
+                    x+=4
                 }
-                if(current.y > 0 && maze[current.x][current.y-1]){
-                    neighbors.push({x:current.x,y:current.y-1});
+                if(dir == 1){
+                    x-=4
                 }
-                if(current.y < height-1 && maze[current.x][current.y+1]){
-                    neighbors.push({x:current.x,y:current.y+1});
+                if(dir == 2){
+                    y+=4
                 }
-                if(neighbors.length > 0){
-                    let next = neighbors[Math.floor(Math.random()*neighbors.length)];
-                    maze[next.x][next.y] = false;
-                    maze[current.x][current.y] = false;
-                    stack.push(current);
-                    current = next;
-                }else{
-                    current = stack.pop();
+                if(dir == 3){
+                    y-=4
+                }
+                //check if the position is valid
+                if(x<0||x>=width||y<0||y>=height){
+                    //randomly pick another position
+                    x = Math.floor(Math.random()*width);
+                    y = Math.floor(Math.random()*height);
+                }
+                //set last position to current position
+                lastX = x;
+                lastY = y;
+
+                //apply
+                for(let j=0;j<segment.length;j++){
+                    for(let k=0;k<segment[0].length;k++){
+                        maze[x+k][y+j] = segment[j][k];
+                    }
+                
                 }
             }
+
+            //randomly select maze segment, upscale by 2, rotate randomly, and place in maze
+            
+
+
             return maze;
         }
         </script>
