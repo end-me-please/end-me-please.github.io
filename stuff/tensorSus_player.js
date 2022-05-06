@@ -1,3 +1,14 @@
+
+
+const options = {
+    task: 'regression',
+    inputs: 441,
+    outputs:2,
+}
+let nn = ml5.neuralNetwork(options);
+
+
+
 class Player {
     constructor(x,y,world,color,human=false) {
         this.x = x;
@@ -18,19 +29,23 @@ class Player {
         return;
         }
         console.log("impostor");
-        this.getViewport();
-        if(this.viewportHistory.includes(null)) {
-            console.log("null");
-            return;
+        let view=this.getViewport().flat(3);
+        nn.predict(view,(err,pred)=>{
+            //console.log(err);
+            //console.log(pred);
+            this.step(pred[0].value,false);
+        });
+        
         }
-        //let chosenDir=impostorBrain(this.viewportHistory);
-        //this.step(chosenDir,false);
-    }
 
 
     step(direction,human=false) {
+        
+        console.log("impostor did something!!");
+
+
             //directions 1-4, store xdiff and ydiff
-            //console.log(direction);
+            console.log(direction);
             let xdiff = 0;
             let ydiff = 0;
             switch (direction) {
@@ -59,15 +74,17 @@ class Player {
                 if(this.world.tiles[this.x+xdiff][this.y+ydiff]) {
                     return false;
                 }
-                
-                //train the impostor brain on input:this.viewportHistory and output:direction
                 //if human, train
+                try{
                 if(human) {
                 let view=this.getViewport();
-                trainModel({input:view,output:direction});
-                
-            
-            }
+                    let inputs=view.flat();
+                    let outputs=direction;
+                    nn.addData(inputs,[outputs,0,0]);
+                    nn.normalizeData();
+                    nn.train({epochs:1},()=>{console.log("trained")});
+                }
+            }catch(e){}
 
 
                 //move player
@@ -120,7 +137,7 @@ class Player {
 }
 
 
-
+//ml5.js neural network training
 
 
 

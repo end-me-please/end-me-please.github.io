@@ -1,7 +1,6 @@
 <html>
     <head>
-        <title>Tensor Sus</title>
-        
+        <script href="title.js"></script>
         <link rel="stylesheet" type="text/css" href="../style.css">    
     
     </head>
@@ -59,8 +58,8 @@
                 this.players=[this.player];
 
                 //add an impostor
-                let impostorX=Math.floor(Math.random()*width);
-                let impostorY=Math.floor(Math.random()*height);
+                let impostorX=playerX+2;
+                let impostorY=playerY+2;
                 let impostor = new Player(impostorX,impostorY,this,"red",false);
                 this.players.push(impostor);
                 //initialize the player in empty space
