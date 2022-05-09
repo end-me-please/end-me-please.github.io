@@ -1,9 +1,9 @@
 const config = {
     inputSize: 441,
     inputRange: 1,
-    hiddenLayers: [3,3],
+    hiddenLayers: [15,8],
     outputSize: 1,
-    learningRate: 0.02,
+    learningRate: 0.2,
     decayRate: 0.999,
 };
 let trainingLocked=false;
@@ -32,7 +32,7 @@ class Player {
         return;
         }
         console.log("impostor");
-        let view=this.getViewport().flat();
+        let view=this.getViewport();
         let output=[0];
         try{
         output=Player.neuralNet.run(view);
@@ -86,36 +86,35 @@ class Player {
                     return false;
                 }
                 //if human, train
-                try{
                 if(human) {
-                let view=this.getViewport().flat();
+                let view=this.getViewport();
                     let newData={input: view, output: [direction/4]};
                     this.trainingData.push(newData);
-                    if(this.trainingData.length>10) {
-                        //resume training Player.neuralNet without overwriting old data
-                        console.log("training..");
-                        try{
-                        Player.neuralNet.train(this.trainingData,{iterations:200,keepNetworkIntact: true});
-                        }catch(e) {}
-                        //console.log(Player.neuralNet.toJSON());
-                        console.log("trained!");
-                        //this.trainingData=[];
                 }
 
-                }
-            }catch(e){}
                 //move player
                 console.log(this.x,this.y);
                 this.x+=xdiff;
                 this.y+=ydiff;
                 console.log(this.x,this.y);
                 //if player is human, update world
-                if (this.human) {
-                    console.log("human");
+                if (this.human&&direction==0) {
                     this.world.tick();
                 }
                 return true;
                 }
+
+            train() {
+                console.log("training..");
+                try{
+                Player.neuralNet.train(this.trainingData,{iterations:100,keepNetworkIntact: true});
+                //this.trainingData=[];
+                }catch(e) {console.log("ono")}
+                console.log("trained!");
+            }
+
+
+            
              getViewport() {
                 let viewport = [];
                 //initialize viewport

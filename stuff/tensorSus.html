@@ -42,21 +42,21 @@
                 //initialize the world
                 //generate a maze first
                 let maze=genMaze(this.width,this.height);
-                console.log(maze);
+                //console.log(maze);
                 this.tiles=maze;
 
                 let playerX=Math.floor(Math.random()*width);
                 let playerY=Math.floor(Math.random()*height);
-                let impostorX=playerX+Math.floor(Math.random()*5)-2;
-                let impostorY=playerY+Math.floor(Math.random()*5)-2;
+                let impostorX=playerX+Math.floor(Math.random()*10)-5;
+                let impostorY=playerY+Math.floor(Math.random()*10)-5;
                 
                 while(this.tiles[playerX][playerY] != 0){
                     //randomly add or remove 2 from impostorX and impostorY
-                    impostorX+=Math.floor(Math.random()*3)-1;
-                    impostorY+=Math.floor(Math.random()*3)-1;
+                    playerX+=Math.floor(Math.random()*10)-5;
+                    playerY+=Math.floor(Math.random()*10)-5;
                 }
                 //do the same for the impostor within 10 tiles of the player
-                while(this.tiles[impostorX][impostorY] != 0&&Math.abs(playerX-impostorX)<10&&Math.abs(playerY-impostorY)<10){
+                while(this.tiles[impostorX][impostorY] != 0&&Math.abs(playerX-impostorX)<15&&Math.abs(playerY-impostorY)<15){
                     impostorX = Math.floor(Math.random()*width);
                     impostorY = Math.floor(Math.random()*height);
                 }
@@ -70,10 +70,10 @@
                 //let impostorY=playerY+2;
                 let impostor = new Player(impostorX,impostorY,this,"red",false);
                 this.players.push(impostor);
+                this.impostor = impostor;
                 //initialize the player in empty space
             }
             tick(){
-                //call .update() on all players
                 for(let i=0;i<this.players.length;i++){
                     this.players[i].update();
                 }
@@ -102,11 +102,16 @@
             console.log("init");
             let canvas = document.getElementById("canvas");
             console.log("canvas found")
-            const world=new World(document.getElementById("canvas"),64,64);
+            const world=new World(document.getElementById("canvas"),32,32);
             console.log("world generated")
-            function tick(){
+            let lastTime=Date.now()
+            let lastLog=0;
+            function tick(time){
+                let deltaTime=time-lastTime;
+                lastTime=time;
+
                 drawViewport(canvas,world.player.getViewport());
-                requestAnimationFrame(tick);
+                //requestAnimationFrame(tick);
             }
             tick();
             //console.log("starting rendering");
@@ -115,7 +120,7 @@
             //add keydown event listener
             window.addEventListener("keydown",function(e){
                 if(e.key=="f"){
-                    world.player.step(0,true);
+                    world.player.step(0,false);
                 }
 
                 if(e.key=="w"){
@@ -135,7 +140,8 @@
                 }
                 //same but if uppercase is pressed
                 if(e.key=="F"){
-                    world.player.step(0,true);
+                    //world.tick();
+                    world.player.step(0,false);
                 }
                 if(e.key=="W"){
                     world.player.step(1,false);
@@ -150,9 +156,17 @@
                 if(e.key=="D"){
                     world.player.step(4,false);
                 }
+                if(e.key=="t"){
+                    world.player.train();
+                    return;
+                }
 
-
-
+                //if impostorX and Y are equal to playerX and Y, call init() again
+                if((world.impostor.x==world.player.x)&&(world.impostor.y==world.player.y)){
+                    //delete world;
+                    init();
+                }
+                tick();
 
             });
         };
