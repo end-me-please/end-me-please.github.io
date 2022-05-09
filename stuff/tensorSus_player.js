@@ -38,7 +38,7 @@ class Player {
         output=Player.neuralNet.run(view);
         }catch(e){}
         console.log(output);
-        this.step(Math.floor(output[0]*4),false);
+        this.step(Math.floor((output[0]*4)+0.5),false);
         }
 
 
@@ -91,7 +91,7 @@ class Player {
                 let view=this.getViewport().flat();
                     let newData={input: view, output: [direction/4]};
                     this.trainingData.push(newData);
-                    if(this.trainingData.length>20) {
+                    if(this.trainingData.length>10) {
                         //resume training Player.neuralNet without overwriting old data
                         console.log("training..");
                         try{
