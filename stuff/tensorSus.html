@@ -2,17 +2,16 @@
     <head>
         <script href="title.js"></script>
         <link rel="stylesheet" type="text/css" href="../style.css">    
-    
+        <script src="https://unpkg.com/brain.js@2.0.0-beta.15/dist/browser.js"></script>
+        <script src="tensorSus_player.js"></script>
+
     </head>
     <body>
         <h3>escape</h3>
         <p>move with WASD, don't let the impostor get you</p>
         <canvas class="genericCanvas" id="canvas" width="640px" height="640px"></canvas>
-
-        <!--<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>-->
-        <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
-        <script src="./tensorSus_player.js"></script>
         <script>
+
             class Tile{
                 constructor(x,y,type,world){
                     this.world = world;
@@ -48,18 +47,27 @@
 
                 let playerX=Math.floor(Math.random()*width);
                 let playerY=Math.floor(Math.random()*height);
-
+                let impostorX=playerX+Math.floor(Math.random()*5)-2;
+                let impostorY=playerY+Math.floor(Math.random()*5)-2;
+                
                 while(this.tiles[playerX][playerY] != 0){
-                    playerX = Math.floor(Math.random()*width);
-                    playerY = Math.floor(Math.random()*height);
+                    //randomly add or remove 2 from impostorX and impostorY
+                    impostorX+=Math.floor(Math.random()*3)-1;
+                    impostorY+=Math.floor(Math.random()*3)-1;
                 }
+                //do the same for the impostor within 10 tiles of the player
+                while(this.tiles[impostorX][impostorY] != 0&&Math.abs(playerX-impostorX)<10&&Math.abs(playerY-impostorY)<10){
+                    impostorX = Math.floor(Math.random()*width);
+                    impostorY = Math.floor(Math.random()*height);
+                }
+
 
                 this.player = new Player(playerX,playerY,this,"blue",true);
                 this.players=[this.player];
 
                 //add an impostor
-                let impostorX=playerX+2;
-                let impostorY=playerY+2;
+                //let impostorX=playerX+2;
+                //let impostorY=playerY+2;
                 let impostor = new Player(impostorX,impostorY,this,"red",false);
                 this.players.push(impostor);
                 //initialize the player in empty space
@@ -86,38 +94,47 @@
         }     
         //add on load event listener
         window.addEventListener("load",function(){
+            //wait 3 seconds before starting
+            init();
+        });
+        
+        function init(){
+            console.log("init");
             let canvas = document.getElementById("canvas");
+            console.log("canvas found")
             const world=new World(document.getElementById("canvas"),64,64);
-            let tick = function(){
-                //world.tick();
-                //world.draw();
-                //drawViewport(canvas, [[0,0,0,0],[1,1,1,0],[0,0,0,0],[0,0,0,0]])
-
+            console.log("world generated")
+            function tick(){
                 drawViewport(canvas,world.player.getViewport());
                 requestAnimationFrame(tick);
             }
             tick();
-
+            //console.log("starting rendering");
+            //set tick in 100ms intervals
+            
             //add keydown event listener
             window.addEventListener("keydown",function(e){
+                if(e.key=="f"){
+                    world.player.step(0,true);
+                }
+
                 if(e.key=="w"){
                     world.player.step(1,true);
+                    
                 }
                 if(e.key=="s"){
                     world.player.step(2,true);
+                    
                 }
                 if(e.key=="a"){
                     world.player.step(3,true);
                 }
                 if(e.key=="d"){
                     world.player.step(4,true);
+                    
                 }
             });
-        });
-        
-
-
-
+        };
         
         function drawViewport(canvas,viewport){
             let ctx = canvas.getContext("2d");
@@ -235,6 +252,7 @@
                 }
             }
             //if less than 30% of the maze is filled, try again
+            return newMaze;
             let filled = 0;for(let i=0;i<width;i++){for(let j=0;j<height;j++){if(newMaze[i][j]){filled++;}}}if(filled<width*height*0.05){return genMaze(width,height);}return newMaze;
         }
 
@@ -288,10 +306,6 @@
         
         return newMaze;
         }
-
-
-
-
 
 
         </script>

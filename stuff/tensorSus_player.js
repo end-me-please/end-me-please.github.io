@@ -1,15 +1,17 @@
-
-
-const options = {
-    task: 'regression',
-    inputs: 441,
-    outputs:2,
-}
-let nn = ml5.neuralNetwork(options);
-
-
-
+const config = {
+    inputSize: 441,
+    inputRange: 1,
+    hiddenLayers: [3,3],
+    outputSize: 1,
+    learningRate: 0.02,
+    decayRate: 0.999,
+};
+let trainingLocked=false;
+console.log("loading player file");
+//console.log("brain: " + Object.keys(brain));
 class Player {
+    //brain.js network
+    static neuralNet = new brain.NeuralNetwork(config);  
     constructor(x,y,world,color,human=false) {
         this.x = x;
         this.y = y;
@@ -18,6 +20,7 @@ class Player {
         this.size=world.tileSize/2;
         this.viewingDistance=10;
         this.human=human;
+        this.trainingData=[];
         this.viewportHistory=[null,null,null,null];
     }
     draw() {
@@ -29,19 +32,22 @@ class Player {
         return;
         }
         console.log("impostor");
-        let view=this.getViewport().flat(3);
-        nn.predict(view,(err,pred)=>{
-            //console.log(err);
-            //console.log(pred);
-            this.step(pred[0].value,false);
-        });
-        
+        let view=this.getViewport().flat();
+        let output=[0];
+        try{
+        output=Player.neuralNet.run(view);
+        }catch(e){}
+        console.log(output);
+        this.step(Math.floor(output[0]*4),false);
         }
 
 
     step(direction,human=false) {
         
-        console.log("impostor did something!!");
+        this.viewportHistory.push(this.getViewport());
+        this.viewportHistory.shift();
+        
+        //console.log("impostor did something!!");
 
 
             //directions 1-4, store xdiff and ydiff
@@ -49,6 +55,11 @@ class Player {
             let xdiff = 0;
             let ydiff = 0;
             switch (direction) {
+                case 0:
+                    if(human){this.world.tick();}
+                    return;
+                break;
+
                 case 1:
                     xdiff = 0;
                     ydiff = -1;
@@ -77,16 +88,22 @@ class Player {
                 //if human, train
                 try{
                 if(human) {
-                let view=this.getViewport();
-                    let inputs=view.flat();
-                    let outputs=direction;
-                    nn.addData(inputs,[outputs,0,0]);
-                    nn.normalizeData();
-                    nn.train({epochs:1},()=>{console.log("trained")});
+                let view=this.getViewport().flat();
+                    let newData={input: view, output: [direction/4]};
+                    this.trainingData.push(newData);
+                    if(this.trainingData.length>20) {
+                        //resume training Player.neuralNet without overwriting old data
+                        console.log("training..");
+                        try{
+                        Player.neuralNet.train(this.trainingData,{iterations:200,keepNetworkIntact: true});
+                        }catch(e) {}
+                        //console.log(Player.neuralNet.toJSON());
+                        console.log("trained!");
+                        //this.trainingData=[];
+                }
+
                 }
             }catch(e){}
-
-
                 //move player
                 console.log(this.x,this.y);
                 this.x+=xdiff;
@@ -99,48 +116,44 @@ class Player {
                 }
                 return true;
                 }
-                getViewport() {
-                    let viewport = [];
-                    //initialize viewport
-                    for (let i=0;i<this.viewingDistance*2+1;i++) {
-                        viewport[i]=[];
-                        for (let j=0;j<this.viewingDistance*2+1;j++) {
-                            viewport[i][j]=0;
+             getViewport() {
+                let viewport = [];
+                //initialize viewport
+                for (let i=0;i<this.viewingDistance*2+1;i++) {
+                    viewport[i]=[];
+                    for (let j=0;j<this.viewingDistance*2+1;j++) {
+                        viewport[i][j]=0;
+                    }
+                }
+        
+            for (let i=-this.viewingDistance;i<this.viewingDistance;i++) {
+                    for (let j=-this.viewingDistance;j<this.viewingDistance;j++) {
+                        //check if tile is out of bounds
+                        if (this.x+i<0 || this.x+i>=this.world.width || this.y+j<0 || this.y+j>=this.world.height) {
+                            viewport[i+this.viewingDistance][j+this.viewingDistance]=1;
+                            //console.log("out of bounds");
+                        } else {
+                        viewport[i+this.viewingDistance][j+this.viewingDistance]=this.world.tiles[this.x+i][this.y+j]?1:0;
                         }
-                    }
-
-                    for (let i=-this.viewingDistance;i<this.viewingDistance;i++) {
-                        for (let j=-this.viewingDistance;j<this.viewingDistance;j++) {
-                            //check if tile is out of bounds
-                            if (this.x+i<0 || this.x+i>=this.world.width || this.y+j<0 || this.y+j>=this.world.height) {
-                                viewport[i+this.viewingDistance][j+this.viewingDistance]=1;
-                                //console.log("out of bounds");
-                            } else {
-                            viewport[i+this.viewingDistance][j+this.viewingDistance]=this.world.tiles[this.x+i][this.y+j]?1:0;
-                            }
-                        //check if any player has the same coordinates as the tile
-                            for (let k=0;k<this.world.players.length;k++) {
-                            //3 if different color, 2 if same color
-                            if (this.world.players[k].x==this.x+i && this.world.players[k].y==this.y+j && this.world.players[k].color!=this.color) {
-                                viewport[i+this.viewingDistance][j+this.viewingDistance]=3;
-                            }
-                            if(this.world.players[k].x==this.x+i && this.world.players[k].y==this.y+j && this.world.players[k].color==this.color) {
-                                viewport[i+this.viewingDistance][j+this.viewingDistance]=2;
-                            }
-                            }
-                    }
+                    //check if any player has the same coordinates as the tile
+                        for (let k=0;k<this.world.players.length;k++) {
+                        //3 if different color, 2 if same color
+                        if (this.world.players[k].x==this.x+i && this.world.players[k].y==this.y+j && this.world.players[k].color!=this.color) {
+                            viewport[i+this.viewingDistance][j+this.viewingDistance]=3;
+                        }
+                        if(this.world.players[k].x==this.x+i && this.world.players[k].y==this.y+j && this.world.players[k].color==this.color) {
+                            viewport[i+this.viewingDistance][j+this.viewingDistance]=2;
+                        }
+                        }
                 }
-                    this.viewportHistory.push(viewport);
-                    this.viewportHistory.shift();
-                    return viewport;
-                }
+            }
+                this.viewportHistory.push(viewport);
+                this.viewportHistory.shift();
+                return viewport;
+            }
 }
 
-
-//ml5.js neural network training
-
-
-
+//module.exports = Player;
 
 
 

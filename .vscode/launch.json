@@ -7,8 +7,8 @@
         {
             "type": "pwa-msedge",
             "request": "launch",
-            "name": "Open turtles.html",
-            "file": "c:\\Users\\erikf\\Documents\\GitHub\\end-me-please.github.io\\stuff\\turtles.html"
+            "name": "Open tensorSus.html",
+            "file": "c:\\Users\\erikf\\OneDrive\\Dokumente\\GitHub\\end-me-please.github.io\\stuff\\tensorSus.html"
         }
     ]
 }
