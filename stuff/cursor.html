@@ -1,0 +1,159 @@
+<html>
+    <head>
+        <script src="./title.js">
+        </script>
+                <script src="https://unpkg.com/brain.js@2.0.0-beta.15/dist/browser.js"></script>    
+</head>
+<body>
+    <canvas class="genericCanvas" width="500" height="500"></canvas>
+
+
+
+
+</script>
+<script>
+//on mousemove
+//get the mouse position over the canvas
+
+    var canvas = document.querySelector(".genericCanvas");
+    var ctx = canvas.getContext("2d");
+    var mouse = {
+        x: undefined,
+        y: undefined
+    };
+    var maxRadius = 40;
+    var minRadius = 2;
+    var colorArray = [
+        "#FF0000",
+        "#FF7F00",
+        "#FFFF00",
+        "#00FF00",
+        "#0000FF",
+        "#8B00FF"
+    ];
+    var color = colorArray[Math.floor(Math.random() * colorArray.length)];
+    var mouseDown = false;
+    var circleArray = [];
+    var circle = {
+        x: undefined,
+        y: undefined,
+        dx: undefined,
+        dy: undefined,
+        radius: undefined,
+        color: undefined
+    };
+    
+    canvas.addEventListener("mousemove", function(event) {
+        mouse.x = event.x;
+        mouse.y = event.y;
+    });
+    canvas.addEventListener("mousedown", function(event) {
+        mouseDown = true;
+    });
+    canvas.addEventListener("mouseup", function(event) {
+        mouseDown = false;
+    });
+    canvas.addEventListener("mouseleave", function(event) {
+        mouseDown = false;
+    });
+
+    function Circle(x, y, dx, dy, radius, color) {
+        this.x = x;
+        this.y = y;
+        this.dx = dx;
+        this.dy = dy;
+        this.radius = radius;
+        this.startRadius = radius;
+        this.color = color;
+        this.draw = function() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+        }
+        this.update = function() {
+            if (this.x + this.radius > innerWidth || this.x - this.radius < 0) {
+                this.dx = -this.dx*1.1;
+            }
+            if (this.y + this.radius > innerHeight || this.y - this.radius < 0) {
+                this.dy = -this.dy*1.1;
+            }
+            
+                if (Math.abs(mouse.x - this.x) < (this.radius) && Math.abs(mouse.y - this.y) < (this.radius) * 1) {
+                    //set radius so that it doesn't get too close to the mouse, otherwise to this.startRadius
+                    this.radius = Math.max(Math.abs(mouse.x - this.x), Math.abs(mouse.y - this.y));
+                }
+                else {
+                    //make it slowly return to startRadius
+                    this.radius+=(this.startRadius-this.radius)/100;
+                }
+                //on mousedown, apply gravity towards the mouse
+                if (mouseDown) {
+                    var dx = mouse.x - this.x;
+                    var dy = mouse.y - this.y;
+                    //calculate the distance between the circle and the mouse
+                    var distance = Math.sqrt(dx * dx + dy * dy);
+                    //calculate the force of gravity
+                    var gravity = 0.1;
+                    var force = gravity * this.radius / distance;
+                    //calculate the direction of the force
+                    var direction = {
+                        x: dx / distance,
+                        y: dy / distance
+                    };
+                    //apply the force
+                    this.dx += direction.x * force;
+                    this.dy += direction.y * force;
+
+                }
+
+
+            //apply drag
+            this.dx *= 0.99;
+            this.dy *= 0.99;
+
+            
+            this.x += this.dx;
+            this.y += this.dy;
+            this.draw();
+        }
+    }
+    function init() {
+        circleArray = [];
+        for (var i = 0; i < 800; i++) {
+            var radius = Math.random() * (maxRadius - minRadius) + minRadius;
+            var x = Math.random() * (innerWidth - radius * 2) + radius;
+            var y = Math.random() * (innerHeight - radius * 2) + radius;
+            var dx = (Math.random() - 0.5) * 2;
+            var dy = (Math.random() - 0.5) * 2;
+            var color = colorArray[Math.floor(Math.random() * colorArray.length)];
+            circleArray.push(new Circle(x, y, dx, dy, radius, color));
+        }
+        for (var i = 0; i < 800; i++) {
+            var radius = Math.random() * (maxRadius - minRadius) + minRadius;
+            var x = Math.random() * (innerWidth - radius * 2) + radius;
+            var y = Math.random() * (innerHeight - radius * 2) + radius;
+            var dx = (Math.random() - 0.5) * 2;
+            var dy = (Math.random() - 0.5) * 2;
+            var color = colorArray[Math.floor(Math.random() * colorArray.length)];
+            
+        }
+    }
+    function animate() {
+        requestAnimationFrame(animate);
+        ctx.clearRect(0, 0, innerWidth, innerHeight);
+        for (var i = 0; i < circleArray.length; i++) {
+            circleArray[i].update();
+        };
+
+    }
+    init();
+    animate();
+
+
+
+</script>
+
+
+</body>
+</html>
