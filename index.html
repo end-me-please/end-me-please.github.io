@@ -41,7 +41,7 @@
     const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new WebGLRenderer({ canvas: document.querySelector('#cubespin') });
 
-    const geometry = new BoxGeometry();
+    const geometry = new BoxGeometry(1.5,1,2);
     const material = new MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
     const cube = new Mesh(geometry, material);
     scene.add(cube);
