@@ -5,6 +5,8 @@
                 <script src="https://unpkg.com/brain.js@2.0.0-beta.15/dist/browser.js"></script>    
 </head>
 <body>
+
+
     <canvas class="genericCanvas" width="500" height="500"></canvas>
 
 
@@ -16,6 +18,11 @@
 //get the mouse position over the canvas
 
     var canvas = document.querySelector(".genericCanvas");
+    //resize the canvas to the window size
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+
     var ctx = canvas.getContext("2d");
     var mouse = {
         x: undefined,
@@ -58,6 +65,7 @@
     });
 
     function Circle(x, y, dx, dy, radius, color) {
+        this.radiusRate=0;
         this.x = x;
         this.y = y;
         this.dx = dx;
@@ -80,12 +88,12 @@
             }
             
                 if (Math.abs(mouse.x - this.x) < (this.radius) && Math.abs(mouse.y - this.y) < (this.radius) * 1) {
-                    //set radius so that it doesn't get too close to the mouse, otherwise to this.startRadius
-                    this.radius = Math.max(Math.abs(mouse.x - this.x), Math.abs(mouse.y - this.y));
+                    //get mouse distance from circle
+                    var distance = Math.sqrt(Math.pow(mouse.x - this.x, 2) + Math.pow(mouse.y - this.y, 2));
+                    this.radiusRate-=distance/100;
                 }
-                else {
-                    //make it slowly return to startRadius
-                    this.radius+=(this.startRadius-this.radius)/100;
+                else{
+                    this.radiusRate+=0.001;
                 }
                 //on mousedown, apply gravity towards the mouse
                 if (mouseDown) {
@@ -106,7 +114,16 @@
                     this.dy += direction.y * force;
 
                 }
-
+            this.radius+=this.radiusRate;
+            if(this.radius>this.startRadius){
+                this.radiusRate*=-0.1;
+            }
+            if(this.radius<minRadius){
+                this.radiusRate*=-0.1;
+            }
+            this.radiusRate+=0.00001;
+            this.radiusRate=this.radiusRate*0.996;
+            this.radius=Math.max(this.radius,minRadius);
 
             //apply drag
             this.dx *= 0.99;
