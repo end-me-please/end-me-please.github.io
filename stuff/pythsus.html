@@ -1,0 +1,47 @@
+<html>
+    <head>
+        <script src="title.js"></script>
+        <link rel="stylesheet" href="../style.css">
+        <script src="https://cdn.jsdelivr.net/pyodide/v0.20.0/full/pyodide.js"></script>
+    </head>
+    <body>
+        <div class = "title">
+            <h2>py</h2>
+        </div>
+        <div>
+            <textarea id="code" rows="30" cols="40"></textarea>
+            <button id="run">run</button>
+            </br>
+        </div>
+        <div>
+            <textarea rows="30" cols="40" id="output" disabled="true"></textarea>
+        </div>
+        <script>
+            async function main(){
+                
+                let stdin_func = function(){
+                    console.log("stdin_func");
+                    let userInput = prompt();
+                    return userInput;
+                }
+                let stdout_func = function(output){
+                    document.getElementById("output").value += output;
+                }
+                let stderr_func = function(output){
+                    document.getElementById("output").value += "\nerr: "+output+"\n";
+                }
+
+
+                let pyodide = await loadPyodide({
+                    stdin: stdin_func, stdout: stdout_func, stderr: stderr_func
+                });
+
+                document.getElementById("run").onclick = function(){
+                    let out = pyodide.runPython(document.getElementById("code").value);
+                    document.getElementById("output").value += "\n"+ out+"\n";
+                }
+            }
+            main();
+        </script>
+    </body>
+</html>
