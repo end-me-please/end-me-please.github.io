@@ -9,35 +9,36 @@
     <script>
         Vars.world = new world(64, 64);
         Vars.renderer = new canvasRenderer(document.getElementById("game"));
-        Vars.world.objects.push(new rect(0.25, 5, 6,2,2,0.8,7));
-        //push some random rects
-        for(var i = 0; i < 10; i++){
-            //dont touch size
-            //vary x,y,vx,vy
-            //x between 0 and 30
-            //y between 5 and 30
-            //vx between -1 and 1
-            //vy between -1 and 1
-            Vars.world.objects.push(new rect(Math.random()*2, Math.random()*30, Math.random()*30+3, 3, 3, Math.random()*2-1, Math.random()*2-1));
-        }
+        let testCluster = new cluster(new vector(10, 10),Math.floor(Math.random()*1000));
+        
+        //the clusterPart constructor: constructor(parent,type="ohno",x=0,y=0,rotation=0,mass=1)
+        
+        let testpart1 = new clusterPart(testCluster,"ohno",0,0,0,1);
+        let testpart2 = new clusterPart(testCluster,"ohno",1,0,0,1);
+        let testpart3 = new clusterPart(testCluster,"ohno",-1,0,0,1);
+        let testpart4 = new clusterPart(testCluster,"ohno",-2,0,0,1);
+        let testpart5 = new clusterPart(testCluster,"ohno",-3,0,0,1);
+        let testpart6 = new clusterPart(testCluster,"ohno",-3,1,0,1);
+        let testpart7 = new clusterPart(testCluster,"ohno",-3,2,0,5);
 
-        //wall box
-        Vars.world.objects.push(new wall(2,2,2,30));
-        Vars.world.objects.push(new wall(2,2,30,2));
-        Vars.world.objects.push(new wall(2,32,30,2));
-        Vars.world.objects.push(new wall(32,2,2,30));
-        Vars.world.objects.push(new wall(32,32,2,30));
-        Vars.world.objects.push(new wall(32,2,30,2));
-        Vars.world.objects.push(new wall(32,32,30,2));
-        Vars.world.objects.push(new wall(2,2,2,30));
+        testCluster.members.push(testpart1);
+        testCluster.members.push(testpart2);
+        testCluster.members.push(testpart3);
+        testCluster.members.push(testpart4);
+        testCluster.members.push(testpart5);
+        testCluster.members.push(testpart6);
+        testCluster.members.push(testpart7);
+        
 
+        Vars.world.clusters.push(testCluster);
 
         //frame
         let lastTime = performance.now();
         let frame = function(time){
             let delta = (time - lastTime);
             lastTime = time;
-            Vars.world.update(delta/6000);
+            testCluster.applyForce(new vector(0,0),new vector(0,1));
+            Vars.world.update(delta/600);
             Vars.renderer.render(Vars.world);
             requestAnimationFrame(frame);
         }

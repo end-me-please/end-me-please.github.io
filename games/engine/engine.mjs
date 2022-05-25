@@ -6,21 +6,13 @@ class world{
     constructor(width, height){
         this.width=width; //width and height of the world in tiles
         this.height=height;
-        this.objects = [];
+        this.clusters = [];
     }
     update(delta){
-    for(let i=0; i<this.objects.length; i++){
-        this.objects[i].update(delta);
+        for(let i=0; i<this.clusters.length; i++){
+        this.clusters[i].update(delta);
     }
-        for(let i=0; i<this.objects.length; i++){
-            for(let j=0; j<this.objects.length; j++){
-                if(i!=j){
-                    this.objects[i].collide(this.objects[j]);
-                }
-            }
-        
-        }
-    }
+}
 }
 
 
@@ -55,119 +47,122 @@ class vector{
         return new vector(this.x-pos.x,this.y-pos.y);
     }
     polarTranslate(angle,distance){
-        this.x+=Math.cos(angle)*distance;
-        this.y+=Math.sin(angle)*distance;
+        return new vector(this.x+Math.cos(angle)*distance,this.y+Math.sin(angle)*distance);
     }
     add(v){
-        this.x+=v.x;
-        this.y+=v.y;
+        return new vector(this.x+v.x,this.y+v.y);
     }
     subtract(v){
-        this.x-=v.x;
-        this.y-=v.y;
+        return new vector(this.x-v.x,this.y-v.y);
     }
     rotate(angle){
-        this.angle+=angle;
+        return new vector(this.x*Math.cos(angle)-this.y*Math.sin(angle),this.x*Math.sin(angle)+this.y*Math.cos(angle));
     }
     multiplyScalar(scalar){
         return new vector(this.x*scalar,this.y*scalar);
     }
-    getNormalized(){
-        let v = this.clone();
-        v.normalize();
-        return v;
-    }
     normalize(){
         let length = this.radius;
-        this.x = Math.cos(this.angle) * length;
-        this.y = Math.sin(this.angle) * length;
+        return new vector(this.x/length,this.y/length);
     }
     dot(v){
         return this.x*v.x+this.y*v.y;
     }
-
     clone(){
         return new vector(this.x,this.y);
     }
+    cross(v){
+        return this.x*v.y-this.y*v.x;
+    }
 }
 
 
-//structure to define a square in 2d
-//should contain mass, x/y movement and angular movement
-class rect{
-    constructor(mass=1,posx=1,posy=1,width=2,height=2,velx=0,vely=0,angle=0)
-    {
-        this.mass=mass;
-        this.size=new vector(width,height);
-        this.pos=new vector(posx,posy);
-        this.vel=new vector(velx,vely);
-        this.angle=angle;
-        this.angularVel=0;
-        this.texture="square";
+class clusterPart {
+    constructor(parent,type="ohno",x=0,y=0,rotation=0,mass=1){
+        this.id=Math.floor(Math.random()*1000000);
+        this.pos = new vector(x,y);
+        this.rotation = rotation;
+        this.mass = mass;
+        this.type = type;
+        this.parent = parent;
+        this.size = 32;
     }
-    get width(){
-        return this.size.x;
+    globalPosition(){
+        //rotate around parent's center of mass
+        let pos = this.pos.clone();
+        //add parent's center of mass
+        pos = pos.rotate(this.parent.angle);
+        pos = pos.relativeTo(this.parent.CenterOfMass.rotate(this.parent.angle));
+        pos = pos.add(this.parent.pos);
+        return pos;
     }
-    get height(){
-        return this.size.y;
+    fromJSON(json){
+        let newPart = new clusterPart({},json.type,json.pos.x,json.pos.y,json.rotation,json.mass);
+        newPart.id = json.id;
+        return newPart;
+    }
+    addParent(parent){
+        this.parent = parent;
+    }
+}
+
+class cluster {
+    constructor(pos, id){
+        this.pos=pos;
+        this.angle = 0;
+        this.angleRate = 0;
+        this.vel = new vector(0,0);
+        this.accel = new vector(0,0);
+        this.angularAccel = 0;
+        this.id=id;
+        this.members=[];
+
+        this.forceVisualPos = new vector(0,0);
+        this.forceVisual = new vector(0,0);
+    }
+    get totalMass(){
+        let mass=0;
+        for(let i=0; i<this.members.length; i++){
+            mass+=this.members[i].mass;
+        }
+        return mass;
+    }
+    get CenterOfMass(){ //center of mass in local coordinates
+        let x=0;
+        let y=0;
+        let totalMass=this.totalMass;
+        for(let i=0; i<this.members.length; i++){
+            x+=this.members[i].pos.x*(this.members[i].mass/totalMass);
+            y+=this.members[i].pos.y*(this.members[i].mass/totalMass);
+        }
+        return new vector(x,y);
+    }
+    applyForce(pos,force){
+        
+        let forcePos = pos.clone().relativeTo(this.CenterOfMass);
+        forcePos = forcePos.rotate(this.angle);
+        //get component pointing towards center of mass
+        let forceComponent = forcePos.normalize().multiplyScalar(force.radius);
+        //get component pointing perpendicular to center of mass
+        let torqueComponent = forcePos.cross(force.normalize());
+        //add components
+        this.accel = this.accel.add(forceComponent);
+        this.angularAccel = this.angularAccel + torqueComponent;
+
+        this.forceVisualPos = forcePos;
+        this.forceVisual = force;
+
+
     }
     update(delta){
-        let deltaPos = new vector(this.vel.x*delta,this.vel.y*delta);
-        this.pos.add(deltaPos);
-        this.angle+=this.angularVel*delta;
-        //gravity
-        this.vel.y+=9.81*delta;
-    }
-    collides(other){
-        if(this.pos.x+this.width/2>other.pos.x-other.width/2 && this.pos.x-this.width/2<other.pos.x+other.width/2 && this.pos.y+this.height/2>other.pos.y-other.height/2 && this.pos.y-this.height/2<other.pos.y+other.height/2){
-            return true;
-        }
-        return false;
-    }
-    collide(other){
-        if(this.collides(other)){
-            let relativePos = this.pos.relativeTo(other.pos);
-            let relativeVel = this.vel.relativeTo(other.vel);
-            let relativeAngle = this.angle-other.angle;
-
-            //apply collision response
-            let overlap = this.width/2+other.width/2-relativePos.radius;
-            let normal = new vector(relativePos.x/relativePos.radius,relativePos.y/relativePos.radius);
-            let tangent = new vector(-normal.y,normal.x);
-            let relativeVelNormal = normal.dot(relativeVel);
-            let relativeVelTangent = tangent.dot(relativeVel);
-            let normalVel = relativeVelNormal*(this.mass-other.mass)/(this.mass+other.mass);
-            let tangentVel = relativeVelTangent*(this.mass-other.mass)/(this.mass+other.mass);
-            let impulseNormal = normal.multiplyScalar(normalVel);
-            let impulseTangent = tangent.multiplyScalar(tangentVel);
-            this.vel.subtract(impulseNormal.multiplyScalar(2));
-            this.vel.subtract(impulseTangent.multiplyScalar(2));
-            //other.vel.subtract(impulseNormal);
-            //other.vel.subtract(impulseTangent);
-            this.angularVel-=relativeAngle*tangentVel*(this.mass-other.mass)/(this.mass+other.mass);
-            //other.angularVel+=relativeAngle*tangentVel*(this.mass-other.mass)/(this.mass+other.mass);
-
-
-        }
+        //rotate
+        this.angleRate += this.angularAccel*delta;this.angularAccel=0;
+        this.vel = this.vel.add(this.accel.multiplyScalar(delta)); this.accel=new vector(0,0);
+        
+        this.angle += this.angleRate*delta;
+        this.pos = this.pos.add(this.vel.multiplyScalar(delta));
     }
 }
-
-class wall extends rect{
-    constructor(posx,posy,width,height,angle=0){
-        super(0,posx,posy,width,height,0,0,angle);
-        this.texture="wall";
-    }
-    collide(other){
-        //no
-    }
-    update(delta){
-        //no
-    }
-}
-
-
-
-
 
 
 
