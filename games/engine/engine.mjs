@@ -139,13 +139,18 @@ class cluster {
     }
     applyForce(pos,force){
         
-        let forcePos = pos.rotate(this.angle);
-        forcePos = forcePos.relativeTo(this.CenterOfMass);
-        let forceComponent = forcePos.normalize().multiplyScalar(force.radius);
-        let torqueComponent = forcePos.cross(force);
+        let forcePos = pos.rotate(-this.angle);
+        forcePos = pos.relativeTo(this.CenterOfMass);
+        //get torque and acceleration
+        let torque = forcePos.cross(force);
+        let accel = force.multiplyScalar(1/this.totalMass);
+        //add torque and acceleration
+        this.angularAccel += torque;
+        this.accel = this.accel.add(accel);
+
+
+
         //add components
-        this.accel = this.accel.add(forceComponent);
-        this.angularAccel = this.angularAccel + torqueComponent;
 
         this.forceVisualPos = forcePos;
         this.forceVisual = force;

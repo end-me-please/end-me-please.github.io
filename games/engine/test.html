@@ -7,7 +7,37 @@
         <canvas id="game" width="600" height="600"></canvas>
         <p>blue dot: center of mass</br>red line: from center of mass to origin of the cluster</br>blue line: force being applied</p>
         <p>(clicking does nothing, this site isnt interactive)</p>
+
+        <input type="button" value="reset" onclick="reset()">
+
+        <p>force:</p><input type="number" id="forceX" value="0">
+        <input type="number" id="forceY" value="0">
+        <p>pos:</p><input type="number" id="forcePosX" value="0">
+        <input type="number" id="forcePosY" value="0">
+
+
     <script>
+        function reset() {
+            Vars.world = new world(64, 64);
+        testCluster = new cluster(new vector(10, 10),Math.floor(Math.random()*1000));
+        let testpart1 = new clusterPart(testCluster,"ohno",2,0,0,1);
+        let testpart2 = new clusterPart(testCluster,"ohno",1,0,0,1);
+        let testpart3 = new clusterPart(testCluster,"ohno",0,0,0,1);
+        let testpart4 = new clusterPart(testCluster,"ohno",-1,0,0,1);
+        let testpart5 = new clusterPart(testCluster,"ohno",-2,0,0,1);
+        //let testpart6 = new clusterPart(testCluster,"ohno",-3,1,0,1);
+        //let testpart7 = new clusterPart(testCluster,"ohno",-3,2,0,5);
+
+        testCluster.members.push(testpart1);
+        testCluster.members.push(testpart2);
+        testCluster.members.push(testpart3);
+        testCluster.members.push(testpart4);
+        testCluster.members.push(testpart5);
+        //testCluster.members.push(testpart6);
+        Vars.world.clusters.push(testCluster);
+        }
+
+
         Vars.world = new world(64, 64);
         Vars.renderer = new canvasRenderer(document.getElementById("game"));
         let testCluster = new cluster(new vector(10, 10),Math.floor(Math.random()*1000));
@@ -33,13 +63,26 @@
 
         Vars.world.clusters.push(testCluster);
 
+        let forceX = 0;
+        let forceY = 0;
+
+        let forcePosX = 0;
+        let forcePosY = 0;
+
         //frame
         let lastTime = performance.now();
         let frame = function(time){
             let delta = (time - lastTime);
             lastTime = time;
-            testCluster.applyForce(new vector(0,0),new vector(0,1));
-            testCluster.applyForce(new vector(0,0),new vector(0,-1));
+            //read input
+            forceX = document.getElementById("forceX").value;
+            forceY = document.getElementById("forceY").value;
+            forcePosX = document.getElementById("forcePosX").value;
+            forcePosY = document.getElementById("forcePosY").value;
+
+
+            testCluster.applyForce(new vector(forcePosX,forcePosY),new vector(forceX,forceY));
+            //testCluster.applyForce(new vector(-2,0),new vector(0,-1));
             Vars.world.update(delta/600);
             Vars.renderer.render(Vars.world);
             requestAnimationFrame(frame);
