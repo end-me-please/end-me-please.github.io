@@ -12,7 +12,7 @@ class world{
 
         //check for collisions
         for(let i=0; i<this.clusters.length; i++){
-            for(let j=i+1; j<this.clusters.length; j++){
+            for(let j=0; j<this.clusters.length; j++){
                 this.clusters[i].checkCollision(this.clusters[j]);
             }
         }
@@ -118,8 +118,8 @@ class clusterPart {
             force = this.globalPosition().relativeTo(other.globalPosition());
             force = force.normalize();
             force = force.multiplyScalar(forceMag);
-            //console.log(force);
         }
+
         //if too far away, don't bother
         if(dist > this.size/32){
             return new vector(0,0);

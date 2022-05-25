@@ -55,13 +55,7 @@
 
         Vars.world = new world(64, 64);
         Vars.renderer = new canvasRenderer(document.getElementById("game"));
-        let testCluster = new cluster(new vector(10, 10),Math.floor(Math.random()*1000));
         
-        //the clusterPart constructor: constructor(parent,type="ohno",x=0,y=0,rotation=0,mass=1)
-        
-
-        Vars.world.clusters.push(testCluster);
-
         let forceX = 0;
         let forceY = 0;
 
@@ -80,9 +74,10 @@
             forcePosY = document.getElementById("forcePosY").value;
             let sausageNum = document.getElementById("sausageNum").value;
             sausageNum = Math.min(sausageNum,Vars.world.clusters.length);
-            
-
+            sausageNum = Math.max(sausageNum,0);
+            if(Vars.world.clusters.length!=0){
             Vars.world.clusters[sausageNum].applyForce(new vector(forcePosX,forcePosY),new vector(forceX,forceY));
+            }
             Vars.world.update(delta/600);
             Vars.renderer.render(Vars.world);
             requestAnimationFrame(frame);
