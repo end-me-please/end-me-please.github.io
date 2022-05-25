@@ -116,7 +116,7 @@ class rect{
         this.pos.add(deltaPos);
         this.angle+=this.angularVel*delta;
         //gravity
-        this.vel.y+=0.981*delta;
+        this.vel.y+=9.81*delta;
     }
     collides(other){
         if(this.pos.x+this.width/2>other.pos.x-other.width/2 && this.pos.x-this.width/2<other.pos.x+other.width/2 && this.pos.y+this.height/2>other.pos.y-other.height/2 && this.pos.y-this.height/2<other.pos.y+other.height/2){
@@ -140,12 +140,12 @@ class rect{
             let tangentVel = relativeVelTangent*(this.mass-other.mass)/(this.mass+other.mass);
             let impulseNormal = normal.multiplyScalar(normalVel);
             let impulseTangent = tangent.multiplyScalar(tangentVel);
-            this.vel.add(impulseNormal);
-            this.vel.add(impulseTangent);
-            other.vel.subtract(impulseNormal);
-            other.vel.subtract(impulseTangent);
+            this.vel.subtract(impulseNormal.multiplyScalar(2));
+            this.vel.subtract(impulseTangent.multiplyScalar(2));
+            //other.vel.subtract(impulseNormal);
+            //other.vel.subtract(impulseTangent);
             this.angularVel-=relativeAngle*tangentVel*(this.mass-other.mass)/(this.mass+other.mass);
-            other.angularVel+=relativeAngle*tangentVel*(this.mass-other.mass)/(this.mass+other.mass);
+            //other.angularVel+=relativeAngle*tangentVel*(this.mass-other.mass)/(this.mass+other.mass);
 
 
         }

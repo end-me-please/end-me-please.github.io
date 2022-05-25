@@ -10,15 +10,24 @@
         Vars.world = new world(64, 64);
         Vars.renderer = new canvasRenderer(document.getElementById("game"));
         Vars.world.objects.push(new rect(3, 5, 6,2,2,0.2,7));
-        Vars.world.objects.push(new rect(3, 8, 7,2,2,0,1.7));
-        Vars.world.objects.push( new wall(2,35,20,2));
+        Vars.world.objects.push(new rect(3, 8, 7,2,2,1.7,1.7));
+        //wall box
+        Vars.world.objects.push(new wall(2,2,2,30));
+        Vars.world.objects.push(new wall(2,2,30,2));
+        Vars.world.objects.push(new wall(2,32,30,2));
+        Vars.world.objects.push(new wall(32,2,2,30));
+        Vars.world.objects.push(new wall(32,32,2,30));
+        Vars.world.objects.push(new wall(32,2,30,2));
+        Vars.world.objects.push(new wall(32,32,30,2));
+        Vars.world.objects.push(new wall(2,2,2,30));
+
 
         //frame
         let lastTime = performance.now();
         let frame = function(time){
             let delta = (time - lastTime);
             lastTime = time;
-            Vars.world.update(1/100);
+            Vars.world.update(delta/600);
             Vars.renderer.render(Vars.world);
             requestAnimationFrame(frame);
         }
