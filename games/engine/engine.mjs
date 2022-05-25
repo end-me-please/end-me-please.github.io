@@ -9,8 +9,10 @@ class world{
         this.objects = [];
     }
     update(delta){
+    for(let i=0; i<this.objects.length; i++){
+        this.objects[i].update(delta);
+    }
         for(let i=0; i<this.objects.length; i++){
-            this.objects[i].update(delta);
             for(let j=0; j<this.objects.length; j++){
                 if(i!=j){
                     this.objects[i].collide(this.objects[j]);
@@ -157,7 +159,6 @@ class rect{
         //other.vel.x-=impulseN*normal.x/other.mass;
         //other.vel.y-=impulseN*normal.y/other.mass;
     }
-
 }
 
 class wall extends rect{
