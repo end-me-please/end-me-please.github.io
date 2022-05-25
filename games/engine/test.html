@@ -39,7 +39,7 @@
             let delta = (time - lastTime);
             lastTime = time;
             testCluster.applyForce(new vector(0,0),new vector(0,1));
-            testCluster.applyForce(new vector(0,0),new vector(0.5,-1));
+            testCluster.applyForce(new vector(0,0),new vector(0,-1));
             Vars.world.update(delta/600);
             Vars.renderer.render(Vars.world);
             requestAnimationFrame(frame);
