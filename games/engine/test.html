@@ -14,21 +14,21 @@
         
         //the clusterPart constructor: constructor(parent,type="ohno",x=0,y=0,rotation=0,mass=1)
         
-        let testpart1 = new clusterPart(testCluster,"ohno",0,0,0,1);
+        let testpart1 = new clusterPart(testCluster,"ohno",2,0,0,1);
         let testpart2 = new clusterPart(testCluster,"ohno",1,0,0,1);
-        let testpart3 = new clusterPart(testCluster,"ohno",-1,0,0,1);
-        let testpart4 = new clusterPart(testCluster,"ohno",-2,0,0,1);
-        let testpart5 = new clusterPart(testCluster,"ohno",-3,0,0,1);
-        let testpart6 = new clusterPart(testCluster,"ohno",-3,1,0,1);
-        let testpart7 = new clusterPart(testCluster,"ohno",-3,2,0,5);
+        let testpart3 = new clusterPart(testCluster,"ohno",0,0,0,1);
+        let testpart4 = new clusterPart(testCluster,"ohno",-1,0,0,1);
+        let testpart5 = new clusterPart(testCluster,"ohno",-2,0,0,1);
+        //let testpart6 = new clusterPart(testCluster,"ohno",-3,1,0,1);
+        //let testpart7 = new clusterPart(testCluster,"ohno",-3,2,0,5);
 
         testCluster.members.push(testpart1);
         testCluster.members.push(testpart2);
         testCluster.members.push(testpart3);
         testCluster.members.push(testpart4);
         testCluster.members.push(testpart5);
-        testCluster.members.push(testpart6);
-        testCluster.members.push(testpart7);
+        //testCluster.members.push(testpart6);
+        //testCluster.members.push(testpart7);
         
 
         Vars.world.clusters.push(testCluster);
@@ -39,6 +39,7 @@
             let delta = (time - lastTime);
             lastTime = time;
             testCluster.applyForce(new vector(0,0),new vector(0,1));
+            testCluster.applyForce(new vector(0,0),new vector(0.5,-1));
             Vars.world.update(delta/600);
             Vars.renderer.render(Vars.world);
             requestAnimationFrame(frame);

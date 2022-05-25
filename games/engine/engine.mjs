@@ -139,12 +139,10 @@ class cluster {
     }
     applyForce(pos,force){
         
-        let forcePos = pos.clone().relativeTo(this.CenterOfMass);
-        forcePos = forcePos.rotate(this.angle);
-        //get component pointing towards center of mass
+        let forcePos = pos.rotate(this.angle);
+        forcePos = forcePos.relativeTo(this.CenterOfMass);
         let forceComponent = forcePos.normalize().multiplyScalar(force.radius);
-        //get component pointing perpendicular to center of mass
-        let torqueComponent = forcePos.cross(force.normalize());
+        let torqueComponent = forcePos.cross(force);
         //add components
         this.accel = this.accel.add(forceComponent);
         this.angularAccel = this.angularAccel + torqueComponent;
