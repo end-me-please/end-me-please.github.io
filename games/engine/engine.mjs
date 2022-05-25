@@ -9,6 +9,14 @@ class world{
         this.clusters = [];
     }
     update(delta){
+
+        //check for collisions
+        for(let i=0; i<this.clusters.length; i++){
+            for(let j=i+1; j<this.clusters.length; j++){
+                this.clusters[i].checkCollision(this.clusters[j]);
+            }
+        }
+
         for(let i=0; i<this.clusters.length; i++){
         this.clusters[i].update(delta);
     }
@@ -101,8 +109,22 @@ class clusterPart {
         newPart.id = json.id;
         return newPart;
     }
-    addParent(parent){
-        this.parent = parent;
+    getForce(other){
+        let force = new vector(0,0);
+        let dist = 9000;
+        if(other instanceof clusterPart && other.parent.id != this.parent.id){
+            dist = this.globalPosition().distanceTo(other.globalPosition());
+            let forceMag = other.parent.totalMass/dist;
+            force = this.globalPosition().relativeTo(other.globalPosition());
+            force = force.normalize();
+            force = force.multiplyScalar(forceMag);
+            //console.log(force);
+        }
+        //if too far away, don't bother
+        if(dist > this.size/32){
+            return new vector(0,0);
+        }
+        return force;
     }
 }
 
@@ -148,15 +170,22 @@ class cluster {
         this.angularAccel += torque;
         this.accel = this.accel.add(accel);
 
-
-
         //add components
 
         this.forceVisualPos = forcePos;
         this.forceVisual = force;
-
-
     }
+
+    checkCollision(other){
+        if(other instanceof cluster){
+            for(let i=0; i<this.members.length; i++){
+                for(let j=0; j<other.members.length; j++){
+                    this.applyForce(this.members[i].pos,this.members[i].getForce(other.members[j]));
+                }
+            }
+        }
+    }
+
     update(delta){
         //rotate
         this.angleRate += this.angularAccel*delta;this.angularAccel=0;
@@ -166,6 +195,7 @@ class cluster {
         this.pos = this.pos.add(this.vel.multiplyScalar(delta));
     }
 }
+
 
 
 

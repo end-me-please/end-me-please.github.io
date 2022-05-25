@@ -14,28 +14,44 @@
         <input type="number" id="forceY" value="0">
         <p>pos:</p><input type="number" id="forcePosX" value="0">
         <input type="number" id="forcePosY" value="0">
-
+        <br/></p>sausage num:</p><input type="number" id="sausageNum" value="0">
 
     <script>
         function reset() {
-            Vars.world = new world(64, 64);
-        testCluster = new cluster(new vector(10, 10),Math.floor(Math.random()*1000));
+            //Vars.world = new world(64, 64);
+        let testCluster = new cluster(new vector(16, 15),Math.floor(Math.random()*1000));
         let testpart1 = new clusterPart(testCluster,"ohno",2,0,0,1);
         let testpart2 = new clusterPart(testCluster,"ohno",1,0,0,1);
         let testpart3 = new clusterPart(testCluster,"ohno",0,0,0,1);
         let testpart4 = new clusterPart(testCluster,"ohno",-1,0,0,1);
         let testpart5 = new clusterPart(testCluster,"ohno",-2,0,0,1);
-        //let testpart6 = new clusterPart(testCluster,"ohno",-3,1,0,1);
-        //let testpart7 = new clusterPart(testCluster,"ohno",-3,2,0,5);
-
         testCluster.members.push(testpart1);
         testCluster.members.push(testpart2);
         testCluster.members.push(testpart3);
         testCluster.members.push(testpart4);
         testCluster.members.push(testpart5);
-        //testCluster.members.push(testpart6);
+
+        let testCluster2 = new cluster(new vector(Math.random()*20, Math.random()*20),Math.floor(Math.random()*1000));
+        let testpart1b = new clusterPart(testCluster2,"ohno",2,0,0,1);
+        let testpart2b = new clusterPart(testCluster2,"ohno",1,0,0,1);
+        let testpart3b = new clusterPart(testCluster2,"ohno",0,0,0,1);
+        let testpart4b = new clusterPart(testCluster2,"ohno",-1,0,0,1);
+        let testpart5b = new clusterPart(testCluster2,"ohno",-2,0,0,1);
+        testCluster2.members.push(testpart1b);
+        testCluster2.members.push(testpart2b);
+        testCluster2.members.push(testpart3b);
+        testCluster2.members.push(testpart4b);
+        testCluster2.members.push(testpart5b);
+        
+
+        Vars.world.clusters.push(testCluster2);
         Vars.world.clusters.push(testCluster);
-        }
+        //shift old
+
+        //Vars.world.clusters.shift();
+        //Vars.world.clusters.shift();
+    
+    }
 
 
         Vars.world = new world(64, 64);
@@ -43,22 +59,6 @@
         let testCluster = new cluster(new vector(10, 10),Math.floor(Math.random()*1000));
         
         //the clusterPart constructor: constructor(parent,type="ohno",x=0,y=0,rotation=0,mass=1)
-        
-        let testpart1 = new clusterPart(testCluster,"ohno",2,0,0,1);
-        let testpart2 = new clusterPart(testCluster,"ohno",1,0,0,1);
-        let testpart3 = new clusterPart(testCluster,"ohno",0,0,0,1);
-        let testpart4 = new clusterPart(testCluster,"ohno",-1,0,0,1);
-        let testpart5 = new clusterPart(testCluster,"ohno",-2,0,0,1);
-        //let testpart6 = new clusterPart(testCluster,"ohno",-3,1,0,1);
-        //let testpart7 = new clusterPart(testCluster,"ohno",-3,2,0,5);
-
-        testCluster.members.push(testpart1);
-        testCluster.members.push(testpart2);
-        testCluster.members.push(testpart3);
-        testCluster.members.push(testpart4);
-        testCluster.members.push(testpart5);
-        //testCluster.members.push(testpart6);
-        //testCluster.members.push(testpart7);
         
 
         Vars.world.clusters.push(testCluster);
@@ -79,16 +79,16 @@
             forceY = document.getElementById("forceY").value;
             forcePosX = document.getElementById("forcePosX").value;
             forcePosY = document.getElementById("forcePosY").value;
+            let sausageNum = document.getElementById("sausageNum").value;
+            sausageNum = Math.min(sausageNum,Vars.world.clusters.length);
+            
 
-
-            testCluster.applyForce(new vector(forcePosX,forcePosY),new vector(forceX,forceY));
-            //testCluster.applyForce(new vector(-2,0),new vector(0,-1));
+            Vars.world.clusters[sausageNum].applyForce(new vector(forcePosX,forcePosY),new vector(forceX,forceY));
             Vars.world.update(delta/600);
             Vars.renderer.render(Vars.world);
             requestAnimationFrame(frame);
-        }
+        }        
         requestAnimationFrame(frame);
-        
 
     </script>
     </body>
