@@ -70,8 +70,7 @@ class vector{
         this.angle+=angle;
     }
     multiplyScalar(scalar){
-        this.x*=scalar;
-        this.y*=scalar;
+        return new vector(this.x*scalar,this.y*scalar);
     }
     getNormalized(){
         let v = this.clone();
@@ -147,7 +146,7 @@ class rect{
             other.vel.subtract(impulseTangent);
             this.angularVel-=relativeAngle*tangentVel*(this.mass-other.mass)/(this.mass+other.mass);
             other.angularVel+=relativeAngle*tangentVel*(this.mass-other.mass)/(this.mass+other.mass);
-            
+
 
         }
     }

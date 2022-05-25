@@ -10,8 +10,8 @@ class canvasRenderer{
             //draw as square
             let pos = world.objects[i].pos.clone();
             let size = world.objects[i].size.clone();
-            pos.multiplyScalar(this.canvas.width/world.width);
-            size.multiplyScalar(this.canvas.width/world.width);
+            pos = pos.multiplyScalar(this.canvas.width/world.width);
+            size = size.multiplyScalar(this.canvas.width/world.width);
             let angle = world.objects[i].angle;
             //solid green
             this.ctx.fillStyle = "green";
