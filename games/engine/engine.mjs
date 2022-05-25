@@ -126,38 +126,30 @@ class rect{
         return false;
     }
     collide(other){
-        //collision resolution
-        let relativeVel = this.vel.relativeTo(other.vel);
-        let relativePos = this.pos.relativeTo(other.pos);
-        let overlap = (this.width+other.width)/2-relativePos.radius;
-        let normal = relativePos.getNormalized();
-        let tangent = new vector(-normal.y,normal.x);
-        let relativeVelNormal = normal.dot(relativeVel);
-        let relativeVelTangent = tangent.dot(relativeVel);
-        if(relativeVelNormal>0){
-            //moving away from each other
-            return;
+        if(this.collides(other)){
+            let relativePos = this.pos.relativeTo(other.pos);
+            let relativeVel = this.vel.relativeTo(other.vel);
+            let relativeAngle = this.angle-other.angle;
+
+            //apply collision response
+            let overlap = this.width/2+other.width/2-relativePos.radius;
+            let normal = new vector(relativePos.x/relativePos.radius,relativePos.y/relativePos.radius);
+            let tangent = new vector(-normal.y,normal.x);
+            let relativeVelNormal = normal.dot(relativeVel);
+            let relativeVelTangent = tangent.dot(relativeVel);
+            let normalVel = relativeVelNormal*(this.mass-other.mass)/(this.mass+other.mass);
+            let tangentVel = relativeVelTangent*(this.mass-other.mass)/(this.mass+other.mass);
+            let impulseNormal = normal.multiplyScalar(normalVel);
+            let impulseTangent = tangent.multiplyScalar(tangentVel);
+            this.vel.add(impulseNormal);
+            this.vel.add(impulseTangent);
+            other.vel.subtract(impulseNormal);
+            other.vel.subtract(impulseTangent);
+            this.angularVel-=relativeAngle*tangentVel*(this.mass-other.mass)/(this.mass+other.mass);
+            other.angularVel+=relativeAngle*tangentVel*(this.mass-other.mass)/(this.mass+other.mass);
+            
+
         }
-        //elastic collision
-        let newVelNormal = -(1+0.5)*relativeVelNormal;
-        let newVelTangent = relativeVelTangent;
-        let newVel1 = new vector(newVelNormal*normal.x+newVelTangent*tangent.x,newVelNormal*normal.y+newVelTangent*tangent.y);
-        let newVel2 = new vector(newVelNormal*normal.x+newVelTangent*tangent.x,newVelNormal*normal.y+newVelTangent*tangent.y);
-        this.vel.x = newVel1.x;
-        this.vel.y = newVel1.y;
-        //other.vel.x = newVel2.x;
-        //other.vel.y = newVel2.y;
-        //friction
-        let totalMass = this.mass+other.mass;
-        let friction = 0.001;
-        let impulseN = -(1+friction)*newVelNormal*totalMass;
-        let impulseT = -friction*newVelTangent*totalMass;
-        this.angularVel+=impulseT*tangent.y/this.width;
-        this.vel.x+=impulseN*normal.x/this.mass;
-        this.vel.y+=impulseN*normal.y/this.mass;
-        //other.angularVel-=impulseT*tangent.y/other.width;
-        //other.vel.x-=impulseN*normal.x/other.mass;
-        //other.vel.y-=impulseN*normal.y/other.mass;
     }
 }
 
