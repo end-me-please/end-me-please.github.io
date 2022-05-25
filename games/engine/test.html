@@ -1,0 +1,30 @@
+<html>
+    <head>
+        <script src="engine.mjs"></script>
+        <script src="rendering.mjs"></script>
+    </head>
+    <body>
+        <canvas id="game" width="600" height="600"></canvas>
+    
+    <script>
+        Vars.world = new world(64, 64);
+        Vars.renderer = new canvasRenderer(document.getElementById("game"));
+        Vars.world.objects.push(new rect(3, 5, 6,2,2,0.2,7));
+        Vars.world.objects.push(new rect(3, 8, 7,2,2,0,1.7));
+        //Vars.world.objects.push( new wall(2,35,20,2));
+
+        //frame
+        let lastTime = performance.now();
+        let frame = function(time){
+            let delta = (time - lastTime);
+            lastTime = time;
+            Vars.world.update(1/100);
+            Vars.renderer.render(Vars.world);
+            requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+        
+
+    </script>
+    </body>
+</html>
