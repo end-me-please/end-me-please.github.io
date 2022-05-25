@@ -12,8 +12,9 @@ class world{
 
         //check for collisions
         for(let i=0; i<this.clusters.length; i++){
-            for(let j=0; j<this.clusters.length; j++){
+            for(let j=i+1; j<this.clusters.length; j++){
                 this.clusters[i].checkCollision(this.clusters[j]);
+                this.clusters[j].checkCollision(this.clusters[i]);
             }
         }
 
@@ -114,12 +115,12 @@ class clusterPart {
         let dist = 9000;
         if(other instanceof clusterPart && other.parent.id != this.parent.id){
             dist = this.globalPosition().distanceTo(other.globalPosition());
+            dist = dist * 0.9;
             let forceMag = other.parent.totalMass/dist;
             force = this.globalPosition().relativeTo(other.globalPosition());
             force = force.normalize();
             force = force.multiplyScalar(forceMag);
         }
-
         //if too far away, don't bother
         if(dist > this.size/32){
             return new vector(0,0);
@@ -167,7 +168,7 @@ class cluster {
         let torque = forcePos.cross(force);
         let accel = force.multiplyScalar(1/this.totalMass);
         //add torque and acceleration
-        this.angularAccel += torque;
+        this.angularAccel += torque*0.90;
         this.accel = this.accel.add(accel);
 
         //add components
@@ -179,8 +180,9 @@ class cluster {
     checkCollision(other){
         if(other instanceof cluster){
             for(let i=0; i<this.members.length; i++){
-                for(let j=0; j<other.members.length; j++){
-                    this.applyForce(this.members[i].pos,this.members[i].getForce(other.members[j]));
+                for(let j=i+1; j<other.members.length; j++){
+                    this.applyForce(this.members[i].pos,this.members[i].getForce(other.members[j]).multiplyScalar(0.97));
+                    this.applyForce(this.members[j].pos,this.members[j].getForce(other.members[i]).multiplyScalar(0.97));
                 }
             }
         }
@@ -192,6 +194,7 @@ class cluster {
         this.vel = this.vel.add(this.accel.multiplyScalar(delta)); this.accel=new vector(0,0);
         
         this.angle += this.angleRate*delta;
+        this.angleRate *= 0.97;
         this.pos = this.pos.add(this.vel.multiplyScalar(delta));
     }
 }

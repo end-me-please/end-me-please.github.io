@@ -45,11 +45,18 @@
 
         Vars.world.clusters.push(testCluster2);
         Vars.world.clusters.push(testCluster);
-        //shift old
 
-        //Vars.world.clusters.shift();
-        //Vars.world.clusters.shift();
-    
+        //apply random force to cluster
+        let force = new vector(Math.random()*3, Math.random()*2);
+        let pos = new vector(Math.random()*2, Math.random()*3);
+        testCluster.applyForce(force, pos);
+
+        let force2 = new vector(Math.random()*2, Math.random()*3);
+        let pos2 = new vector(Math.random()*3, Math.random()*2);
+        testCluster2.applyForce(force2, pos2);
+        
+
+
     }
 
 
