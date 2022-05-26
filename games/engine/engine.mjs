@@ -13,10 +13,12 @@ class world{
         //check for collisions
         for(let i=0; i<this.clusters.length; i++){
             for(let j=i+1; j<this.clusters.length; j++){
+                //check maxSpan of both, if the distance is smaller than the sum, check for collision
                 this.clusters[i].checkCollision(this.clusters[j]);
                 this.clusters[j].checkCollision(this.clusters[i]);
+                }
             }
-        }
+        
 
         for(let i=0; i<this.clusters.length; i++){
         this.clusters[i].update(delta);
@@ -139,10 +141,32 @@ class cluster {
         this.angularAccel = 0;
         this.id=id;
         this.members=[];
-
+        this.lastDelta = 0;
         this.forceVisualPos = new vector(0,0);
         this.forceVisual = new vector(0,0);
+        this.maxSpan = 0;
+        this.CenterOfMass = new vector(0,0);
     }
+    addPart(part){
+        this.members.push(part);
+        part.parent = this;
+        this.maxSpan = Math.max(this.maxSpan,part.pos.distanceTo(this.CenterOfMass));
+        this.CenterOfMass = this.getCenterOfMass();
+    }
+
+
+    getMaxSpan(){
+        //get furthest distance from origin
+        let max = 0;
+        for(let i=0; i<this.members.length; i++){
+            let dist = this.members[i].pos.distanceTo(new vector(0,0));
+            if(dist > max){
+                max = dist;
+            }
+        }
+        return max;
+    }
+
     get totalMass(){
         let mass=0;
         for(let i=0; i<this.members.length; i++){
@@ -150,7 +174,7 @@ class cluster {
         }
         return mass;
     }
-    get CenterOfMass(){ //center of mass in local coordinates
+    getCenterOfMass(){ //center of mass in local coordinates
         let x=0;
         let y=0;
         let totalMass=this.totalMass;
@@ -161,14 +185,13 @@ class cluster {
         return new vector(x,y);
     }
     applyForce(pos,force){
-        
         let forcePos = pos.rotate(-this.angle);
         forcePos = pos.relativeTo(this.CenterOfMass);
         //get torque and acceleration
         let torque = forcePos.cross(force);
-        let accel = force.multiplyScalar(1/this.totalMass);
+        let accel = force.multiplyScalar(1/this.totalMass).multiplyScalar(0.97);
         //add torque and acceleration
-        this.angularAccel += torque*0.90;
+        this.angularAccel += torque;
         this.accel = this.accel.add(accel);
 
         //add components
@@ -178,20 +201,31 @@ class cluster {
     }
 
     checkCollision(other){
-        if(other instanceof cluster){
+        if(other instanceof cluster&&other.id!=this.id){
             for(let i=0; i<this.members.length; i++){
-                for(let j=i+1; j<other.members.length; j++){
-                    this.applyForce(this.members[i].pos,this.members[i].getForce(other.members[j]).multiplyScalar(0.97));
-                    this.applyForce(this.members[j].pos,this.members[j].getForce(other.members[i]).multiplyScalar(0.97));
+                for(let j=0; j<other.members.length; j++){
+                    
+                    let force1 = this.members[i].getForce(other.members[j]);
+                    if(force1.radius>0.01){
+                        this.update(-this.lastDelta,false);
+                        this.applyForce(this.members[i].pos,this.members[i].getForce(other.members[j]));
+                        this.update(this.lastDelta,false);
+                    }
                 }
             }
         }
     }
 
-    update(delta){
+    update(delta,resetAccel=true){
         //rotate
+        
+        this.vel = this.vel.add(this.accel.multiplyScalar(delta));
+        
+        if(resetAccel){
         this.angleRate += this.angularAccel*delta;this.angularAccel=0;
-        this.vel = this.vel.add(this.accel.multiplyScalar(delta)); this.accel=new vector(0,0);
+        this.accel=new vector(0,0);
+        this.lastDelta = delta;
+        }
         
         this.angle += this.angleRate*delta;
         this.angleRate *= 0.97;

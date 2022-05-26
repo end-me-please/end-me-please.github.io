@@ -14,6 +14,12 @@ class canvasRenderer{
     renderCluster(cluster){
         this.ctx.save();
         this.ctx.translate(cluster.pos.x*32,cluster.pos.y*32);
+        //draw a circle of radius maxSpan
+        this.ctx.beginPath();
+        this.ctx.arc(0,0,cluster.maxSpan*32,0,2*Math.PI);
+        this.ctx.stroke();
+        
+        
         //rotate center of mass
         let com = cluster.CenterOfMass.rotate(cluster.angle);
         this.ctx.translate(-com.x*32,-com.y*32);
@@ -33,8 +39,6 @@ class canvasRenderer{
         this.ctx.lineTo(cluster.forceVisualPos.x*32+cluster.forceVisual.x*32,cluster.forceVisualPos.y*32+cluster.forceVisual.y*32);
         this.ctx.lineWidth = 4;
         this.ctx.stroke();
-
-
 
 
         for(let i=0; i<cluster.members.length; i++){
