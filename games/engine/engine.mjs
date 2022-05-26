@@ -14,9 +14,12 @@ class world{
         for(let i=0; i<this.clusters.length; i++){
             for(let j=i+1; j<this.clusters.length; j++){
                 //check maxSpan of both, if the distance is smaller than the sum, check for collision
+                let spanSum = this.clusters[i].maxSpan + this.clusters[j].maxSpan;
+                let dist = this.clusters[i].pos.distanceTo(this.clusters[j].pos);
+                if(dist<spanSum){
                 this.clusters[i].checkCollision(this.clusters[j]);
                 this.clusters[j].checkCollision(this.clusters[i]);
-                }
+                }}
             }
         
 
@@ -97,6 +100,7 @@ class clusterPart {
         this.type = type;
         this.parent = parent;
         this.size = 32;
+        this.forceVisual = new vector(0,0);
     }
     globalPosition(){
         //rotate around parent's center of mass
@@ -127,6 +131,7 @@ class clusterPart {
         if(dist > this.size/32){
             return new vector(0,0);
         }
+        this.forceVisual = force;
         return force;
     }
 }
@@ -151,7 +156,7 @@ class cluster {
     addPart(part){
         this.members.push(part);
         part.parent = this;
-        this.maxSpan = Math.max(this.maxSpan,part.pos.distanceTo(this.CenterOfMass));
+        this.maxSpan = Math.max(this.maxSpan,part.pos.radius+0.5);
         this.totalMass = this.getTotalMass();
         this.CenterOfMass = this.getCenterOfMass();
     }
@@ -205,8 +210,7 @@ class cluster {
     checkCollision(other){
         if(other instanceof cluster&&other.id!=this.id){
             for(let i=0; i<this.members.length; i++){
-                for(let j=0; j<other.members.length; j++){
-                    
+                for(let j=i+1; j<other.members.length; j++){
                     let force1 = this.members[i].getForce(other.members[j]);
                     if(force1.radius>0.01){
                         this.update(-this.lastDelta,false);

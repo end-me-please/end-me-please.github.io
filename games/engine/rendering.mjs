@@ -33,13 +33,14 @@ class canvasRenderer{
         this.ctx.stroke();
 
         //draw line starting at cluster.forceVisualPos in the direction of cluster.forceVisual
-        this.ctx.strokeStyle = "blue";
+        this.ctx.strokeStyle = "yellow";
         this.ctx.beginPath();
         this.ctx.moveTo(cluster.forceVisualPos.x*32,cluster.forceVisualPos.y*32);
         this.ctx.lineTo(cluster.forceVisualPos.x*32+cluster.forceVisual.x*32,cluster.forceVisualPos.y*32+cluster.forceVisual.y*32);
         this.ctx.lineWidth = 4;
         this.ctx.stroke();
-
+        //set forceVisual to zero
+        cluster.forceVisual = new vector(0,0);
 
         for(let i=0; i<cluster.members.length; i++){
             //draw a green circle for now
@@ -47,6 +48,18 @@ class canvasRenderer{
             this.ctx.arc(cluster.members[i].pos.x*cluster.members[i].size,cluster.members[i].pos.y*cluster.members[i].size,cluster.members[i].size/2,0,2*Math.PI);
             this.ctx.fillStyle = "green";
             this.ctx.fill();
+            //draw visual force vector
+            this.ctx.beginPath();
+            this.ctx.moveTo(cluster.members[i].pos.x*cluster.members[i].size,cluster.members[i].pos.y*cluster.members[i].size);
+            let forceVisual = cluster.members[i].forceVisual.rotate(cluster.angle).multiplyScalar(0.3);
+            let forceX = cluster.members[i].pos.x*cluster.members[i].size+forceVisual.x*cluster.members[i].size;
+            let forceY = cluster.members[i].pos.y*cluster.members[i].size+forceVisual.y*cluster.members[i].size;
+            this.ctx.lineTo(forceX,forceY);
+            this.ctx.lineWidth = 3;
+            this.ctx.stroke();
+            //set forceVisual to zero
+            cluster.members[i].forceVisual = new vector(0,0);
+
         }
         this.ctx.restore();
         for(let i=0; i<cluster.members.length; i++){
