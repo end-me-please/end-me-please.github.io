@@ -146,11 +146,13 @@ class cluster {
         this.forceVisual = new vector(0,0);
         this.maxSpan = 0;
         this.CenterOfMass = new vector(0,0);
+        this.totalMass = 0;
     }
     addPart(part){
         this.members.push(part);
         part.parent = this;
         this.maxSpan = Math.max(this.maxSpan,part.pos.distanceTo(this.CenterOfMass));
+        this.totalMass = this.getTotalMass();
         this.CenterOfMass = this.getCenterOfMass();
     }
 
@@ -167,7 +169,7 @@ class cluster {
         return max;
     }
 
-    get totalMass(){
+    getTotalMass(){
         let mass=0;
         for(let i=0; i<this.members.length; i++){
             mass+=this.members[i].mass;
