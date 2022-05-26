@@ -17,7 +17,7 @@
 
     <script>
         function reset() {
-        let testCluster = new cluster(new vector(16, 15),Math.floor(Math.random()*1000));
+        let testCluster = new cluster(new vector(Math.random()*20, Math.random()*20),Math.floor(Math.random()*1000));
         let testpart1 = new clusterPart(testCluster,"ohno",2,0,0,1);
         let testpart2 = new clusterPart(testCluster,"ohno",1,0,0,1);
         let testpart3 = new clusterPart(testCluster,"ohno",0,0,0,1);
