@@ -210,7 +210,7 @@ class cluster {
     checkCollision(other){
         if(other instanceof cluster&&other.id!=this.id){
             for(let i=0; i<this.members.length; i++){
-                for(let j=i+1; j<other.members.length; j++){
+                for(let j=0; j<other.members.length; j++){
                     let force1 = this.members[i].getForce(other.members[j]);
                     if(force1.radius>0.01){
                         this.update(-this.lastDelta,false);
