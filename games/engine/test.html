@@ -9,6 +9,7 @@
         <p>blue dot: center of mass</br>red line: from center of mass to origin of the cluster</br>blue line: force being applied</br>red circle: collision checking distance</p>
 
         <input type="button" value="spawn random stuff" onclick="reset()">
+        <input type="checkbox" id="gravity">
 
     <script>
 
@@ -25,7 +26,6 @@
         testCluster.addPart(testpart3);
         testCluster.addPart(testpart4);
         testCluster.addPart(testpart5);
-
 
         let testCluster2 = new cluster(new vector(Math.random()*20, Math.random()*20),Math.floor(Math.random()*1000));
         let testpart1b = new clusterPart(testCluster2,"ohno",2,0,0,1);
@@ -51,21 +51,19 @@
 
     }
 
-
         Vars.world = new world(64, 64);
         Vars.renderer = new canvasRenderer(document.getElementById("game"));
         Vars.inputs = new inputHandler(document.getElementById("game"));
-        let forceX = 0;
-        let forceY = 0;
-
-        let forcePosX = 0;
-        let forcePosY = 0;
-
+        
+        Vars.world.walls.push(new staticCollider(2,2,15,15,0));
         //frame
         let lastTime = performance.now();
         let frame = function(time){
             let delta = (time - lastTime);
             lastTime = time;
+
+
+
             handleInput(Vars);
             Vars.world.update(delta/600);
             Vars.renderer.render(Vars.world);
@@ -73,19 +71,26 @@
         }        
         requestAnimationFrame(frame);
         
+        let grabbed = null;
         function handleInput(vars){
             let canvas = document.getElementById("game");
 
             if(vars.inputs.mouseDown){
-                let pointedElement = vars.world.getObjectAt(vars.inputs.mouse.x, vars.inputs.mouse.y);
-                if(pointedElement){
+                if(grabbed==null){
+                    let pointedElement = vars.world.getObjectAt(vars.inputs.mouse.x, vars.inputs.mouse.y);
+                    grabbed = pointedElement;
+                }
+                if(grabbed){
+                    let pointedElement=grabbed
                     //get difference between mouse and object
                     let diff = vars.inputs.mouse.relativeTo(pointedElement.globalPosition());
                     pointedElement.parent.applyForce(pointedElement.pos,diff.multiplyScalar(9));
-
+                    pointedElement.parent.vel = diff.multiplyScalar(9);
                     pointedElement.parent.pos = diff.add(pointedElement.parent.pos);
 
                 }
+            } else {
+                grabbed = null;
             }
 
 
