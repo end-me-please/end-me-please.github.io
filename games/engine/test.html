@@ -8,8 +8,9 @@
         <canvas id="game" width="600" height="600"></canvas>
         <p>blue dot: center of mass</br>red line: from center of mass to origin of the cluster</br>blue line: force being applied</br>red circle: collision checking distance</p>
         <input type="button" value="spawn random stuff" onclick="reset()">
-        <input type="checkbox" id="gravity">
-    <script>
+        <input type="range" min="0.01" max="0.1" step="0.01" value="0.01" oninput="Vars.timeStep=this.value">
+
+<script>
 
 
         function reset() {
@@ -52,18 +53,23 @@
         Vars.world = new world(64, 64);
         Vars.renderer = new canvasRenderer(document.getElementById("game"));
         Vars.inputs = new inputHandler(document.getElementById("game"));
-
+        Vars.timeStep = 0.01;
         Vars.world.walls.push(new staticCollider(7,15,9,2));
         //frame
         let lastTime = performance.now();
+        lastRemainder = 0;
         let frame = function(time){
-            let delta = (time - lastTime);
+            let delta = (time - lastTime)/600;
             lastTime = time;
-
-
-
+            
             handleInput(Vars);
-            Vars.world.update(delta/600);
+            delta += lastRemainder;
+            while (delta>Vars.timeStep){
+            Vars.world.update(Vars.timeStep);
+            delta-= Vars.timeStep;    
+            }
+            lastRemainder = delta;
+            
             Vars.renderer.render(Vars.world);
             requestAnimationFrame(frame);
         }        
