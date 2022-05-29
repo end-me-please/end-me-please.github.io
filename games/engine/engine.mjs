@@ -123,11 +123,6 @@ class clusterPart {
         pos = pos.add(this.parent.pos);
         return pos;
     }
-    fromJSON(json){
-        let newPart = new clusterPart({},json.type,json.pos.x,json.pos.y,json.rotation,json.mass);
-        newPart.id = json.id;
-        return newPart;
-    }
     getCollisionForce(other){
         let force = new vector(0,0);
         let dist = 9000;
@@ -138,40 +133,8 @@ class clusterPart {
             force = this.globalPosition().relativeTo(other.globalPosition());
             force = force.normalize();
             force = force.multiplyScalar(forceMag);
-        } else if(other instanceof staticCollider){
-            //check if circle is inside of rotated rectangle defined by other's width, height and rotation
-            let pos = this.globalPosition();
-            let rot = other.angle;
-            let width = other.width;
-            let height = other.height;
-            let radius = this.size/2;
-            let x = pos.x;
-            let y = pos.y;
-            let x1 = x - radius;
-            let x2 = x + radius;
-            let y1 = y - radius;
-            let y2 = y + radius;
-            let x1r = x1 * Math.cos(rot) - y1 * Math.sin(rot);
-            let x2r = x2 * Math.cos(rot) - y1 * Math.sin(rot);
-            let y1r = x1 * Math.sin(rot) + y1 * Math.cos(rot);
-            let y2r = x2 * Math.sin(rot) + y2 * Math.cos(rot);
-            let x1r1 = x1r - width/2;
-            let x2r1 = x2r - width/2;
-            let y1r1 = y1r - height/2;
-            let y2r1 = y2r - height/2;
-            let x1r2 = x1r + width/2;
-            let x2r2 = x2r + width/2;
-            let y1r2 = y1r + height/2;
-            let y2r2 = y2r + height/2;
-            if(x1r1<x2r2 && x2r1<x1r2 && y1r1<y2r2 && y2r1<y1r2){
-                //circle is inside of rectangle
-                //calculate force
-                let forceMag = other.mass/dist;
-                force = this.globalPosition().relativeTo(pos);
-                force = force.normalize();
-                force = force.multiplyScalar(forceMag);
-            }
         }
+
         //if too far away, don't bother
         if(dist > (this.size+other.size)/2){
             return new vector(0,0);
@@ -208,9 +171,10 @@ class cluster {
     addPart(part){
         this.members.push(part);
         part.parent = this;
-        this.maxSpan = Math.max(this.maxSpan,part.pos.radius+0.5);
+        this.maxSpan = Math.max(this.maxSpan,part.pos.radius);
         this.totalMass = this.getTotalMass();
         this.CenterOfMass = this.getCenterOfMass();
+        return part;
     }
 
 
@@ -272,16 +236,24 @@ class cluster {
                 }
             }
         }
-        else if (other instanceof staticCollider){
+        if(other instanceof staticCollider&&other.id!=this.id){
             for(let i=0; i<this.members.length; i++){
-                let force = this.members[i].getCollisionForce(other);
-                if(force.radius>0.01){
-                    this.update(-this.lastDelta,false);
-                    this.applyForce(this.members[i].pos,this.members[i].getCollisionForce(other).multiplyScalar(1));
-                    this.update(this.lastDelta,false);
+                for(let j=0; j<other.members.length; j++){
+                    let force1 = this.members[i].getCollisionForce(other.members[j]);
+                    if(force1.radius>0.01){
+                        this.update(-this.lastDelta,false);
+                        this.applyForce(this.members[i].pos,this.members[i].getCollisionForce(other.members[j]).multiplyScalar(1));
+                        this.vel = this.vel.multiplyScalar(0.4);
+                        this.angleRate = this.angleRate*0.4;
+                        this.update(this.lastDelta,false);
+                    }
                 }
             }
         }
+        
+
+
+
         }
 
     update(delta,resetAccel=true){
@@ -301,17 +273,20 @@ class cluster {
         return pos.relativeTo(this.CenterOfMass).rotate(-this.angle);
     }
 }
-class staticCollider{
-    constructor(x,y,width,height,angle){
-        this.pos = new vector(x,y);
+class staticCollider extends cluster{
+    constructor(x,y,width,height){
+        super(new vector(x,y), Math.floor(Math.random()*10000));
         this.width = width;
         this.height = height;
-        this.angle = angle;
+        this.segmentSize=1;
+        //generate clusterParts to fill the walls
+        for(let i=0; i<this.width; i+=this.segmentSize){
+            for(let j=0; j<this.height; j+=this.segmentSize){
+                this.addPart(new clusterPart(this, "wall",i,j,0,1));
+            }
+        }
     }
-    getCollisionForce(other){
-    return new vector(0,0);
-    }
-    update(delta){
+    update(delta,resetAccel=true){
     }
 }
 

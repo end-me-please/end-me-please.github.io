@@ -9,6 +9,10 @@ class canvasRenderer{
         for(let i = 0; i<world.clusters.length; i++){
             this.renderCluster(world.clusters[i]);
         }
+        //draw walls
+        for(let i=0; i<world.walls.length; i++){
+            this.renderCluster(world.walls[i]);
+        }
     }
 
     renderCluster(cluster){
@@ -76,8 +80,16 @@ class canvasRenderer{
         this.ctx.arc(cluster.pos.x*32,cluster.pos.y*32,4,0,2*Math.PI);
         this.ctx.fillStyle = "blue";
         this.ctx.fill();
-
     }
+
+    renderWall(wall){
+        this.ctx.beginPath();
+        this.ctx.moveTo(wall.pos.x*32,wall.pos.y*32);
+        //draw rectangle at wall.pos with width and height of wall.width and wall.height
+        this.ctx.rect(wall.pos.x*32,wall.pos.y*32,wall.width*32,wall.height*32);
+        this.ctx.stroke();
+    }
+
     drawPoint(point){
         this.ctx.beginPath();
         this.ctx.arc(point.x*32,point.y*32,4,0,2*Math.PI);
