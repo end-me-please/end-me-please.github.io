@@ -45,15 +45,15 @@ class canvasRenderer{
         for(let i=0; i<cluster.members.length; i++){
             //draw a green circle for now
             this.ctx.beginPath();
-            this.ctx.arc(cluster.members[i].pos.x*cluster.members[i].size,cluster.members[i].pos.y*cluster.members[i].size,cluster.members[i].size/2,0,2*Math.PI);
+            this.ctx.arc(cluster.members[i].pos.x*cluster.members[i].size*32,cluster.members[i].pos.y*cluster.members[i].size*32,cluster.members[i].size*32/2,0,2*Math.PI);
             this.ctx.fillStyle = "green";
             this.ctx.fill();
             //draw visual force vector
             this.ctx.beginPath();
-            this.ctx.moveTo(cluster.members[i].pos.x*cluster.members[i].size,cluster.members[i].pos.y*cluster.members[i].size);
+            this.ctx.moveTo(cluster.members[i].pos.x*cluster.members[i].size*32,cluster.members[i].pos.y*cluster.members[i].size*32);
             let forceVisual = cluster.members[i].forceVisual.rotate(cluster.angle).multiplyScalar(0.3);
-            let forceX = cluster.members[i].pos.x*cluster.members[i].size+forceVisual.x*cluster.members[i].size;
-            let forceY = cluster.members[i].pos.y*cluster.members[i].size+forceVisual.y*cluster.members[i].size;
+            let forceX = cluster.members[i].pos.x*cluster.members[i].size*32+forceVisual.x*cluster.members[i].size*32;
+            let forceY = cluster.members[i].pos.y*cluster.members[i].size*32+forceVisual.y*cluster.members[i].size*32;
             this.ctx.lineTo(forceX,forceY);
             this.ctx.lineWidth = 3;
             this.ctx.stroke();
@@ -66,7 +66,7 @@ class canvasRenderer{
             //red hollow circle
             this.ctx.beginPath();
             //use global position
-            this.ctx.arc(cluster.members[i].globalPosition().x*cluster.members[i].size,cluster.members[i].globalPosition().y*cluster.members[i].size,cluster.members[i].size/2,0,2*Math.PI);
+            this.ctx.arc(cluster.members[i].globalPosition().x*cluster.members[i].size*32,cluster.members[i].globalPosition().y*cluster.members[i].size*32,cluster.members[i].size*32/2,0,2*Math.PI);
             this.ctx.strokeStyle = "red";
             this.ctx.lineWidth = 4;
             this.ctx.stroke();
@@ -77,5 +77,11 @@ class canvasRenderer{
         this.ctx.fillStyle = "blue";
         this.ctx.fill();
 
+    }
+    drawPoint(point){
+        this.ctx.beginPath();
+        this.ctx.arc(point.x*32,point.y*32,4,0,2*Math.PI);
+        this.ctx.fillStyle = "red";
+        this.ctx.fill();
     }
 }

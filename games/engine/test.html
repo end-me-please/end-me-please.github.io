@@ -2,6 +2,7 @@
     <head>
         <script src="engine.mjs"></script>
         <script src="rendering.mjs"></script>
+        <script src="inputs.js"></script>
     </head>
     <body>
         <canvas id="game" width="600" height="600"></canvas>
@@ -9,13 +10,9 @@
 
         <input type="button" value="reset" onclick="reset()">
 
-        <p>force:</p><input type="number" id="forceX" value="0">
-        <input type="number" id="forceY" value="0">
-        <p>pos:</p><input type="number" id="forcePosX" value="0">
-        <input type="number" id="forcePosY" value="0">
-        <br/></p>sausage num:</p><input type="number" id="sausageNum" value="0">
-
     <script>
+
+
         function reset() {
         let testCluster = new cluster(new vector(Math.random()*20, Math.random()*20),Math.floor(Math.random()*1000));
         let testpart1 = new clusterPart(testCluster,"ohno",2,0,0,1);
@@ -41,11 +38,8 @@
         testCluster2.addPart(testpart3b);
         testCluster2.addPart(testpart4b);
         testCluster2.addPart(testpart5b);
-
-
         Vars.world.clusters.push(testCluster);
         Vars.world.clusters.push(testCluster2);
-
         //apply random force to cluster
         let force = new vector(Math.random()*3, Math.random()*2);
         let pos = new vector(Math.random()*2, Math.random()*3);
@@ -60,7 +54,7 @@
 
         Vars.world = new world(64, 64);
         Vars.renderer = new canvasRenderer(document.getElementById("game"));
-        
+        Vars.inputs = new inputHandler(document.getElementById("game"));
         let forceX = 0;
         let forceY = 0;
 
@@ -72,22 +66,31 @@
         let frame = function(time){
             let delta = (time - lastTime);
             lastTime = time;
-            //read input
-            forceX = document.getElementById("forceX").value;
-            forceY = document.getElementById("forceY").value;
-            forcePosX = document.getElementById("forcePosX").value;
-            forcePosY = document.getElementById("forcePosY").value;
-            let sausageNum = document.getElementById("sausageNum").value;
-            sausageNum = Math.min(sausageNum,Vars.world.clusters.length);
-            sausageNum = Math.max(sausageNum,0);
-            if(Vars.world.clusters.length!=0){
-            Vars.world.clusters[sausageNum].applyForce(new vector(forcePosX,forcePosY),new vector(forceX,forceY));
-            }
+            handleInput(Vars);
             Vars.world.update(delta/600);
             Vars.renderer.render(Vars.world);
             requestAnimationFrame(frame);
         }        
         requestAnimationFrame(frame);
+        
+        function handleInput(vars){
+            let canvas = document.getElementById("game");
+
+            if(vars.inputs.mouseDown){
+                let pointedElement = vars.world.getObjectAt(vars.inputs.mouse.x, vars.inputs.mouse.y);
+                if(pointedElement){
+                    //get difference between mouse and object
+                    let diff = vars.inputs.mouse.relativeTo(pointedElement.globalPosition());
+                    pointedElement.parent.applyForce(pointedElement.pos,diff.multiplyScalar(9));
+
+                    pointedElement.parent.pos = diff.add(pointedElement.parent.pos);
+
+                }
+            }
+
+
+        }
+        
 
     </script>
     </body>

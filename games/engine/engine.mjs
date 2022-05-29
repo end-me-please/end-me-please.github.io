@@ -21,12 +21,17 @@ class world{
                 this.clusters[j].checkCollision(this.clusters[i]);
                 }}
             }
-        
-
         for(let i=0; i<this.clusters.length; i++){
         this.clusters[i].update(delta);
     }
-}
+    }
+    getObjectAt(x,y){
+        let candidate = this.clusters.find(c=>c.pos.distanceTo(new vector(x,y))<c.maxSpan);
+        if(candidate){
+            return candidate.members.find(p=>p.globalPosition().distanceTo(new vector(x,y))<p.size/2);
+        }
+        return null;
+    }
 }
 
 
@@ -99,7 +104,7 @@ class clusterPart {
         this.mass = mass;
         this.type = type;
         this.parent = parent;
-        this.size = 32;
+        this.size = 1;
         this.forceVisual = new vector(0,0);
     }
     globalPosition(){
@@ -116,23 +121,28 @@ class clusterPart {
         newPart.id = json.id;
         return newPart;
     }
-    getForce(other){
+    getCollisionForce(other){
         let force = new vector(0,0);
         let dist = 9000;
         if(other instanceof clusterPart && other.parent.id != this.parent.id){
             dist = this.globalPosition().distanceTo(other.globalPosition());
-            dist = dist * 0.9;
+            //dist = dist * 0.9;
             let forceMag = other.parent.totalMass/dist;
             force = this.globalPosition().relativeTo(other.globalPosition());
             force = force.normalize();
             force = force.multiplyScalar(forceMag);
         }
         //if too far away, don't bother
-        if(dist > this.size/32){
+        if(dist > (this.size+other.size)/2){
             return new vector(0,0);
         }
         this.forceVisual = force;
         return force;
+    }
+    hit(sourcePos,strength){
+        let relativePos = this.globalPosition().relativeTo(sourcePos);
+        let force = relativePos.normalize().multiplyScalar(strength);
+        this.parent.applyForce(this.pos,force);
     }
 }
 
@@ -200,9 +210,6 @@ class cluster {
         //add torque and acceleration
         this.angularAccel += torque;
         this.accel = this.accel.add(accel);
-
-        //add components
-
         this.forceVisualPos = forcePos;
         this.forceVisual = force;
     }
@@ -211,10 +218,10 @@ class cluster {
         if(other instanceof cluster&&other.id!=this.id){
             for(let i=0; i<this.members.length; i++){
                 for(let j=0; j<other.members.length; j++){
-                    let force1 = this.members[i].getForce(other.members[j]);
+                    let force1 = this.members[i].getCollisionForce(other.members[j]);
                     if(force1.radius>0.01){
                         this.update(-this.lastDelta,false);
-                        this.applyForce(this.members[i].pos,this.members[i].getForce(other.members[j]));
+                        this.applyForce(this.members[i].pos,this.members[i].getCollisionForce(other.members[j]));
                         this.update(this.lastDelta,false);
                     }
                 }
@@ -236,6 +243,9 @@ class cluster {
         this.angle += this.angleRate*delta;
         this.angleRate *= 0.97;
         this.pos = this.pos.add(this.vel.multiplyScalar(delta));
+    }
+    globalToLocal(pos){
+        return pos.relativeTo(this.CenterOfMass).rotate(-this.angle);
     }
 }
 
