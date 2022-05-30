@@ -8,8 +8,8 @@
         <canvas id="game" width="600" height="600"></canvas>
         <p>blue dot: center of mass</br>red line: from center of mass to origin of the cluster</br>blue line: force being applied</br>red circle: collision checking distance</p>
         <input type="button" value="spawn random stuff" onclick="reset()">
-        <input type="range" min="0.01" max="0.1" step="0.01" value="0.01" oninput="Vars.timeStep=this.value">
-
+        <input type="range" min="0.001" max="0.1" step="0.001" value="0.01" oninput="Vars.timeStep=this.value">
+        <p>total impulse: <span id="impulse">0</span></p>
 <script>
 
 
@@ -71,8 +71,10 @@
             lastRemainder = delta;
             
             Vars.renderer.render(Vars.world);
-            requestAnimationFrame(frame);
-        }        
+            
+            document.getElementById("impulse").innerText = Vars.world.getTotalEnergy();
+            
+            requestAnimationFrame(frame);        }        
         requestAnimationFrame(frame);
         
         let grabbed = null;

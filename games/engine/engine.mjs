@@ -8,7 +8,7 @@ class world{
         this.height=height;
         this.clusters = [];
         this.walls = [];
-        this.gravity = new vector(0,0.1);
+        this.gravity = new vector(0,0);
     }
     update(delta){
 
@@ -39,6 +39,15 @@ class world{
         }
         return null;
     }
+
+    getTotalEnergy(){
+        let energy = 0;
+        for(let i=0; i<this.clusters.length; i++){
+            energy += this.clusters[i].totalMass*this.clusters[i].vel.radius;
+        }
+        return energy;
+    }
+
 }
 
 
@@ -100,6 +109,9 @@ class vector{
     cross(v){
         return this.x*v.y-this.y*v.x;
     }
+    multiply(v){
+        return new vector(this.x*v.x,this.y*v.y);
+    }
 }
 
 
@@ -127,12 +139,13 @@ class clusterPart {
         let force = new vector(0,0);
         let dist = 9000;
         if(other instanceof clusterPart && other.parent.id != this.parent.id){
+            
             dist = this.globalPosition().distanceTo(other.globalPosition());
-            //dist = dist * 0.9;
-            let forceMag = other.parent.totalMass/dist;
+            let forceMag = other.parent.totalMass/(dist*2);
             force = this.globalPosition().relativeTo(other.globalPosition());
             force = force.normalize();
             force = force.multiplyScalar(forceMag);
+        
         }
 
         //if too far away, don't bother
@@ -171,7 +184,7 @@ class cluster {
     addPart(part){
         this.members.push(part);
         part.parent = this;
-        this.maxSpan = Math.max(this.maxSpan,part.pos.radius);
+        this.maxSpan = Math.max(this.maxSpan,part.pos.radius+part.size*0.5);
         this.totalMass = this.getTotalMass();
         this.CenterOfMass = this.getCenterOfMass();
         return part;
@@ -225,16 +238,16 @@ class cluster {
 
     checkCollision(other){
         if(other instanceof cluster&&other.id!=this.id){
+            this.update(-this.lastDelta,false);
             for(let i=0; i<this.members.length; i++){
                 for(let j=0; j<other.members.length; j++){
                     let force1 = this.members[i].getCollisionForce(other.members[j]);
                     if(force1.radius>0.01){
-                        this.update(-this.lastDelta,false);
                         this.applyForce(this.members[i].pos,this.members[i].getCollisionForce(other.members[j]).multiplyScalar(1));
-                        this.update(this.lastDelta,false);
                     }
                 }
             }
+            this.update(this.lastDelta,false);
         }
         if(other instanceof staticCollider&&other.id!=this.id){
             for(let i=0; i<this.members.length; i++){
