@@ -174,17 +174,16 @@ class clusterPart {
     }
     getCollisionForce(other){
         let force = new vector(0,0);
-        let dist = 9000;
+        let dist = 69;
         if(other instanceof clusterPart && other.parent.id != this.parent.id){
-            
             dist = this.globalPosition().distanceTo(other.globalPosition());
+            if(dist<this.size+other.size){
             let forceMag = other.parent.totalMass/(dist);
             force = this.globalPosition().relativeTo(other.globalPosition());
             force = force.normalize();
             force = force.multiplyScalar(forceMag);
-        
+            }
         }
-
         //if too far away, don't bother
         if(dist > (this.size+other.size)/2){
             return new vector(0,0);

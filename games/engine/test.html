@@ -11,6 +11,7 @@
         <input type="range" min="0.001" max="0.1" step="0.001" value="0.01" oninput='document.getElementById("timestep").innerText = this.value;Vars.world.timeStep=this.value'>
         <p>ms per tick: <span id="mspt">0</span></p>
         <p>current timestep: <span id="timestep">0</span></p>
+        <p>time per cluster: <span id="clusterTime">0</span></p>
 <script>
 
 
@@ -54,6 +55,7 @@
         Vars.world = new world(64, 64);
         Vars.renderer = new canvasRenderer(document.getElementById("game"));
         Vars.inputs = new inputHandler(document.getElementById("game"));
+        Vars.lastClusterTime = 0;
         Vars.world.walls.push(new staticCollider(7,15,9,2));
         Vars.world.walls.push(new staticCollider(2,11,2,9));
         Vars.world.walls.push(new staticCollider(11,11,2,9));
@@ -70,7 +72,19 @@
             Vars.world.update(delta);
             let frameEnd = performance.now();
 
+            let frameTime = frameEnd - frameStart;
+
+            Vars.world.timeStep = Math.max(0.005,(Vars.world.timeStep + (frameTime-15)/500));
+
+
+            let clusterTime = (frameTime/(Vars.world.clusters.length+1));
+            let averageClusterTime = (Vars.lastClusterTime + clusterTime)/2;
+            Vars.lastClusterTime = averageClusterTime;
+
+
+            document.getElementById("clusterTime").innerText = averageClusterTime.toFixed(3);
             document.getElementById("mspt").innerText = (frameEnd-frameStart).toFixed(3);
+            document.getElementById("timestep").innerText = Vars.world.timeStep.toFixed(3);
 
             Vars.renderer.render(Vars.world);
    
