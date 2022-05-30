@@ -144,7 +144,7 @@ class clusterPart {
         if(other instanceof clusterPart && other.parent.id != this.parent.id){
             
             dist = this.globalPosition().distanceTo(other.globalPosition());
-            let forceMag = other.parent.totalMass/(dist*2);
+            let forceMag = other.parent.totalMass/(dist);
             force = this.globalPosition().relativeTo(other.globalPosition());
             force = force.normalize();
             force = force.multiplyScalar(forceMag);
