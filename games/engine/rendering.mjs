@@ -19,10 +19,11 @@ class canvasRenderer{
         this.ctx.save();
         this.ctx.translate(cluster.pos.x*32,cluster.pos.y*32);
         //draw a circle of radius maxSpan
+        /*
         this.ctx.beginPath();
         this.ctx.arc(0,0,cluster.maxSpan*32,0,2*Math.PI);
         this.ctx.stroke();
-        
+        */
         
         //rotate center of mass
         let com = cluster.CenterOfMass.rotate(cluster.angle);
@@ -63,9 +64,9 @@ class canvasRenderer{
             this.ctx.stroke();
             //set forceVisual to zero
             cluster.members[i].forceVisual = new vector(0,0);
-
         }
         this.ctx.restore();
+        //global position/velocity sanity tests
         for(let i=0; i<cluster.members.length; i++){
             //red hollow circle
             this.ctx.beginPath();
@@ -74,7 +75,21 @@ class canvasRenderer{
             this.ctx.strokeStyle = "red";
             this.ctx.lineWidth = 4;
             this.ctx.stroke();
+       
+            //pink line from global position to global velocity
+            this.ctx.beginPath();
+            let globalPos = cluster.members[i].globalPosition();
+            let globalVel = cluster.members[i].globalVelocity();
+            this.ctx.moveTo(globalPos.x*32,globalPos.y*32);
+            this.ctx.lineTo(globalPos.x*32+globalVel.x*32,globalPos.y*32+globalVel.y*32);
+            this.ctx.strokeStyle = "pink";
+            this.ctx.lineWidth = 3;
+            this.ctx.stroke();
         }
+
+
+
+
         //draw blue dot at center of cluster
         this.ctx.beginPath();
         this.ctx.arc(cluster.pos.x*32,cluster.pos.y*32,4,0,2*Math.PI);

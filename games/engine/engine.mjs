@@ -9,9 +9,28 @@ class world{
         this.clusters = [];
         this.walls = [];
         this.gravity = new vector(0,0.4);
+        this.lastRemainder = 0;
+        this.timeStep = 1/60;
+        this.timeScale = 1/600;
     }
     update(delta){
+        delta = Math.min(delta, 64);
+        delta = delta * this.timeScale;
+        delta += this.lastRemainder;
+        let iter = 0;
+        while (delta>this.timeStep){
+        iter++;
+        this.tick(this.timeStep);
+        delta-= this.timeStep;
+        }
+        this.lastRemainder = delta;
+        if(iter>100){
+            this.lastRemainder = 0;
+        }
+    }
 
+
+    tick(delta){
         //check for collisions
         for(let i=0; i<this.clusters.length; i++){
             for(let j=i+1; j<this.clusters.length; j++){
@@ -58,6 +77,10 @@ class vector{
     constructor(x,y){
         this.x=x;
         this.y=y;
+    }
+    null(){
+        this.x=0;
+        this.y=0;
     }
     get radius(){
         return Math.sqrt(this.x*this.x+this.y*this.y);
@@ -138,6 +161,17 @@ class clusterPart {
         pos = pos.add(this.parent.pos);
         return pos;
     }
+    globalVelocity(){
+        let parentVel = this.parent.vel.clone();
+        //parentVel is the base velocity, it's already in global space
+        //adjust by parent's angle and angleRate
+        let angleRate = this.parent.angleRate;
+        let distance = this.parent.CenterOfMass.distanceTo(this.pos);
+        let angle = this.parent.CenterOfMass.angleTo(this.pos);
+        let angleVel = angleRate*distance;
+        let vel = parentVel.polarTranslate(angle,angleVel);
+        return vel;
+    }
     getCollisionForce(other){
         let force = new vector(0,0);
         let dist = 9000;
@@ -193,7 +227,6 @@ class cluster {
         return part;
     }
 
-
     getMaxSpan(){
         //get furthest distance from origin
         let max = 0;
@@ -205,7 +238,6 @@ class cluster {
         }
         return max;
     }
-
     getTotalMass(){
         let mass=0;
         for(let i=0; i<this.members.length; i++){
@@ -228,7 +260,7 @@ class cluster {
         forcePos = pos.relativeTo(this.CenterOfMass);
         //get torque and acceleration
         let torque = forcePos.cross(force);
-        let accel = force.multiplyScalar(1/this.totalMass).multiplyScalar(0.97);
+        let accel = force.multiplyScalar(1/this.totalMass);
         //add torque and acceleration
         this.angularAccel += torque;
         this.accel = this.accel.add(accel);
@@ -277,12 +309,9 @@ class cluster {
                 this.update(this.lastDelta,false);
             }
         }
-        
-
-
-
         }
 
+    
     update(delta,resetAccel=true){
         //rotate
         this.vel = this.vel.add(this.accel.multiplyScalar(delta));        
