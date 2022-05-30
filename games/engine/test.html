@@ -73,7 +73,7 @@
             let frameEnd = performance.now();
             let frameTime = frameEnd - frameStart;
 
-            Vars.world.timeStep = Math.max(0.005,(Vars.world.timeStep + (frameTime-15)/500));
+            Vars.world.timeStep = Math.min(0.1,Math.max(0.005,(Vars.world.timeStep + (frameTime-10)/500)));
 
 
             let clusterTime = (frameTime/(Vars.world.clusters.length+1));

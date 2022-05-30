@@ -17,14 +17,14 @@ class world{
         delta = Math.min(delta, 64);
         delta = delta * this.timeScale;
         delta += this.lastRemainder;
-        let iter = 0;
+        let iteration = 0;
         while (delta>this.timeStep){
-        iter++;
+        iteration++;
         this.tick(this.timeStep);
         delta-= this.timeStep;
         }
         this.lastRemainder = delta;
-        if(iter>100){
+        if(iteration>100){
             this.lastRemainder = 0;
         }
     }
@@ -263,6 +263,7 @@ class cluster {
         //add torque and acceleration
         this.angularAccel += torque;
         this.accel = this.accel.add(accel);
+        
         this.forceVisualPos = forcePos;
         this.forceVisual = force;
     }
@@ -283,11 +284,10 @@ class cluster {
                     }
                 }
             }
-            if(deepestForce.radius > 0){
+                //console.log(deepestForce);
                 this.update(-this.lastDelta,false);
                 this.applyForce(deepestPos,deepestForce);
                 this.update(this.lastDelta,false);
-            }
         }
         if(other instanceof staticCollider&&other.id!=this.id){
             let deepestForce = new vector(0,0);
@@ -318,10 +318,10 @@ class cluster {
         this.angleRate += this.angularAccel*delta;this.angularAccel=0;
         this.accel=new vector(0,0);
         this.lastDelta = delta;
+        this.angleRate = this.angleRate*0.97;
         }
         
         this.angle += this.angleRate*delta;
-        this.angleRate *= 0.97;
         this.pos = this.pos.add(this.vel.multiplyScalar(delta));
     }
     globalToLocal(pos){
