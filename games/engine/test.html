@@ -55,6 +55,9 @@
         Vars.inputs = new inputHandler(document.getElementById("game"));
         Vars.timeStep = 0.01;
         Vars.world.walls.push(new staticCollider(7,15,9,2));
+        Vars.world.walls.push(new staticCollider(2,11,2,9));
+        Vars.world.walls.push(new staticCollider(11,11,2,9));
+        
         //frame
         let lastTime = performance.now();
         lastRemainder = 0;

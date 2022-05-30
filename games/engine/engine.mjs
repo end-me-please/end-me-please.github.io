@@ -8,7 +8,7 @@ class world{
         this.height=height;
         this.clusters = [];
         this.walls = [];
-        this.gravity = new vector(0,0);
+        this.gravity = new vector(0,0.4);
     }
     update(delta){
 
@@ -43,7 +43,10 @@ class world{
     getTotalEnergy(){
         let energy = 0;
         for(let i=0; i<this.clusters.length; i++){
-            energy += this.clusters[i].totalMass*this.clusters[i].vel.radius;
+            //calculate energy
+            let eX = this.clusters[i].vel.x * this.clusters[i].totalMass;
+            let eY = this.clusters[i].vel.y * this.clusters[i].totalMass;
+            energy += eX + eY;    
         }
         return energy;
     }
@@ -238,29 +241,41 @@ class cluster {
 
     checkCollision(other){
         if(other instanceof cluster&&other.id!=this.id){
-            this.update(-this.lastDelta,false);
+            let deepestForce = new vector(0,0);
+            let deepestPos = new vector(0,0);
             for(let i=0; i<this.members.length; i++){
                 for(let j=0; j<other.members.length; j++){
-                    let force1 = this.members[i].getCollisionForce(other.members[j]);
-                    if(force1.radius>0.01){
-                        this.applyForce(this.members[i].pos,this.members[i].getCollisionForce(other.members[j]).multiplyScalar(1));
+                    let force = this.members[i].getCollisionForce(other.members[j]);
+                    //check if this is the deepest force
+                    if(force.radius > deepestForce.radius){
+                        deepestForce = force;
+                        deepestPos = this.members[i].pos;
                     }
                 }
             }
-            this.update(this.lastDelta,false);
+            if(deepestForce.radius > 0){
+                this.update(-this.lastDelta,false);
+                this.applyForce(deepestPos,deepestForce);
+                this.update(this.lastDelta,false);
+            }
         }
         if(other instanceof staticCollider&&other.id!=this.id){
+            let deepestForce = new vector(0,0);
+            let deepestPos = new vector(0,0);
             for(let i=0; i<this.members.length; i++){
                 for(let j=0; j<other.members.length; j++){
-                    let force1 = this.members[i].getCollisionForce(other.members[j]);
-                    if(force1.radius>0.01){
-                        this.update(-this.lastDelta,false);
-                        this.applyForce(this.members[i].pos,this.members[i].getCollisionForce(other.members[j]).multiplyScalar(1));
-                        this.vel = this.vel.multiplyScalar(0.4);
-                        this.angleRate = this.angleRate*0.4;
-                        this.update(this.lastDelta,false);
+                    let force = this.members[i].getCollisionForce(other.members[j]);
+                    //check if this is the deepest force
+                    if(force.radius > deepestForce.radius){
+                        deepestForce = force;
+                        deepestPos = this.members[i].pos;
                     }
                 }
+            }
+            if(deepestForce.radius > 0){
+                this.update(-this.lastDelta,false);
+                this.applyForce(deepestPos,deepestForce);
+                this.update(this.lastDelta,false);
             }
         }
         
