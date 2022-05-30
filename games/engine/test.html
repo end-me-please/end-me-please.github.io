@@ -71,7 +71,6 @@
             let frameStart = performance.now();
             Vars.world.update(delta);
             let frameEnd = performance.now();
-
             let frameTime = frameEnd - frameStart;
 
             Vars.world.timeStep = Math.max(0.005,(Vars.world.timeStep + (frameTime-15)/500));
