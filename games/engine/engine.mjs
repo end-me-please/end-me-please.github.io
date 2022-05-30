@@ -246,7 +246,6 @@ class cluster {
             for(let i=0; i<this.members.length; i++){
                 for(let j=0; j<other.members.length; j++){
                     let force = this.members[i].getCollisionForce(other.members[j]);
-                    //check if this is the deepest force
                     if(force.radius > deepestForce.radius){
                         deepestForce = force;
                         deepestPos = this.members[i].pos;
