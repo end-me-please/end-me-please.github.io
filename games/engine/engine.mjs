@@ -284,11 +284,12 @@ class cluster {
                     }
                 }
             }
-                //console.log(deepestForce);
+            if(deepestForce.radius > 0){
                 this.update(-this.lastDelta,false);
                 this.applyForce(deepestPos,deepestForce);
                 this.update(this.lastDelta,false);
-        }
+                }
+            }
         if(other instanceof staticCollider&&other.id!=this.id){
             let deepestForce = new vector(0,0);
             let deepestPos = new vector(0,0);
