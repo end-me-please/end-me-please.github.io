@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel='stylesheet' type='text/css' media='screen' href='../../style.css'>
+    <script src='4f.js'></script>
+    <script src='../title.js'></script>
+</head>
+<body>
+    <div class="info">
+        <!--prompt user to give access to a device camera-->
+        <h4>Select a device camera</h1>
+        <p>
+            <!--list of devices, and a button to select it-->
+            <select id="deviceList">
+                <option value="">Select a device</option>
+            </select>
+            <button id="selectButton" onclick="startStream()">Select</button>
+        </p>
+    </div> 
+    <video class="genericCanvas" id="rawVideo" width="320" height="240" autoplay></video>  
+    <video class="genericCanvas" id="processedVideo" width="320" height="240" autoplay></video>  
+
+
+    <script>
+        //get device cameras
+        navigator.mediaDevices.enumerateDevices().then(gotDevices).catch(console.error);
+        function gotDevices(deviceInfos) {
+            let videoSelect = document.querySelector("select#deviceList");
+            for (let i = 0; i !== deviceInfos.length; ++i) {
+                const deviceInfo = deviceInfos[i];
+                const option = document.createElement('option');
+                option.value = deviceInfo.deviceId;
+                if (deviceInfo.kind === 'videoinput') {
+                    option.text = deviceInfo.label || 'camera ' + (videoSelect.length + 1);
+                    videoSelect.appendChild(option);
+                } else {
+                    console.log('Found one other kind of source/device: ', deviceInfo);
+                }
+            }
+        }
+        //start video stream on select button click
+        function startStream() {
+            let videoSelect = document.querySelector("select#deviceList");
+            let constraints = {
+                video: {
+                    deviceId: videoSelect.value
+                }
+            };
+            navigator.mediaDevices.getUserMedia(constraints).then(gotStream).catch(console.error);
+        }
+
+        function gotStream(stream) {
+            window.stream = stream; // make stream available to console
+            let videoElement = document.getElementById('rawVideo');
+            videoElement.srcObject = stream;
+            videoElement.onloadedmetadata = function(e) {
+                videoElement.play();
+            };
+
+            //process video stream frame by frame
+            let canvas = document.getElementById('processedVideo');
+            let context = canvas.getContext('2d');
+            let video = document.getElementById('rawVideo');
+            //call on every frame
+            function processVideo() {
+                context.drawImage(video, 0, 0, 320, 240);
+                let imageData = context.getImageData(0, 0, 320, 240);
+                let data = imageData.data;
+                let width = imageData.width;
+                let height = imageData.height;
+                let i = 0;
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        let r = data[i];
+                        let g = data[i + 1];
+                        let b = data[i + 2];
+                        let a = data[i + 3];
+                        let avg = (r + g + b) / 3;
+                        data[i] = avg;
+                        data[i + 1] = avg;
+                        data[i + 2] = avg;
+                        i += 4;
+                    }
+                }
+                context.putImageData(imageData, 0, 0);
+            }
+
+
+
+        }
+        
+    </script>
+
+
+</body>
+</html>
