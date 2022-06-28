@@ -1,0 +1,42 @@
+<html>
+    <head>
+        <script src="https://unpkg.com/gpu.js@latest/dist/gpu-browser.min.js"></script>
+        <script src="title.js"></script>
+        <link rel="stylesheet" href="../style.css">
+        
+        <input type="button" value="Start" onclick="start()">
+        
+    </head>
+    <body>
+        <canvas class="genericCanvas"></canvas>
+    </body>
+    <script>
+        const gpu = new GPU();
+        const canvas = document.querySelector(".genericCanvas");
+
+        //particle, extends array, has x, y, vx, vy, radius, r,g,b
+        const particle = new Float32Array(9);
+
+
+
+        let particleVelocities = [];
+        let particlePositions = [];
+        let particleColors = [];
+        let particleSizes = [];
+        let particleCount = 2048;
+
+        //populate arrays with random values
+        for(let i = 0; i < particleCount; i++){
+            particleVelocities.push(Math.random() * 2 - 1);
+            particlePositions.push(Math.random() * 2 - 1);
+            particleColors.push(Math.random() * 2 - 1);
+            particleSizes.push(Math.random() * 2 - 1);
+        }        
+
+
+
+
+
+
+    </script>    
+</html>
