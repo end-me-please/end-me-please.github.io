@@ -64,6 +64,6 @@ body {
     background-color: darkgray;
 }
 
-li {
+a {
     z-index: 1;
 }
