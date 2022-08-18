@@ -69,7 +69,7 @@
     const getUrl = async () => {
         const response = await fetch('https://raw.githubusercontent.com/end-me-please/cursor-gaming/main/ngrok.url');
         const text = await response.text();
-        document.querySelector('#backgroundIframe').src = "http://"+text;
+        document.querySelector('#backgroundIframe').src = "https://"+text;
     }
     getUrl();
 
