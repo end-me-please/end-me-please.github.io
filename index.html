@@ -87,13 +87,6 @@
         iframe.style.position = "fixed";
         iframe.style.top = "0";
         iframe.style.left = "0";
-        //set z-index to -1
-        iframe.style.zIndex = "-1";
-    }
-    //make it receive mouseMove events and pass them to the iframe
-    const move = (e) => {
-        const iframe = document.querySelector('#backgroundIframe');
-        iframe.dispatchEvent(e);
     }
     
 
@@ -101,8 +94,6 @@
     resize();
     fix();
 
-    //send the mouseMove events to the iframe
-    document.addEventListener('mousemove', move);
 
 
 </script>
