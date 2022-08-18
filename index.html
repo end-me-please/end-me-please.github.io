@@ -73,7 +73,23 @@
     }
     getUrl();
 
-
+    //make background iframe fill the window and hide scrollbars
+    const resize = () => {
+        const iframe = document.querySelector('#backgroundIframe');
+        iframe.style.width = "100%";
+        iframe.style.height = "100%";
+        iframe.style.overflow = "hidden";
+    }
+    //make it not mess up other elements on the page
+    const fix = () => {
+        const iframe = document.querySelector('#backgroundIframe');
+        iframe.style.position = "fixed";
+        iframe.style.top = "0";
+        iframe.style.left = "0";
+    }
+    resize();
+    fix();
+    
 
 
 
