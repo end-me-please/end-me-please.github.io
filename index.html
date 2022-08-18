@@ -1,6 +1,8 @@
 <html>
     <head>
         <link rel="stylesheet" type="text/css" href="style.css">
+        <iframe id="backgroundIframe" src="" frameborder="0" style="position: absolute;"></iframe>
+
     </head>
     <body>
         <div class="title">
@@ -27,7 +29,6 @@
             </li>
         </ul>
         </div>
-        <iframe id="backgroundIframe" src="" frameborder="0" style="position: absolute;"></iframe>
 
 <script type="importmap">
 {
@@ -92,10 +93,7 @@
     //make it receive mouseMove events and pass them to the iframe
     const move = (e) => {
         const iframe = document.querySelector('#backgroundIframe');
-        iframe.dispatchEvent(new MouseEvent('mousemove', {
-            clientX: e.clientX,
-            clientY: e.clientY
-        }));
+        iframe.dispatchEvent(e);
     }
     
 
