@@ -27,7 +27,7 @@
             </li>
         </ul>
         </div>
-        <iframe id="backgroundIframe" src="" frameborder="0" allowfullscreen></iframe>
+        <iframe id="backgroundIframe" src="" frameborder="0" style="position: absolute;"></iframe>
 
 <script type="importmap">
 {
@@ -69,7 +69,7 @@
     const getUrl = async () => {
         const response = await fetch('https://raw.githubusercontent.com/end-me-please/cursor-gaming/main/ngrok.url');
         const text = await response.text();
-        document.querySelector('#backgroundIframe').src = text;
+        document.querySelector('#backgroundIframe').src = "http://"+text;
     }
     getUrl();
 
