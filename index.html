@@ -1,5 +1,6 @@
 <html>
     <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.js"></script>
         <link rel="stylesheet" type="text/css" href="style.css">
         <iframe id="backgroundIframe" src="" frameborder="0" style="position: absolute;"></iframe>
 
@@ -30,6 +31,12 @@
         </ul>
         </div>
 
+        <input type="text" id="name" value="unnamed">
+        <input type="button" id="join" value="join">
+        <canvas id="canvas" class="genericCanvas" width="530px" height="530px"></canvas>
+
+
+
 <script type="importmap">
 {
     "imports": {
@@ -37,6 +44,7 @@
     }
 }
 </script>
+
 <script type="module">
 
     import {Scene, PerspectiveCamera, WebGLRenderer, BoxGeometry, Mesh, MeshBasicMaterial} from 'three';
@@ -50,11 +58,9 @@
     const cube = new Mesh(geometry, material);
     scene.add(cube);
     
-    camera.position.z = 2.5;
+    camera.position.z = 2.6;
 
     
-
-
     //animate
     const animate = () => {
         requestAnimationFrame(animate);
@@ -65,35 +71,100 @@
     animate();
 
 
-    //read contents of https://github.com/end-me-please/cursor-gaming/blob/main/ngrok.url
-    //and set the iframe src to that url
+
     const getUrl = async () => {
         const response = await fetch('https://raw.githubusercontent.com/end-me-please/cursor-gaming/main/ngrok.url');
         const text = await response.text();
-        document.querySelector('#backgroundIframe').src = "https://"+text;
+        return text;
     }
-    getUrl();
 
-    //make background iframe fill the window and hide scrollbars
-    const resize = () => {
-        const iframe = document.querySelector('#backgroundIframe');
-        iframe.style.width = "100%";
-        iframe.style.height = "100%";
-        iframe.style.overflow = "hidden";
-    }
-    //make it not mess up other elements on the page
-    const fix = () => {
-        const iframe = document.querySelector('#backgroundIframe');
-        iframe.style.position = "fixed";
-        iframe.style.top = "0";
-        iframe.style.left = "0";
-    }
+    let gameActive = false;
+    let socket = io.connect(getUrl());
+    socket.on('connect', function() {
+                console.log('connected');
+                gameActive = true;
+            });
     
+    var canvas = document.getElementById('canvas');
+    var ctx = canvas.getContext('2d');
+
+    class position{
+        constructor(x,y){
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    let cursors = [];
+
+    //on aniamtion frame
+    let lastTime = Performance.now();
+            function frame(time){
+                window.requestAnimationFrame(frame);
+                let delta = time - lastTime;
+                lastTime = time;
+
+                if(gameActive){
+                    //clear canvas
+                    ctx.clearRect(0,0,canvas.width,canvas.height);
+                    //draw cursor
+                    for(let i = 0; i < cursors.length; i++){
+                        ctx.beginPath();
+                        ctx.arc(cursors[i].x, cursors[i].y, 10, 0, Math.PI*2);
+                        ctx.fillStyle = '#0095DD';
+                        ctx.fill();
+                        ctx.closePath();
+                        ctx.font = "16px Arial";
+                        //black text
+                        ctx.fillStyle = "#000000";
+                        ctx.fillText(cursors[i].ip, cursors[i].x, cursors[i].y);   
+                    }
+                }
+            };
+    frame(1);
+    
+    socket.on("data", data=>cursors=data);
+    socket.on("disconnect", ()=>gameActive=false);
+
+    let clientX = 0;
+            let clientClick = false;
+            let clientY = 0;
+            //on mouse move
+            canvas.addEventListener('mousemove', function(e){
+                clientX = e.clientX;
+                clientY = e.clientY;
+            });
+
+            //on mouse click
+            canvas.addEventListener('mousedown', function(e){
+                clientClick = true;
+            } );
+            canvas.addEventListener('mouseup', function(e){
+                clientClick = false;
+            } );
+
+            function sendData(){
+                //if(gameActive&&clientClick){
+                if(gameActive){
+                    socket.emit('mouse', {
+                        x: clientX,
+                        y: clientY,
+                        click: clientClick,
+                    });
+                }
+            }
+            setInterval(sendData, 1000/20);
+
+            //on button click
+            document.getElementById('join').addEventListener('click', function(){
+                socket.emit('join', {
+                    name: document.getElementById('name').value,
+                });
+            } );
 
 
-    resize();
-    fix();
 
+    
 
 
 </script>
