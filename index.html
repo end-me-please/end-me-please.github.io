@@ -98,7 +98,7 @@
     let cursors = [];
 
     //on aniamtion frame
-    let lastTime = Performance.now();
+    let lastTime = Date.now();
             function frame(time){
                 window.requestAnimationFrame(frame);
                 let delta = time - lastTime;
