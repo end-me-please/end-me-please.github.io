@@ -1,10 +1,8 @@
 <html>
     <head>
-        <script src="https://unpkg.com/gpu.js@latest/dist/gpu-browser.min.js"></script>
+        <script src="https://unpkg.com/gpu.js@latest/dist/gpu-browser.js"></script>
         <script src="title.js"></script>
         <link rel="stylesheet" href="../style.css">
-        
-        <input type="button" value="Start" onclick="start()">
         
     </head>
     <body>
@@ -12,26 +10,98 @@
     </body>
     <script>
         const gpu = new GPU();
+        //set gpu.js to cpu mode
+
         const canvas = document.querySelector(".genericCanvas");
 
-        //particle, extends array, has x, y, vx, vy, radius, r,g,b
-        const particle = new Float32Array(9);
+        const particleCount = 500;
+        const colorCount = 3;
+        const maxX = 100;
+        const maxY = 100;
+        const minX = 0;
+        const minY = 0;
 
-
+        //color attraction matrix
+        const colorAttraction = [];
+        for(let i = 0; i < colorCount; i++){
+            colorAttraction[i] = [];
+            for(let j = 0; j < colorCount; j++){
+                //random number between -1 and 1
+                colorAttraction[i][j] = Math.random() * 2 - 1;
+            }
+        }
 
         let particleVelocities = [];
         let particlePositions = [];
         let particleColors = [];
-        let particleSizes = [];
-        let particleCount = 2048;
 
-        //populate arrays with random values
         for(let i = 0; i < particleCount; i++){
-            particleVelocities.push(Math.random() * 2 - 1);
-            particlePositions.push(Math.random() * 2 - 1);
-            particleColors.push(Math.random() * 2 - 1);
-            particleSizes.push(Math.random() * 2 - 1);
-        }        
+            particleVelocities[i] = [0,0];
+            particlePositions[i] = [0,0];
+            particleColors[i] = Math.floor(Math.random() * colorCount);
+        }
+        console.log(particlePositions);
+
+        //velocityUpdataKernel, respecting deltaTime
+        const velocityUpdateKernel = gpu.createKernel(function(particlePositions,particleVelocities, deltaTime){
+            const x = particlePositions[this.thread.x][0];
+            const y = particlePositions[this.thread.x][1];
+            const vx = particleVelocities[this.thread.x][0];
+            const vy = particleVelocities[this.thread.x][1];
+            const thisColor = this.constants.particleColors[this.thread.x];
+            const otherColor = this.constants.particleColors[this.thread.y];
+            const attr = this.constants.colorAttraction[thisColor][otherColor];
+            const dx = particlePositions[this.thread.y][0] - x;
+            const dy = particlePositions[this.thread.y][1] - y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const force = attr * deltaTime / dist;
+            const ax = force * dx / dist;
+            const ay = force * dy / dist;
+
+            const newVx = vx + ax * deltaTime;
+            const newVy = vy + ay * deltaTime;
+            const newX = x + newVx * deltaTime;
+            const newY = y + newVy * deltaTime;
+            return [newX,newY,newVx,newVy];
+        }).setOutput([4,particleCount])
+        .setConstants({colorCount: colorCount, colorAttraction: colorAttraction, particleColors: particleColors});
+
+
+
+
+        
+        function update(){
+            const deltaTime = 0.01;
+            const updatedParticles = velocityUpdateKernel(particlePositions,particleVelocities, deltaTime);
+            particlePositions=[updatedParticles[0],updatedParticles[1]];
+            particleVelocities=[updatedParticles[2],updatedParticles[3]];
+        }
+        function render(){
+            //draw particles
+            const context = canvas.getContext("2d");
+            context.clearRect(0,0,canvas.width,canvas.height);
+            context.fillStyle = "black";
+            console.log(particlePositions);
+            for(let i = 0; i < particleCount; i++){
+                context.beginPath();
+                context.arc(particlePositions[i][0],particlePositions[i][1],1,0,2*Math.PI);
+                context.fill();
+            }
+
+
+        }
+        
+        
+        
+        const updateAndRender = () => {
+            update();
+                render();
+        }
+        setInterval(updateAndRender, 100);
+
+        
+
+
 
 
 

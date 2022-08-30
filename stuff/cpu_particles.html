@@ -1,0 +1,206 @@
+<html>
+    <head>
+    <script src="https://unpkg.com/gpu.js@latest/dist/gpu-browser.js"></script>
+    <script src="title.js"></script>
+    </head>
+    <body>
+        <div id="config">
+            <p id="timeDisplay"></p>
+        </div>
+
+
+
+        <canvas></canvas>
+        <script>
+        //scale canvas to window size
+        
+        const canvas = document.querySelector("canvas");
+        //dark background
+        canvas.style.backgroundColor = "gray";
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const scale = 2.5;
+        const ctx = document.querySelector("canvas").getContext("2d");
+        const particleCount = 1900;
+        const colorCount = 8;
+        const maxX = window.innerWidth/scale;
+        const maxY = window.innerHeight/scale;
+        const minX = 0;
+        const minY = 0;
+
+        //color attraction matrix
+        const colorAttraction = [];
+        for(let i = 0; i < colorCount; i++){
+            colorAttraction[i] = [];
+            for(let j = 0; j < colorCount; j++){
+                //random number between -1 and 1
+                colorAttraction[i][j] = Math.random() * 5 - 2.5;
+                //make self attraction always slightly negative
+                if(i == j){
+                    colorAttraction[i][j] = -1*Math.random()+0.5;
+                }
+
+            }
+        }
+        console.log(colorAttraction);
+        class particle{
+            constructor(){
+                this.velocity = [0,0];
+                this.position = [Math.random() * maxX, Math.random() * maxY];
+                this.color = Math.floor(Math.random() * colorCount);
+            }
+        }
+        let particles = [];
+        for(let i = 0; i < particleCount; i++){
+            particles[i] = new particle();
+        }
+
+        function updateParticles(deltaTime){
+            for(let i = 0; i < particleCount; i++){
+                for(let j = 0; j < particleCount; j++){
+                    if(i == j){
+                        continue;
+                    }
+                    const x = particles[i].position[0];
+                    const y = particles[i].position[1];
+                    const vx = particles[i].velocity[0];
+                    const vy = particles[i].velocity[1];
+                    const thisColor = particles[i].color;
+                    const otherColor = particles[j].color;
+                    const attr = colorAttraction[thisColor][otherColor];
+                    const dx = particles[j].position[0] - x;
+                    const dy = particles[j].position[1] - y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    if(dist > 100) {
+                        continue;
+                    }
+                    dist = Math.max(dist, 1);
+
+
+
+
+                    const force = attr * deltaTime / dist;
+                    const ax = force * dx / dist;
+                    const ay = force * dy / dist;
+                    
+                    particles[i].velocity[0] = vx + ax;
+                    particles[i].velocity[1] = vy + ay;
+
+                    //if velocity is nan, set to 0
+                    if(isNaN(particles[i].velocity[0])){
+                        particles[i].velocity[0] = 0;
+                    }
+                    if(isNaN(particles[i].velocity[1])){
+                        particles[i].velocity[1] = 0;
+                    }
+
+
+
+
+                }
+            }
+            for(let i = 0; i < particleCount; i++){
+
+                //damping depends on speed
+                const speed = Math.sqrt(particles[i].velocity[0] * particles[i].velocity[0] + particles[i].velocity[1] * particles[i].velocity[1]);
+                const damp = 1 - 0.00001 * speed;
+                particles[i].velocity[0] *= damp;
+                particles[i].velocity[1] *= damp;
+
+
+                particles[i].position[0] += particles[i].velocity[0] * deltaTime;
+                particles[i].position[1] += particles[i].velocity[1] * deltaTime;
+
+                //smooth wrap around
+                if(particles[i].position[0] > maxX){
+                    particles[i].position[0] -= maxX;
+                }
+                if(particles[i].position[0] < minX){
+                    particles[i].position[0] += maxX;
+                }
+                if(particles[i].position[1] > maxY){
+                    particles[i].position[1] -= maxY;
+                }
+                if(particles[i].position[1] < minY){
+                    particles[i].position[1] += maxY;
+                }
+
+
+            }
+        }
+        function renderParticles(){
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            for(let i = 0; i < particleCount; i++){
+                const x = particles[i].position[0];
+                const y = particles[i].position[1];
+                const color = particles[i].color;
+                ctx.fillStyle = "rgb(" + (color * 255 / colorCount) + ",0,255)";
+                ctx.fillRect(x*scale,y*scale,scale,scale);
+            }
+        }
+
+        function mainLoop(){
+            let startTime = performance.now();
+            updateParticles(0.12);
+            let updateTime = performance.now();
+            renderParticles();
+            let renderTime = performance.now();
+            //round duration to 2 decimal places
+            let updateDuration = Math.round((updateTime - startTime) * 100) / 100;
+            let renderDuration = Math.round((renderTime - updateTime) * 100) / 100;
+            document.getElementById("timeDisplay").innerHTML = "update: " + updateDuration + "ms render: " + renderDuration + "ms";
+
+
+            requestAnimationFrame(mainLoop);
+        }
+        mainLoop();
+
+
+
+        //add type selector + attraction sliders for each color
+        const config = document.getElementById("config");
+        const typeSelector = document.createElement("select");
+        typeSelector.id = "typeSelector";
+        //each color
+        for(let i = 0; i < colorCount; i++){
+            const option = document.createElement("option");
+            option.value = i;
+            option.innerHTML = "Color " + i;
+            typeSelector.appendChild(option);
+        }
+        config.appendChild(typeSelector);
+        
+        //add sliders for each color
+        for(let i = 0; i < colorCount; i++){
+            const colorDiv = document.createElement("div");
+            colorDiv.id = "color" + i;
+            colorDiv.style.display = "none";
+            for(let j = 0; j < colorCount; j++){
+                const slider = document.createElement("input");
+                slider.type = "range";
+                slider.min = -2.5;
+                slider.max = 2.5;
+                slider.step = 0.25;
+                slider.value = colorAttraction[i][j];
+                slider.id = "slider" + i + j;
+                slider.oninput = function(){
+                    colorAttraction[i][j] = this.value;
+                }
+                colorDiv.appendChild(slider);
+            }
+            config.appendChild(colorDiv);
+        }
+        typeSelector.onchange = function(){
+            for(let i = 0; i < colorCount; i++){
+                document.getElementById("color" + i).style.display = "none";
+            }
+            document.getElementById("color" + this.value).style.display = "block";
+        }
+        document.getElementById("color0").style.display = "block";
+
+
+
+
+        </script>
+    </body>
+</html>
