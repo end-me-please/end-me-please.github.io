@@ -78,7 +78,7 @@
     }
 
     let gameActive = false;
-    let socket = io.connect(getUrl());
+    let socket = io.connect("http://"+getUrl());
     socket.on('connect', function() {
                 console.log('connected');
                 gameActive = true;
