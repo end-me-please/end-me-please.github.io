@@ -77,8 +77,9 @@
         return text;
     }
 
+    let url = await getUrl();
     let gameActive = false;
-    let socket = io.connect("https://"+getUrl());
+    let socket = io.connect("https://"+url);
     socket.on('connect', function() {
                 console.log('connected');
                 gameActive = true;
