@@ -1,0 +1,126 @@
+<html>
+    <head>
+    <script src="dist/gpu-browser.js"></script>
+    </head>
+    <body>
+        <!--<canvas id="map" width="800" height="600"></canvas>
+        -->
+    
+        
+        
+        
+
+        <script>
+
+
+
+
+
+            //fullsize canvas
+            /*
+            let canvas = document.getElementById("map");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            */
+            let gpu = new GPU({mode: "cpu"});
+
+            //add custom functions to the gpu
+            
+            
+            function fade(t) {
+                return t * t * t * (t * (t * 6 - 15) + 10);
+                }
+                function lerp(t, a, b) {
+                return a + t * (b - a);
+                }
+                function grad(hash, x, y) {
+                var h = hash & 15; // CONVERT LO 4 BITS OF HASH CODE
+                var u = h < 8 ? x : y, // INTO 12 GRADIENT DIRECTIONS.
+                    v = h < 4 ? y : h == 12 || h == 14 ? x : 0;
+                return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
+            }
+
+            gpu.addFunction(fade);
+            gpu.addFunction(lerp);
+            gpu.addFunction(grad);
+
+
+            //let ctx = canvas.getContext("2d");
+
+
+            
+            let renderingKernel = gpu.createKernel(function (p){
+                
+                let x = this.thread.x/100;
+                let y = this.thread.y/100;
+                let X = 0;
+                let Y = 0;
+                let u = 0;
+                let v = 0;
+                let A = 0;
+                let B = 0;
+
+                X = Math.floor(x) & 255; // FIND UNIT CUBE THAT
+                Y = Math.floor(y) & 255; // CONTAINS POINT.
+                x = x - Math.floor(x); // FIND RELATIVE X,Y,Z
+                y = y - Math.floor(y); // OF POINT IN CUBE.
+                u = fade(x); // COMPUTE FADE CURVES
+                v = fade(y); // FOR EACH OF X,Y,Z.
+                A = p[X] + Y; AA = p[A]; AB = p[A + 1]; // HASH COORDINATES OF
+                B = p[X + 1] + Y; BA = p[B]; BB = p[B + 1]; // THE 8 CUBE CORNERS,
+                
+                
+                let output = lerp(v, lerp(u, grad(p[AA], x, y), // AND ADD
+                grad(p[BA], x - 1, y)), // BLENDED
+                lerp(u, grad(p[AB], x, y - 1), // RESULTS
+                grad(p[BB], x - 1, y - 1))); // FROM  8
+                
+                this.color(output, output, output);
+                //return output;
+            }, {output:[window.innerWidth, window.innerHeight]}).setGraphical(true);
+
+
+            //append gpu canvas to the page
+            document.body.appendChild(renderingKernel.canvas);
+
+
+            console.log(renderingKernel);
+            let i = 2;
+            function draw() {
+
+
+                let rand = Random(i);
+                i++;
+                let permutationTable = new Uint8Array(512);
+                for (let i = 0; i < 512; i++) {
+                permutationTable[i] = Math.floor(rand.next().value * 255);
+                }
+                renderingKernel(permutationTable);
+                requestAnimationFrame(draw);
+            }
+            draw();
+
+
+
+
+
+
+
+
+
+
+
+    function* Random (seed) {
+        while (true) {
+            seed = (seed * 9301 + 49297) % 233280;
+            //make sure that the yielded value is between 0 and 1
+            yield seed / 233280;
+        }
+    }
+
+
+
+
+        </script>    
+    </body>
+</html>
