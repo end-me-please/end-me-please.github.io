@@ -84,6 +84,7 @@
         let xhr = new XMLHttpRequest();
         xhr.open("GET", source, false);
         xhr.send(null);
+        console.log(xhr.responseText);
         return xhr.responseText;
     }
 
