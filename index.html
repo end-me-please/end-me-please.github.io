@@ -36,7 +36,7 @@
         <canvas id="canvas" class="genericCanvas" width="530px" height="530px"></canvas>
         
         
-        <div style="position: absolute; top:0; left:0; margin: 10px;">
+        <div style="position: absolute; top:6px; left:6px; margin: 10px;">
         <input type="button" id="join" value="join">
         <input type="text" id="name" value="unnamed">
         </div> 
@@ -87,7 +87,7 @@
     function getUrlSync(){
         let source = "https://raw.githubusercontent.com/end-me-please/cursor-gaming/main/ngrok.url";
         let xhr = new XMLHttpRequest();
-        xhr.open("GET", source, false);
+        xhr.open('GET', source, false);
         xhr.send(null);
         console.log(xhr.responseText);
         return xhr.responseText;
