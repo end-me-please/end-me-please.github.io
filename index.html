@@ -38,7 +38,7 @@
         
         <div style="position: absolute; top:6px; left:6px; margin: 10px;">
         <input type="button" id="join" value="rename">
-        <input type="text" id="name" value="unnamed">
+        <input type="text" id="name" value="unnamed amogus">
         </div> 
 
 <script type="importmap">
@@ -93,17 +93,24 @@
         return xhr.responseText;
     }
 
+    //check if localstorage has a name, if so, put it in the input field
+    if(localStorage.getItem("name")){
+        document.getElementById("name").value = localStorage.getItem("name");
+    }
+
+
+
     let gameActive = false;
     let cursors = [];
     let socket = {};
     setTimeout(()=>{
     socket = io.connect("https://"+getUrlSync()+"/")
-
+    
     socket.on('connect', function() {
                 console.log('connected');
                 gameActive = true;
                 socket.emit('join', {
-                    name: "unnamed amogus",
+                    name: document.getElementById('name').value
                 });
             });
 
@@ -202,6 +209,8 @@
                 socket.emit('join', {
                     name: document.getElementById('name').value,
                 });
+                //store name in local storage
+                localStorage.setItem('name', document.getElementById('name').value);
             } );
 
 
