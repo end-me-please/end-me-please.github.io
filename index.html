@@ -102,7 +102,11 @@
     socket.on('connect', function() {
                 console.log('connected');
                 gameActive = true;
+                socket.emit('join', {
+                    name: "unnamed amogus",
+                });
             });
+
     socket.on("data", data=>cursors=data);
     socket.on("disconnect", ()=>gameActive=false);
 
