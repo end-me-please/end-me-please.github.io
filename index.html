@@ -89,13 +89,18 @@
     }
 
     let gameActive = false;
-    setTimeout(()=>{let socket = io.connect("https://"+getUrlSync()+"/")
+    let cursors = [];
+
+    setTimeout(()=>{
+    let socket = io.connect("https://"+getUrlSync()+"/")
 
     socket.on('connect', function() {
                 console.log('connected');
                 gameActive = true;
             });
-    
+    socket.on("data", data=>cursors=data);
+    socket.on("disconnect", ()=>gameActive=false);
+
     },1000);
     
     
@@ -110,8 +115,7 @@
         }
     }
 
-    let cursors = [];
-
+    
     //on aniamtion frame
     let lastTime = Date.now();
             function frame(time){
@@ -138,8 +142,6 @@
             };
     frame(1);
     
-    socket.on("data", data=>cursors=data);
-    socket.on("disconnect", ()=>gameActive=false);
 
     let clientX = 0;
             let clientClick = false;
