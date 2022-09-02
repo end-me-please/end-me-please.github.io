@@ -89,7 +89,7 @@
     }
 
     let gameActive = false;
-    let socket = io.connect("https://"+getUrlSync());
+    setTimeout(()=>{let socket = io.connect("https://"+getUrlSync()+"/")},1000);
     socket.on('connect', function() {
                 console.log('connected');
                 gameActive = true;
