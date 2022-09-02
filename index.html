@@ -196,7 +196,13 @@
             } );
 
 
-
+            //prevent scrolling
+            window.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+            }, { passive: false });
+            //hide scrollbars
+            document.body.style.overflow = 'hidden';
+            
     
 
 
