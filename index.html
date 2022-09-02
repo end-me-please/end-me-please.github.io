@@ -108,6 +108,16 @@
     var canvas = document.getElementById('canvas');
     var ctx = canvas.getContext('2d');
 
+    //move canvas to background
+    canvas.style.position = "absolute";
+    canvas.style.top = "0px";
+    canvas.style.left = "0px";
+    canvas.style.zIndex = "-1";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+
+
+
     class position{
         constructor(x,y){
             this.x = x;
