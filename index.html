@@ -143,15 +143,18 @@
                     ctx.clearRect(0,0,canvas.width,canvas.height);
                     //draw cursor
                     for(let i = 0; i < cursors.length; i++){
+                        let drawX = cursors[i].x*canvas.width;
+                        let drawY = cursors[i].y*canvas.height;
+
                         ctx.beginPath();
-                        ctx.arc(cursors[i].x, cursors[i].y, 4, 0, Math.PI*2);
+                        ctx.arc(drawX, drawY, 4, 0, Math.PI*2);
                         ctx.fillStyle = '#0095DD';
                         ctx.fill();
                         ctx.closePath();
                         ctx.font = "13px Arial";
                         //black text
                         ctx.fillStyle = "#000000";
-                        ctx.fillText(cursors[i].name, cursors[i].x, cursors[i].y);   
+                        ctx.fillText(cursors[i].name, drawX, drawY);   
                     }
                 }
             };
@@ -163,8 +166,11 @@
             let clientY = 0;
             //on mouse move
             document.addEventListener('mousemove', function(e){
-                clientX = e.clientX;
-                clientY = e.clientY;
+                //clientx and clienty as relative positions in %
+                let adjustedX = e.clientX / window.innerWidth;
+                let adjustedY = e.clientY / window.innerHeight;
+                clientX = adjustedX;
+                clientY = adjustedY;
             });
 
             //on mouse click
