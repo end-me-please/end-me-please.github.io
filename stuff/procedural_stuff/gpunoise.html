@@ -8,6 +8,7 @@
         -->
     
         
+        <div id="fps"></div>
         
         
 
@@ -17,13 +18,7 @@
 
 
 
-            //fullsize canvas
-            /*
-            let canvas = document.getElementById("map");
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            */
-            let gpu = new GPU({mode: "cpu"});
+            let gpu = new GPU({mode: "gpu"});
 
             //add custom functions to the gpu
             
@@ -50,16 +45,20 @@
 
 
             
-            let renderingKernel = gpu.createKernel(function (p){
+            let renderingKernel = gpu.createKernel(function (p,xo,yo){
                 
-                let x = this.thread.x/100;
-                let y = this.thread.y/100;
+                let x = ((this.thread.x+xo)/100);
+                let y = ((this.thread.y+yo)/100);
                 let X = 0;
                 let Y = 0;
                 let u = 0;
                 let v = 0;
                 let A = 0;
                 let B = 0;
+                let AA = 0;
+                let AB = 0;
+                let BA = 0;
+                let BB = 0;
 
                 X = Math.floor(x) & 255; // FIND UNIT CUBE THAT
                 Y = Math.floor(y) & 255; // CONTAINS POINT.
@@ -84,19 +83,36 @@
             //append gpu canvas to the page
             document.body.appendChild(renderingKernel.canvas);
 
+            //fps counter
+            let fps = document.getElementById("fps");
+            //make fps font red
+            fps.style.color = "red";
+            //make document background black
+            document.body.style.backgroundColor = "black";
 
-            console.log(renderingKernel);
+            let frames = 0;
+            let lastTime = Date.now();
+            let fpsInterval = setInterval(function(){
+                fps.innerHTML = "FPS: " + frames;
+                frames = 0;
+            }, 1000);
+
+
+
+
+            
+            
+            let rand = Random(69);
+            let permutationTable = new Uint8Array(1024);
+                for (let i = 0; i < 1024; i++) {
+                permutationTable[i] = Math.floor(rand.next().value * 255);
+            }
+
             let i = 2;
             function draw() {
-
-
-                let rand = Random(i);
+                renderingKernel(permutationTable,0,i);
                 i++;
-                let permutationTable = new Uint8Array(512);
-                for (let i = 0; i < 512; i++) {
-                permutationTable[i] = Math.floor(rand.next().value * 255);
-                }
-                renderingKernel(permutationTable);
+                frames++;
                 requestAnimationFrame(draw);
             }
             draw();
@@ -119,7 +135,8 @@
         }
     }
 
-
+    //hide scrollbars
+    document.body.style.overflow = "hidden";
 
 
         </script>    
