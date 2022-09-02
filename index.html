@@ -92,7 +92,7 @@
     let cursors = [];
     let socket = {};
     setTimeout(()=>{
-    let socket = io.connect("https://"+getUrlSync()+"/")
+    socket = io.connect("https://"+getUrlSync()+"/")
 
     socket.on('connect', function() {
                 console.log('connected');
