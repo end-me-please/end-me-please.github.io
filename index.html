@@ -128,7 +128,7 @@
                         ctx.font = "16px Arial";
                         //black text
                         ctx.fillStyle = "#000000";
-                        ctx.fillText(cursors[i].ip, cursors[i].x, cursors[i].y);   
+                        ctx.fillText(cursors[i].name, cursors[i].x, cursors[i].y);   
                     }
                 }
             };
@@ -141,7 +141,7 @@
             let clientClick = false;
             let clientY = 0;
             //on mouse move
-            canvas.addEventListener('mousemove', function(e){
+            document.addEventListener('mousemove', function(e){
                 clientX = e.clientX;
                 clientY = e.clientY;
             });
