@@ -89,11 +89,15 @@
     }
 
     let gameActive = false;
-    setTimeout(()=>{let socket = io.connect("https://"+getUrlSync()+"/")},1000);
+    setTimeout(()=>{let socket = io.connect("https://"+getUrlSync()+"/")
+
     socket.on('connect', function() {
                 console.log('connected');
                 gameActive = true;
             });
+    
+    },1000);
+    
     
 
     var canvas = document.getElementById('canvas');
