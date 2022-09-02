@@ -138,8 +138,8 @@
                     ctx.clearRect(0,0,canvas.width,canvas.height);
                     //draw cursor
                     for(let i = 0; i < cursors.length; i++){
-                        let drawX = cursors[i].x*canvas.width;
-                        let drawY = cursors[i].y*canvas.height;
+                        let drawX = cursors[i].x*canvas.width/100;
+                        let drawY = cursors[i].y*canvas.height/100;
 
                         ctx.beginPath();
                         ctx.arc(drawX, drawY, 4, 0, Math.PI*2);
@@ -164,8 +164,8 @@
                 //clientx and clienty as relative positions in %
                 let adjustedX = e.clientX / window.innerWidth;
                 let adjustedY = e.clientY / window.innerHeight;
-                clientX = adjustedX;
-                clientY = adjustedY;
+                clientX = adjustedX*100;
+                clientY = adjustedY*100;
             });
 
             //on mouse click
