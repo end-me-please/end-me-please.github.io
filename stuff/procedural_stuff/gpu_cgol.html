@@ -15,9 +15,11 @@
 
             let gpu = new GPU({mode: 'gpu'});
 
-            const cellSize = 1;
-            let width = Math.floor(window.innerWidth/cellSize);
-            let height = Math.floor(window.innerHeight/cellSize);
+            const gridWidth = 900;
+            const gridHeight = 900;
+            const renderCellSize = 10;
+            let width = Math.floor(window.innerWidth/renderCellSize);
+            let height = Math.floor(window.innerHeight/renderCellSize);
 
 
             let cgolUpdateKernel = gpu.createKernel(function (cells) {
@@ -47,31 +49,46 @@
                 return nextState;
 
             }, {
-                output: [width, height],
+                output: [gridWidth, gridHeight],
                 pipeline: true,
                 immutable: true,
 
                 constants: {
-                    height: height,
-                    width: width
+                    height: gridHeight,
+                    width: gridWidth
                 }
             });
-            let cgolRenderKernel = gpu.createKernel(function (cells) {
+            let cgolRenderKernel = gpu.createKernel(function (cells,x1,y1,x2,y2) {
                 let x = this.thread.x;
                 let y = this.thread.y;
+
+                //scale to be in x1,y1,x2,y2
+                x = Math.floor(x1 + (x2 - x1) * x / this.constants.width);
+                y = Math.floor(y1 + (y2 - y1) * y / this.constants.height);
+
                 let cell = cells[y][x];
-                this.color(cell, cell, cell, 1);
+                let color = cell * 255;
+                this.color(color, color, color, 255);
+
+
             }, {
-                output: [width, height],
-                graphical: true
+                output: [window.innerWidth, window.innerHeight],
+                graphical: true,
+                constants: {
+                    gridHeight: gridHeight,
+                    gridWidth: gridWidth,
+                    height: window.innerHeight,
+                    width: window.innerWidth,
+                    renderCellSize: renderCellSize
+                }
             });
 
 
 
             let cells = [];
-            for (let y = 0; y < height; y++) {
+            for (let y = 0; y < gridHeight; y++) {
                 cells[y] = [];
-                for (let x = 0; x < width; x++) {
+                for (let x = 0; x < gridWidth; x++) {
                     cells[y][x] = Math.round(Math.random());
                 }
             }
@@ -80,8 +97,15 @@
             canvas.style.width = window.innerWidth + 'px';
             canvas.style.height = window.innerHeight + 'px';
             canvas.style.imageRendering = 'pixelated';
+            //sca
             document.body.appendChild(canvas);
 
+            //viewX is half the width of the view
+            let viewX = Math.floor(width / 2);
+            let viewY = Math.floor(height / 2);
+            let zoom = 1;
+            let smoothZoom = zoom;
+            let viewRect = [0,0,width,height];
 
             let current = cgolUpdateKernel(cells);
             function render() {
@@ -89,54 +113,62 @@
                 let start = performance.now();
                 current = cgolUpdateKernel(current);
                 let updateTime = performance.now();
-                cgolRenderKernel(current);
+                updateViewRect();
+                cgolRenderKernel(current,viewRect[0],viewRect[1],viewRect[2],viewRect[3]);
                 let renderTime = performance.now();
-                console.log("update time: " + (updateTime - start) + "ms\nrender time: " + (renderTime - updateTime) + "ms; tiles: " + (width * height));
+                console.log("update time: " + (updateTime - start) + "ms\nrender time: " + (renderTime - updateTime) + "ms; tiles: " + (gridHeight * gridWidth));
+                smoothZoom += (zoom - smoothZoom) / 10;
                 requestAnimationFrame(render);
             };
             render();            
 
 
-
-
-            //zoom into the canvas, allow panning
-            let zoom = 5;
-            let panX = 0;
-            let panY = 0;
+            //allow manipulation of viewRect through pan and zoom
             let mouseDown = false;
-            let lastX = 0;
-            let lastY = 0;
+            let lastMouseX = 0;
+            let lastMouseY = 0;
+            let lastViewRect = [0,0,width,height];
+            
 
-            //set default zoom
-            canvas.style.transform = "scale(" + zoom + ") translate(" + panX + "px, " + panY + "px)";
-
-            canvas.addEventListener('wheel', function (e) {
-                e.preventDefault();
-                let delta = e.deltaY;
-                if (delta > 0) {
-                    zoom /= 1.1;
-                } else {
-                    zoom *= 1.1;
-                }
-                canvas.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + zoom + ')';
-            });
+            function updateViewRect(){
+                //determine the new viewRect based on viewX, viewY, and smoothZoom
+                let viewWidth = width / smoothZoom;
+                let viewHeight = height / smoothZoom;
+                let x1 = viewX - viewWidth / 2;
+                let y1 = viewY - viewHeight / 2;
+                let x2 = viewX + viewWidth / 2;
+                let y2 = viewY + viewHeight / 2;
+                viewRect = [x1,y1,x2,y2];
+            }
+            //zoom and pan
             canvas.addEventListener('mousedown', function (e) {
                 mouseDown = true;
-                lastX = e.clientX;
-                lastY = e.clientY;
+                lastMouseX = e.clientX
+                lastMouseY = e.clientY
             });
             canvas.addEventListener('mouseup', function (e) {
                 mouseDown = false;
             });
             canvas.addEventListener('mousemove', function (e) {
                 if (mouseDown) {
-                    let deltaX = e.clientX - lastX;
-                    let deltaY = e.clientY - lastY;
-                    panX += deltaX;
-                    panY += deltaY;
-                    canvas.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + zoom + ')';
-                    lastX = e.clientX;
-                    lastY = e.clientY;
+                    let dx = e.clientX - lastMouseX;
+                    let dy = e.clientY - lastMouseY;
+                    //compensate for zoom
+                    dx /= smoothZoom;
+                    dy /= smoothZoom;
+                    viewX -= dx;
+                    viewY += dy;
+
+                    lastMouseX = e.clientX
+                    lastMouseY = e.clientY
+                }
+            });
+            canvas.addEventListener('wheel', function (e) {
+                let delta = e.deltaY;
+                if (delta > 0) {
+                    zoom *= 1.1;
+                } else {
+                    zoom /= 1.1;
                 }
             });
 
@@ -146,6 +178,9 @@
 
 
 
+
+            //no scrolling
+            document.body.style.overflow = 'hidden';
 
 
 
