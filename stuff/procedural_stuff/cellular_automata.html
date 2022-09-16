@@ -1,0 +1,232 @@
+<html>
+    <head></head>
+    <body>
+
+
+        <canvas id="canvas" width="700" height="700"></canvas>
+
+
+
+
+
+        <script>
+            let canvas = document.getElementById("canvas");
+            canvas.style.backgroundColor = "white";
+            canvas.style.marginLeft = "auto";
+            canvas.style.marginRight = "auto";
+            canvas.style.display = "block";
+            canvas.style.imageRendering = "pixelated";
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            let ctx = canvas.getContext("2d");
+
+
+            let cellSize = 10;
+            let gridWidth = canvas.width/cellSize;
+            let gridHeight = canvas.height/cellSize;
+            gridWidth = Math.floor(gridWidth);
+            gridHeight = Math.floor(gridHeight);
+
+            let grid = [];
+            for(let i = 0; i < gridWidth; i++){
+                grid[i] = [];
+                for(let j = 0; j < gridHeight; j++){
+                    grid[i][j] = 0;
+                }
+            }
+
+            function render(){
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                //draw a faint grid
+                ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
+                for(let i = 0; i < gridWidth; i++){
+                    for(let j = 0; j < gridHeight; j++){
+                        ctx.strokeRect(i*cellSize, j*cellSize, cellSize, cellSize);
+                    }
+                }
+
+                for(let i = 0; i < gridWidth; i++){
+                    for(let j = 0; j < gridHeight; j++){
+                        if(grid[i][j] == 1){
+                            ctx.fillStyle = "black";
+                        }else{
+                            ctx.fillStyle = "white";
+                        }
+                        ctx.fillRect(i*cellSize, j*cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+
+            function update(){
+                //update grid
+                let newGrid = [];
+                for(let i = 0; i < gridWidth; i++){
+                    newGrid[i] = [];
+                    for(let j = 0; j < gridHeight; j++){
+                        newGrid[i][j] = 0;
+                    }
+                }
+                for(let i = 0; i < gridWidth; i++){
+                    for(let j = 0; j < gridHeight; j++){
+                        let neighbors = 0;
+                        for(let k = -1; k <= 1; k++){
+                            for(let l = -1; l <= 1; l++){
+                                if(k == 0 && l == 0){
+                                    continue;
+                                }
+                                let x = i + k;
+                                let y = j + l;
+                                if(x < 0){
+                                    x = gridWidth - 1;
+                                }
+                                if(x >= gridWidth){
+                                    x = 0;
+                                }
+                                if(y < 0){
+                                    y = gridHeight - 1;
+                                }
+                                if(y >= gridHeight){
+                                    y = 0;
+                                }
+                                neighbors += grid[x][y];
+                            }
+                        }
+                        if(grid[i][j] == 1){
+                            if(neighbors == 2 || neighbors == 3){
+                                newGrid[i][j] = 1;
+                            }
+                        }else{
+                            if(neighbors == 3){
+                                newGrid[i][j] = 1;
+                            }
+                        }
+                    }
+                }
+                grid = newGrid;
+            }
+
+            let mouseX = 0;
+            let mouseY = 0;
+            canvas.addEventListener("mousemove", function(e){
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+
+
+            //timer for update and render
+            let timer = setInterval(function(){
+                update();
+                render();
+            }, 1000/15);
+
+
+            //when clicked, spawn a glider in a random direction
+            canvas.addEventListener("click", function(e){
+                let x = Math.floor(e.clientX/cellSize);
+                let y = Math.floor(e.clientY/cellSize);
+                let direction = Math.floor(Math.random()*4);
+                if(direction == 0){
+                    grid[x][y] = 1;
+                    grid[x+1][y] = 1;
+                    grid[x+2][y] = 1;
+                    grid[x][y+1] = 1;
+                    grid[x+1][y+2] = 1;
+                }else if(direction == 1){
+                    grid[x][y] = 1;
+                    grid[x-1][y] = 1;
+                    grid[x-2][y] = 1;
+                    grid[x][y+1] = 1;
+                    grid[x-1][y+2] = 1;
+                }else if(direction == 2){
+                    grid[x][y] = 1;
+                    grid[x+1][y] = 1;
+                    grid[x+2][y] = 1;
+                    grid[x][y-1] = 1;
+                    grid[x+1][y-2] = 1;
+                }else if(direction == 3){
+                    grid[x][y] = 1;
+                    grid[x-1][y] = 1;
+                    grid[x-2][y] = 1;
+                    grid[x][y-1] = 1;
+                    grid[x-1][y-2] = 1;
+                }
+            });
+            //spacebar to toggle timer
+            document.addEventListener("keydown", function(e){
+                if(e.keyCode == 32){
+                    if(timer == null){
+                        timer = setInterval(function(){
+                            update();
+                            render();
+                        }, 1000/15);
+                    }else{
+                        clearInterval(timer);
+                        timer = null;
+                    }
+                }
+
+
+
+            });
+
+            document.addEventListener("keydown", function(e){
+                let key = e.key;
+                key = key.toLowerCase();
+                let charCode = key.charCodeAt(0);
+                let bits = [];
+                    for(let j = 0; j < 8; j++){
+                        bits.push(charCode & 1);
+                        charCode = charCode >> 1;
+                    }
+                    let layout = [
+                        [1, 2],
+                        [3, 4],
+                        [7, 5, 6]
+                    ];
+         
+                    let pattern = [];
+                    for(let i = 0; i < 3; i++){
+                        pattern[i] = [];
+                        for(let j = 0; j < 3; j++){
+                            pattern[i][j] = 0;
+                        }
+                    }
+
+                    for(let j = 0; j < layout.length; j++){
+                        for(let k = 0; k < layout[j].length; k++){
+                            let bit = bits[layout[j][k]-1];
+                            if(bit == 1){
+                                pattern[j][k] = 1;
+                            }
+                        }
+                    }
+
+                    let x = Math.floor(mouseX/cellSize);
+                    let y = Math.floor(mouseY/cellSize);
+
+                    for(let i = 0; i < 3; i++){
+                        for(let j = 0; j < 3; j++){
+                            grid[x+j][y+i] = pattern[i][j];
+                        }
+                    }
+
+                    
+                    render();
+
+
+            });
+
+
+
+ 
+
+
+
+            //no scrolling >:(
+            document.body.style.overflow = "hidden";
+
+
+            </script>
+    </body>
+</html>
