@@ -24,7 +24,7 @@
 
             let ctx = canvas.getContext("2d");
 
-            let cellSize = 10;
+            let cellSize = 5;
             let gridWidth = canvas.width/cellSize;
             let gridHeight = canvas.height/cellSize;
             gridWidth = Math.floor(gridWidth);
@@ -119,8 +119,9 @@
                 let updateEnd = performance.now();
                 render();
                 let renderEnd = performance.now();
-                console.log("update: " + (updateEnd - start) + "ms" + " render: " + (renderEnd - updateEnd) + "ms");
+                console.log("update: " + (updateEnd - start) + "ms" + " render: " + (renderEnd - updateEnd) + "ms; tiles: " + gridWidth * gridHeight);
                 });
+            
 
             }, 1000/15);
 

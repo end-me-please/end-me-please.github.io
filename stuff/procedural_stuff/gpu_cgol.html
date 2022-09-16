@@ -15,7 +15,7 @@
 
             let gpu = new GPU({mode: 'gpu'});
 
-            const cellSize = 10;
+            const cellSize = 1;
             let width = Math.floor(window.innerWidth/cellSize);
             let height = Math.floor(window.innerHeight/cellSize);
 
@@ -65,7 +65,7 @@
                 output: [width, height],
                 graphical: true
             });
-            
+
 
 
             let cells = [];
@@ -85,15 +85,60 @@
 
             let current = cgolUpdateKernel(cells);
             function render() {
+                //measure both render and update times
+                let start = performance.now();
                 current = cgolUpdateKernel(current);
+                let updateTime = performance.now();
                 cgolRenderKernel(current);
+                let renderTime = performance.now();
+                console.log("update time: " + (updateTime - start) + "ms\nrender time: " + (renderTime - updateTime) + "ms; tiles: " + (width * height));
                 requestAnimationFrame(render);
-            }
+            };
             render();            
 
 
 
 
+            //zoom into the canvas, allow panning
+            let zoom = 5;
+            let panX = 0;
+            let panY = 0;
+            let mouseDown = false;
+            let lastX = 0;
+            let lastY = 0;
+
+            //set default zoom
+            canvas.style.transform = "scale(" + zoom + ") translate(" + panX + "px, " + panY + "px)";
+
+            canvas.addEventListener('wheel', function (e) {
+                e.preventDefault();
+                let delta = e.deltaY;
+                if (delta > 0) {
+                    zoom /= 1.1;
+                } else {
+                    zoom *= 1.1;
+                }
+                canvas.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + zoom + ')';
+            });
+            canvas.addEventListener('mousedown', function (e) {
+                mouseDown = true;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            });
+            canvas.addEventListener('mouseup', function (e) {
+                mouseDown = false;
+            });
+            canvas.addEventListener('mousemove', function (e) {
+                if (mouseDown) {
+                    let deltaX = e.clientX - lastX;
+                    let deltaY = e.clientY - lastY;
+                    panX += deltaX;
+                    panY += deltaY;
+                    canvas.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + zoom + ')';
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                }
+            });
 
 
 
