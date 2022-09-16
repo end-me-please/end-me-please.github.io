@@ -1,0 +1,116 @@
+<html>
+    <head>
+        <script src="dist/gpu-browser.js"></script>
+    </head>
+    <body>
+
+
+
+
+
+
+
+
+        <script>
+
+            let gpu = new GPU({mode: 'gpu'});
+
+            const cellSize = 10;
+            let width = Math.floor(window.innerWidth/cellSize);
+            let height = Math.floor(window.innerHeight/cellSize);
+
+
+            let cgolUpdateKernel = gpu.createKernel(function (cells) {
+                let x = this.thread.x;
+                let y = this.thread.y;
+                let cell = cells[y][x];
+                
+                let height = this.constants.height;
+                let width = this.constants.width;
+
+                let neighbors = 0;
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        if (i == 0 && j == 0) continue;
+                        let x1 = (x + i + width) % width;
+                        let y1 = (y + j + height) % height;
+                        neighbors += cells[y1][x1];
+                    }
+                }
+                let nextState = 0;
+                if (cell == 1 && neighbors == 2 || neighbors == 3) {
+                    nextState = 1;
+                } else if (cell == 0 && neighbors == 3) {
+                    nextState = 1;
+                }
+
+                return nextState;
+
+            }, {
+                output: [width, height],
+                pipeline: true,
+                immutable: true,
+
+                constants: {
+                    height: height,
+                    width: width
+                }
+            });
+            let cgolRenderKernel = gpu.createKernel(function (cells) {
+                let x = this.thread.x;
+                let y = this.thread.y;
+                let cell = cells[y][x];
+                this.color(cell, cell, cell, 1);
+            }, {
+                output: [width, height],
+                graphical: true
+            });
+            
+
+
+            let cells = [];
+            for (let y = 0; y < height; y++) {
+                cells[y] = [];
+                for (let x = 0; x < width; x++) {
+                    cells[y][x] = Math.round(Math.random());
+                }
+            }
+
+            let canvas = cgolRenderKernel.canvas;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+            canvas.style.imageRendering = 'pixelated';
+            document.body.appendChild(canvas);
+
+
+            let current = cgolUpdateKernel(cells);
+            function render() {
+                current = cgolUpdateKernel(current);
+                cgolRenderKernel(current);
+                requestAnimationFrame(render);
+            }
+            render();            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        </script>
+
+
+    </body>
+</html>

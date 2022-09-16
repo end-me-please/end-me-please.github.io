@@ -16,17 +16,22 @@
             canvas.style.marginRight = "auto";
             canvas.style.display = "block";
             canvas.style.imageRendering = "pixelated";
+            //scale the canvas
+            
+            
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
 
             let ctx = canvas.getContext("2d");
-
 
             let cellSize = 10;
             let gridWidth = canvas.width/cellSize;
             let gridHeight = canvas.height/cellSize;
             gridWidth = Math.floor(gridWidth);
             gridHeight = Math.floor(gridHeight);
+            //scale ctx to cell size
+            ctx.scale(cellSize, cellSize);
+            
 
             let grid = [];
             for(let i = 0; i < gridWidth; i++){
@@ -37,26 +42,17 @@
             }
 
             function render(){
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                //draw a faint grid
-                ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
+                //create new image data
+                //clear canvas
                 for(let i = 0; i < gridWidth; i++){
                     for(let j = 0; j < gridHeight; j++){
-                        ctx.strokeRect(i*cellSize, j*cellSize, cellSize, cellSize);
-                    }
-                }
-
-                for(let i = 0; i < gridWidth; i++){
-                    for(let j = 0; j < gridHeight; j++){
-                        if(grid[i][j] == 1){
-                            ctx.fillStyle = "black";
-                        }else{
-                            ctx.fillStyle = "white";
-                        }
-                        ctx.fillRect(i*cellSize, j*cellSize, cellSize, cellSize);
+                        let color = !grid[i][j] * 255;
+                        ctx.fillStyle = "rgb(" + color + "," + color + "," + color + ")";
+                        ctx.fillRect(i, j, 1, 1);
                     }
                 }
             }
+
 
             function update(){
                 //update grid
@@ -116,8 +112,16 @@
 
             //timer for update and render
             let timer = setInterval(function(){
+                //log the update and render time
+                requestAnimationFrame(()=>{
+                let start = performance.now();
                 update();
+                let updateEnd = performance.now();
                 render();
+                let renderEnd = performance.now();
+                console.log("update: " + (updateEnd - start) + "ms" + " render: " + (renderEnd - updateEnd) + "ms");
+                });
+
             }, 1000/15);
 
 
