@@ -252,6 +252,51 @@
                 }
             });
 
+            //for mobile devices handle zoom and pan with touch events
+            canvas.addEventListener('touchstart', function (e) {
+                if (e.touches.length == 2) {
+                    let dx = e.touches[0].clientX - e.touches[1].clientX;
+                    let dy = e.touches[0].clientY - e.touches[1].clientY;
+                    lastTouchDistance = Math.sqrt(dx * dx + dy * dy);
+                } else if (e.touches.length == 1) {
+                    lastTouchX = e.touches[0].clientX;
+                    lastTouchY = e.touches[0].clientY;
+                }
+            });
+            canvas.addEventListener('touchmove', function (e) {
+                if (e.touches.length == 2) {
+                    let dx = e.touches[0].clientX - e.touches[1].clientX;
+                    let dy = e.touches[0].clientY - e.touches[1].clientY;
+                    let touchDistance = Math.sqrt(dx * dx + dy * dy);
+                    let delta = touchDistance - lastTouchDistance;
+                    if (delta > 0) {
+                        zoom *= 1.1;
+                    } else {
+                        zoom /= 1.1;
+                    }
+                    lastTouchDistance = touchDistance;
+                } else if (e.touches.length == 1) {
+                    let dx = e.touches[0].clientX - lastTouchX;
+                    let dy = e.touches[0].clientY - lastTouchY;
+                    dx /=renderCellSize;
+                    dy /=renderCellSize;
+                    //determine a reasonable speed for panning
+                    let speed = 1 / smoothZoom;
+                    viewX -= dx * speed;
+                    viewY += dy * speed;
+                    //dont let the view go out of bounds
+                    if (viewX < width / 2) viewX = width / 2;
+                    if (viewY < height / 2) viewY = height / 2;
+                    if (viewX > gridWidth - width / 2) viewX = gridWidth - width / 2;
+                    if (viewY > gridHeight - height / 2) viewY = gridHeight - height / 2;
+                    
+                    lastTouchX = e.touches[0].clientX
+                    lastTouchY = e.touches[0].clientY
+                }
+            });
+            
+
+
 
 
 
