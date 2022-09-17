@@ -18,8 +18,8 @@
             const renderCellSize = 10;
             let width = Math.floor(window.innerWidth/renderCellSize);
             let height = Math.floor(window.innerHeight/renderCellSize);
-            const gridWidth = 700;
-            const gridHeight = 700;
+            const gridWidth = 2500;
+            const gridHeight = 1900;
             let fps = 0;
 
             let cgolUpdateKernel = gpu.createKernel(function (cells) {
@@ -31,21 +31,20 @@
 
                 let neighbors = cells[y][x-1] + cells[y][x+1] + cells[(y-1+height)%height][x] + cells[(y+1+height)%height][x] + cells[(y-1+height)%height][x-1] + cells[(y-1+height)%height][x+1] + cells[(y+1+height)%height][x-1] + cells[(y+1+height)%height][x+1];
                 let nextState = 0;
-                if (cell == 1 && neighbors == 2 || neighbors == 3) {
-                    nextState = 1;
-                } else if (cell == 0 && neighbors == 3) {
-                    nextState = 1;
-                }
+                nextState = (neighbors==3)||(neighbors==2&&cell==1)?1:0;
+                
                 return nextState;
 
             }, {
                 output: [gridWidth, gridHeight],
-                pipeline: true,
-                immutable: true,
+                pipeline: false,
+                immutable: false,
+                optimizeFloatMemory: true,
                 constants: {
                     height: gridHeight,
                     width: gridWidth
-                }
+                },
+
             });
 
             let cgolRenderKernel = gpu.createKernel(function (cells,x1,y1,x2,y2) {
@@ -73,6 +72,7 @@
             }, {
                 output: [window.innerWidth, window.innerHeight],
                 graphical: true,
+                optimizeFloatMemory: true,
                 immutable: false,
                 constants: {
                     gridHeight: gridHeight,
@@ -88,7 +88,7 @@
             for (let y = 0; y < gridHeight; y++) {
                 cells[y] = [];
                 for (let x = 0; x < gridWidth; x++) {
-                    cells[y][x] = Math.round(Math.random());
+                    cells[y][x] = Math.round(Math.random()-0.44);
                 }
             }
 
@@ -97,18 +97,19 @@
             document.body.appendChild(canvas);
 
 
-            let viewX = Math.floor(width / 2);
-            let viewY = Math.floor(height / 2);
+            let viewX = Math.floor(window.innerWidth / 2);
+            let viewY = Math.floor(window.innerHeight / 2);
             let zoom = 2;
             let smoothZoom = zoom;
             let viewRect = [0,0,width,height];
 
+
+            
             let current = cgolUpdateKernel(cells);
             function render() {
                 updateViewRect();
                 current = cgolUpdateKernel(current);
                 cgolRenderKernel(current,viewRect[0],viewRect[1],viewRect[2],viewRect[3]);
-                
                 smoothZoom += (zoom - smoothZoom) / 10;
                 fps++;
                 requestAnimationFrame(render);
@@ -117,8 +118,7 @@
             setInterval(function(){
                 document.getElementById("fps").innerHTML = fps + " fps";
                 fps = 0;
-
-                current = arr;
+                
             },1000);
 
             //allow manipulation of viewRect through pan and zoom
