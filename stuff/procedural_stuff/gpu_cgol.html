@@ -119,12 +119,18 @@
                 }
                 let r = redCount/(cellRatio-1);
                 let b = blueCount/(cellRatio-1);
-                //add proximity to mouseX and mouseY as green
-                let g = 0;
-                if(mouseX > 0 && mouseY > 0){
-                    let dist = Math.sqrt((x-mouseX)**2+(y-mouseY)**2);
-                    g = 1/(dist+1);
-                }
+
+                let mouseCellPixelX = Math.floor((mouseX-x1)/(x2-x1)*this.constants.width);
+                let mouseCellPixelY = Math.floor((mouseY-y1)/(y2-y1)*this.constants.height);
+                
+                //get proximity to this.thread.x, this.thread.y
+                let proximity = Math.sqrt((mouseCellPixelX-this.thread.x)**2+(mouseCellPixelY-this.thread.y)**2);
+                proximity = 1/(proximity);
+
+
+                let g = proximity;
+
+
 
                 this.color(r, g, b, 1);
                 return 0;
@@ -396,7 +402,10 @@
             });
 
 
-
+            //hide cursor when over canvas
+            canvas.addEventListener('mouseenter', function (e) {
+                canvas.style.cursor = 'none';
+            });
 
 
 
