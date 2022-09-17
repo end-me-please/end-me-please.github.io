@@ -59,7 +59,11 @@
                 if(outOfBounds){
                     let chX = Math.floor(this.thread.x/25);
                     let chY = Math.floor(this.thread.y/25);
-                    let checkerboard = (chX + chY) % 2;
+                    let checkerboard = (chX*chY)%2+Math.sin(chX+chY);
+
+                    //add low amount of noise to checkerboard
+                    checkerboard += Math.random()*0.1;
+
                     this.color(checkerboard, 0, checkerboard, 1);
                     return 0;
                 }
