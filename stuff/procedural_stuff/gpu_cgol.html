@@ -3,7 +3,7 @@
         <script src="dist/gpu-browser.js"></script>
     </head>
     <body>
-
+        <label id="fps">69 fps</label>
 
 
 
@@ -15,49 +15,39 @@
 
             let gpu = new GPU({mode: 'gpu'});
 
-            const gridWidth = 900;
-            const gridHeight = 900;
             const renderCellSize = 10;
             let width = Math.floor(window.innerWidth/renderCellSize);
             let height = Math.floor(window.innerHeight/renderCellSize);
-
+            const gridWidth = 700;
+            const gridHeight = 700;
+            let fps = 0;
 
             let cgolUpdateKernel = gpu.createKernel(function (cells) {
                 let x = this.thread.x;
                 let y = this.thread.y;
                 let cell = cells[y][x];
-                
                 let height = this.constants.height;
                 let width = this.constants.width;
 
-                let neighbors = 0;
-                for (let i = -1; i <= 1; i++) {
-                    for (let j = -1; j <= 1; j++) {
-                        if (i == 0 && j == 0) continue;
-                        let x1 = (x + i + width) % width;
-                        let y1 = (y + j + height) % height;
-                        neighbors += cells[y1][x1];
-                    }
-                }
+                let neighbors = cells[y][x-1] + cells[y][x+1] + cells[(y-1+height)%height][x] + cells[(y+1+height)%height][x] + cells[(y-1+height)%height][x-1] + cells[(y-1+height)%height][x+1] + cells[(y+1+height)%height][x-1] + cells[(y+1+height)%height][x+1];
                 let nextState = 0;
                 if (cell == 1 && neighbors == 2 || neighbors == 3) {
                     nextState = 1;
                 } else if (cell == 0 && neighbors == 3) {
                     nextState = 1;
                 }
-
                 return nextState;
 
             }, {
                 output: [gridWidth, gridHeight],
                 pipeline: true,
                 immutable: true,
-
                 constants: {
                     height: gridHeight,
                     width: gridWidth
                 }
             });
+
             let cgolRenderKernel = gpu.createKernel(function (cells,x1,y1,x2,y2) {
                 let x = this.thread.x;
                 let y = this.thread.y;
@@ -66,20 +56,29 @@
                 x = Math.floor(x1 + (x2 - x1) * x / this.constants.width);
                 y = Math.floor(y1 + (y2 - y1) * y / this.constants.height);
 
+                
+                let outOfBounds = x >= this.constants.gridWidth || y >= this.constants.gridHeight || x < 0 || y < 0;
+                if(outOfBounds){
+                    let chX = Math.floor(this.thread.x/25);
+                    let chY = Math.floor(this.thread.y/25);
+                    let checkerboard = (chX + chY) % 2;
+                    this.color(checkerboard, 0, checkerboard, 1);
+                    return 0;
+                }
+
                 let cell = cells[y][x];
                 let color = cell * 255;
                 this.color(color, color, color, 255);
 
-
             }, {
                 output: [window.innerWidth, window.innerHeight],
                 graphical: true,
+                immutable: false,
                 constants: {
                     gridHeight: gridHeight,
                     gridWidth: gridWidth,
                     height: window.innerHeight,
                     width: window.innerWidth,
-                    renderCellSize: renderCellSize
                 }
             });
 
@@ -94,34 +93,33 @@
             }
 
             let canvas = cgolRenderKernel.canvas;
-            canvas.style.width = window.innerWidth + 'px';
-            canvas.style.height = window.innerHeight + 'px';
-            canvas.style.imageRendering = 'pixelated';
-            //sca
+            
             document.body.appendChild(canvas);
 
-            //viewX is half the width of the view
+
             let viewX = Math.floor(width / 2);
             let viewY = Math.floor(height / 2);
-            let zoom = 1;
+            let zoom = 2;
             let smoothZoom = zoom;
             let viewRect = [0,0,width,height];
 
             let current = cgolUpdateKernel(cells);
             function render() {
-                //measure both render and update times
-                let start = performance.now();
-                current = cgolUpdateKernel(current);
-                let updateTime = performance.now();
                 updateViewRect();
+                current = cgolUpdateKernel(current);
                 cgolRenderKernel(current,viewRect[0],viewRect[1],viewRect[2],viewRect[3]);
-                let renderTime = performance.now();
-                console.log("update time: " + (updateTime - start) + "ms\nrender time: " + (renderTime - updateTime) + "ms; tiles: " + (gridHeight * gridWidth));
+                
                 smoothZoom += (zoom - smoothZoom) / 10;
+                fps++;
                 requestAnimationFrame(render);
             };
             render();            
+            setInterval(function(){
+                document.getElementById("fps").innerHTML = fps + " fps";
+                fps = 0;
 
+                current = arr;
+            },1000);
 
             //allow manipulation of viewRect through pan and zoom
             let mouseDown = false;
@@ -153,17 +151,24 @@
                 if (mouseDown) {
                     let dx = e.clientX - lastMouseX;
                     let dy = e.clientY - lastMouseY;
-                    //compensate for zoom
-                    dx /= smoothZoom;
-                    dy /= smoothZoom;
-                    viewX -= dx;
-                    viewY += dy;
-
+                    dx /=renderCellSize;
+                    dy /=renderCellSize;
+                    //determine a reasonable speed for panning
+                    let speed = 1 / smoothZoom;
+                    viewX -= dx * speed;
+                    viewY += dy * speed;
+                    //dont let the view go out of bounds
+                    if (viewX < width / 2) viewX = width / 2;
+                    if (viewY < height / 2) viewY = height / 2;
+                    if (viewX > gridWidth - width / 2) viewX = gridWidth - width / 2;
+                    if (viewY > gridHeight - height / 2) viewY = gridHeight - height / 2;
+                    
                     lastMouseX = e.clientX
                     lastMouseY = e.clientY
                 }
             });
             canvas.addEventListener('wheel', function (e) {
+                e.preventDefault();
                 let delta = e.deltaY;
                 if (delta > 0) {
                     zoom *= 1.1;
@@ -173,14 +178,8 @@
             });
 
 
+            //hide scrollbars
 
-
-
-
-
-
-            //no scrolling
-            document.body.style.overflow = 'hidden';
 
 
 
