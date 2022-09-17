@@ -18,8 +18,8 @@
             const renderCellSize = 10;
             let width = Math.floor(window.innerWidth/renderCellSize);
             let height = Math.floor(window.innerHeight/renderCellSize);
-            const gridWidth = 1800;
-            const gridHeight = 1800;
+            const gridWidth = 1700;
+            const gridHeight = 1700;
             let fps = 0;
 
             let cgolUpdateKernel = gpu.createKernel(function (cells) {
@@ -28,11 +28,47 @@
                 let cell = cells[y][x];
                 let height = this.constants.height;
                 let width = this.constants.width;
+                //0 if dead, 1 or 2 if alive (red/blue)
+                let alive = cell > 0;
+                let redNeighbors = 0;
+                let blueNeighbors = 0;
+                //use bit shifting to get the neighbors
+                for (let i = 0; i < 9; i++) {
+                    //ignore the center cell
+                    if (i === 4) continue;
+                    let neighborX = x + (i % 3) - 1;
+                    let neighborY = y + Math.floor(i / 3) - 1;
 
-                let neighbors = cells[y][x-1] + cells[y][x+1] + cells[(y-1+height)%height][x] + cells[(y+1+height)%height][x] + cells[(y-1+height)%height][x-1] + cells[(y-1+height)%height][x+1] + cells[(y+1+height)%height][x-1] + cells[(y+1+height)%height][x+1];
-                let nextState = 0;
-                nextState = (neighbors==3)||(neighbors==2&&cell==1)?1:0;
-                return nextState;
+
+                    if (neighborX < 0) neighborX += width;
+                    if (neighborY < 0) neighborY += height;
+                    if (neighborX >= width) neighborX -= width;
+                    if (neighborY >= height) neighborY -= height;
+                    let neighbor = cells[neighborY][neighborX];
+                    if (neighbor === 1) redNeighbors++;
+                    if (neighbor === 2) blueNeighbors++;
+                }
+                if (alive) {
+                    if (redNeighbors+blueNeighbors == 2 || redNeighbors+blueNeighbors == 3) {
+                        return cell;
+                    } else {
+                        return 0;
+                    }
+                } else {
+                    if(redNeighbors+blueNeighbors == 3) {
+                        if (redNeighbors > blueNeighbors) {
+                            return 1;
+                        } else {
+                            return 2;
+                        }
+                    } else {
+                        return 0;
+                    }
+                }
+
+
+
+
             }, {
                 output: [gridWidth, gridHeight],
                 pipeline: false,
@@ -59,14 +95,8 @@
                 if(outOfBounds){
                     let chX = Math.floor(this.thread.x/25);
                     let chY = Math.floor(this.thread.y/25);
-                    let checkerboard = (chX*chY)%2+Math.sin(chX+chY);
-
+                    let checkerboard = (chX+chY)%2;
                     //add low amount of noise to checkerboard
-                    checkerboard += Math.random()*0.1;
-                    if(this.thread.x>500){
-                        checkerboard *= 0.2;
-                    }
-
                     this.color(checkerboard, 0, checkerboard, 1);
                     return 0;
                 }
@@ -76,7 +106,7 @@
                 
                 //if pixelRatio is less than 0.25, combine 4 cells into one pixel
 
-                if(cellRatio > 1&&this.thread.x>500){
+                if(cellRatio > 1){
                     let cell = cells[y][x];
                     let cell2 = cells[y][x+1];
                     let cell3 = cells[y+1][x];
@@ -87,10 +117,14 @@
                     return 0;
                 }
                 let color = cells[y][x];
-
-                
-                this.color(color, color, color, 255);
-
+                //1 = red, 2 = blue
+                if (color === 1) {
+                    this.color(1, 0, 0, 1);
+                } else if (color === 2) {
+                    this.color(0, 0, 1, 1);
+                } else {
+                    this.color(0, 0, 0, 1);
+                }
             }, {
                 output: [window.innerWidth, window.innerHeight],
                 graphical: true,
@@ -212,44 +246,43 @@
 
 
             let patternList = {
-                gliderTopLeft: [
+                gliderDiag: [
                     [1, 0, 0],
                     [0, 1, 1],
                     [1, 1, 0]
                 ],
-                gliderTopRight: [
-                    [0, 0, 1],
-                    [1, 1, 0],
-                    [0, 1, 1]
-                ],
-                gliderBottomLeft: [
-                    [1, 1, 0],
-                    [0, 1, 1],
-                    [1, 0, 0]
-                ],
-                gliderBottomRight: [
-                    [0, 1, 1],
-                    [1, 1, 0],
-                    [0, 0, 1]
-                ],
             };
 
+
+
             //select patterns with number keys
-            let currentPattern = patternList.gliderTopLeft;
+            let currentPattern = patternList.gliderDiag;
+            let currentDir = 0;
+            let currentColor = 1;
             document.addEventListener('keydown', function (e) {
                 if (e.keyCode == 49) {
-                    currentPattern = patternList.gliderTopLeft;
-                } else if (e.keyCode == 50) {
-                    currentPattern = patternList.gliderTopRight;
-                } else if (e.keyCode == 51) {
-                    currentPattern = patternList.gliderBottomLeft;
-                } else if (e.keyCode == 52) {
-                    currentPattern = patternList.gliderBottomRight;
+                    currentPattern = patternList.gliderDiag;
+                } 
+            });
+            //set direction with WASD
+            document.addEventListener('keydown', function (e) {
+                if (e.keyCode == 87) {
+                    currentDir = 0;
+                } else if (e.keyCode == 68) {
+                    currentDir = 1;
+                } else if (e.keyCode == 83) {
+                    currentDir = 2;
+                } else if (e.keyCode == 65) {
+                    currentDir = 3;
+                }
+                //color with Q and E
+                if (e.keyCode == 81) {
+                    currentColor = 1;
+                } else if (e.keyCode == 69) {
+                    currentColor = 2;
                 }
             });
 
-
-            //on g button press, spawn a glider
             canvas.addEventListener('click', function (e) {
                     e.preventDefault();
                     //get position of mouse in viewRect, mouse is lastMouseX, lastMouseY
@@ -263,11 +296,29 @@
                     //spawn pattern
                     for (let i = 0; i < currentPattern.length; i++) {
                         for (let j = 0; j < currentPattern[i].length; j++) {
-                            if (currentPattern[i][j] == 1) {
-                                current[y + i][x + j] = 1;
+                            let cell = currentPattern[i][j];
+                            if (cell == 1) {
+                                let dx = 0;
+                                let dy = 0;
+                                if (currentDir == 0) {
+                                    dx = i;
+                                    dy = j;
+                                } else if (currentDir == 1) {
+                                    dx = j;
+                                    dy = -i;
+                                } else if (currentDir == 2) {
+                                    dx = -i;
+                                    dy = -j;
+                                } else if (currentDir == 3) {
+                                    dx = -j;
+                                    dy = i;
+                                }
+                                if (x + dx >= 0 && x + dx < gridWidth && y + dy >= 0 && y + dy < gridHeight) {
+                                    current[y + dy][x + dx] = currentColor;
+                                }
                             }
                         }
-                    }                    
+                    }
 
                 
             });
