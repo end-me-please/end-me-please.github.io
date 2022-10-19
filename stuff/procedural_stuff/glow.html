@@ -1,0 +1,139 @@
+<html>
+    <head>
+        <script src="dist/gpu-browser.js"></script>
+    </head>
+    <body>
+        <script>
+            const gpu = new GPU({mode: "gpu"});
+
+            const waveEmitters = Array(3);
+            //0 is x, 1 is y, 3 is amplitude
+            let waveEmitterCount = 30;
+            //position is window size scaled
+            //amplitude is 0-1
+            for (let i = 0; i < waveEmitterCount; i++) {
+                let x = Math.floor(Math.random()*45) * window.innerWidth/45;
+                let y = Math.floor(Math.random()*45) * window.innerHeight/45;
+                let amplitude = Math.random()*0.1;
+                waveEmitters[i] = [x, y, amplitude];
+            }
+            const refractionMap = [];
+            const refractionResolution = 20;
+            for (let i = 0; i < refractionResolution; i++) {
+                refractionMap[i] = [];
+                for (let j = 0; j < refractionResolution; j++) {
+                    refractionMap[i][j] = 0;
+                }
+            }
+
+            //fill half of the refraction map with random values
+            for (let i = 0; i < refractionResolution/2; i++) {
+                for (let j = 0; j < refractionResolution; j++) {
+                    refractionMap[i][j] = Math.random()*1;
+                }
+            }
+
+
+
+
+            let displayKernel = gpu.createKernel(function(waveEmitters, time){
+                let x = this.thread.x;
+                let y = this.thread.y;
+                let green = 0;
+                
+                let waveEmitterCount = this.constants.waveEmitterCount;
+                let refractionResolution = this.constants.refractionResolution;
+                
+                for (let i = 0; i < waveEmitterCount; i++) {
+                    let waveEmitterX = waveEmitters[i][0];
+                    let waveEmitterY = waveEmitters[i][1];
+                    let waveEmitterAmplitude = waveEmitters[i][2];
+                    let distance = Math.sqrt(Math.pow(x - waveEmitterX, 2) + Math.pow(y - waveEmitterY, 2));
+                    
+                    //count refractive indices between emitter and pixel
+                    let refractiveIndex = 0;
+                    
+                    let xStep = (x - waveEmitterX)*10;
+                    let yStep = (y - waveEmitterY)*10;
+
+                    for (let j = 0; j < 40; j++) {
+                        let xRefraction = waveEmitterX + xStep*j;
+                        let yRefraction = waveEmitterY + yStep*j;
+                        let refractionIndex = this.constants.refractionMap[Math.floor(xRefraction)][Math.floor(yRefraction)];
+                        refractiveIndex += refractionIndex;
+                    }
+                    
+
+
+                    let wave = Math.cos(distance / (15+refractiveIndex) - (time / 10)) * (waveEmitterAmplitude*(1/(distance/100)));
+
+                    
+                    green += wave;
+                }
+
+                //purple is a checkered pattern with sharp edges, 10px wide
+                let purple = Math.floor(x/10) % 2 == Math.floor(y/10) % 2 ? 0.5 : 0;
+
+                this.color(purple,green,purple,1);
+                return 1;
+             }).setOutput([window.innerWidth,window.innerHeight]).setGraphical(true).setConstants({refractionMap:refractionMap,waveEmitterCount:waveEmitterCount,refractionResolution:refractionResolution});
+
+
+            let canvas = displayKernel.canvas;
+            document.body.appendChild(canvas);
+
+            //animation loop
+            let time = 0;
+            function animate() {
+                displayKernel(waveEmitters, time);
+                time++;
+                requestAnimationFrame(animate);
+            }
+            animate();
+            let lastMoveTime = Date.now();
+            let lastX = 0;
+            let click = false;
+            let lastY = 0;
+            //on mouse move, set the first wave emitter to the mouse position
+            canvas.addEventListener("mousemove", function(e){
+                let x = e.clientX;
+                let y = canvas.width-e.clientY;
+                lastX = x;
+                lastY = y;
+                lastMoveTime = Date.now();
+            });
+            canvas.addEventListener("mousedown", function(e){
+                click = true;
+            });
+            canvas.addEventListener("mouseup", function(e){
+                click = false;
+            });
+            //make the emitter list a ring buffer, reducing amplitude of the oldest emitter
+            let emitterIndex = 0;
+            function addEmitter(x, y, amplitude) {
+                waveEmitters[emitterIndex] = [x, y, amplitude];
+                emitterIndex++;
+                if (emitterIndex >= waveEmitterCount) {
+                    emitterIndex = 0;
+                }
+            }
+            //every 30ms
+            setInterval(function(){
+                //if the mouse has moved in the last 30ms
+                if (Date.now() - lastMoveTime < 30&&click) {
+                    //add an emitter at the mouse position
+                    //snap to 30px grid
+                    let x = Math.floor(lastX/15) * 15;
+                    let y = Math.floor(lastY/15) * 15;
+                    addEmitter(x, y, 0.05);
+                }
+            }, 30);
+
+
+
+
+
+
+        </script>
+    </body>
+</html>
