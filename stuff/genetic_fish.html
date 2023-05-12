@@ -141,7 +141,7 @@
             constructor() {
                 this.inputSize = 8;
                 this.outputSize = 2;
-                this.layerShape = [this.inputSize, 5, this.outputSize];
+                this.layerShape = [this.inputSize, 6, this.outputSize];
                 //count total number of nodes
                 
                 //all values from previous layer are multiplied by weights of their connections and added to all values of the next layer
@@ -193,8 +193,8 @@
                         }
                     }
                 }
+                this.lastValues = values;
                 return values[values.length - 1];
-
             }
 
             draw(ctx) {
@@ -212,6 +212,16 @@
                     ctx.beginPath();
                     ctx.arc(drawX,drawY, circleRadius, 0, 2 * Math.PI);
                     ctx.fill();
+                    let lastNodeValue = this.lastValues[layer][i];
+                    //
+                    ctx.fillStyle = lastNodeValue > 0 ? "red" : "blue";
+                    ctx.beginPath();
+                    ctx.arc(drawX,drawY, Math.abs(circleRadius * lastNodeValue * 4), 0, 2 * Math.PI);
+                    ctx.fill();
+
+
+
+
                     ctx.strokeStyle = "black";
                     for(let j = 0; j < this.layerShape[layer + 1]; j++){
                         let nextDrawX = circleRadius+(layer+1)*width/this.layerShape.length;
@@ -239,6 +249,12 @@
             sim.update();
             sim.render(ctx);
             sim.fishes[0].brain.draw(inspectCtx);
+            //draw rectangle around observed fish
+            ctx.strokeStyle = "red";
+            ctx.beginPath();
+            ctx.rect(sim.fishes[0].x - sim.fishes[0].size, sim.fishes[0].y - sim.fishes[0].size, sim.fishes[0].size * 2, sim.fishes[0].size * 2);
+            ctx.stroke();
+
             requestAnimationFrame(loop);
 
         }
