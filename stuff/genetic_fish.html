@@ -420,7 +420,11 @@
             }
             avgScore /= sim.fishes.length;
             
-            document.getElementById("stats").innerHTML = "high score: "+highScore.toPrecision(3)+"<br>low score: "+lowScore.toPrecision(3)+"<br>avg score: "+avgScore.toPrecision(3);
+            //calculate mean score (not average)
+            //sort and take middle value
+            let sortedFishes = sim.fishes.sort((a,b) => a.score - b.score);
+            let medianScore = sortedFishes[Math.floor(sortedFishes.length / 2)].score;
+            document.getElementById("stats").innerHTML = "high score: "+highScore.toPrecision(3)+"<br>low score: "+lowScore.toPrecision(3)+"<br>avg score: "+avgScore.toPrecision(3)+"<br>median score: "+medianScore.toPrecision(3);
 
             } catch (error) {
                 console.log(error);
