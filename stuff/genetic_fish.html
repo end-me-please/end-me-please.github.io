@@ -439,6 +439,8 @@
         setInterval(() => {
             generation++;
             document.getElementById("evolve").innerHTML = "next generation ("+generation+")";
+            sim.evolve();
+
         }, 5000);
 
 
