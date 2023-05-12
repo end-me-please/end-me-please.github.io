@@ -7,6 +7,8 @@
         <canvas id="canvas" width="600" height="600" style="border: 1px solid red; background-color: aliceblue;"></canvas>
         <button id="mutate" onclick="sim.mutate(0.1)">Mutate</button>
         <button id="evolve" onclick="sim.evolve()">next generation</button>
+        <br>
+        <canvas id="inspect" width="400" height="400" style="border: 1px solid black; background-color: aliceblue;"></canvas>
     </body>
 
 
@@ -15,7 +17,8 @@
     <script>
         let canvas = document.getElementById("canvas");
         let ctx = canvas.getContext("2d");
-
+        let inspectCanvas = document.getElementById("inspect");
+        let inspectCtx = inspectCanvas.getContext("2d");
 
         class Simulation {
             constructor(numFish) {
@@ -30,7 +33,7 @@
             fishIntensities(fish,channels){
                 let intensities = [];
                 for (let i = 0; i < channels; i++) {
-                    intensities.push(0);
+                    intensities[i]=0;
                 }
                 //offset angle by fish.angle
                 for (let i = 0; i < this.fishes.length; i++) {
@@ -39,10 +42,12 @@
                     let angle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x) - fish.angle;
                     if(angle < 0) angle += 2 * Math.PI;
                     let channel = Math.floor(angle / (2 * Math.PI / channels));
+                    if(channel >= channels) continue;
                     let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
                     intensities[channel] += 1 / distance;
                 }
-
+                if(intensities.length != channels) {console.log(intensities);};
+                
                 return intensities;
             }
             update(){
@@ -167,7 +172,7 @@
                 return child;
             }
             think (input) {
-                if(input.length != this.inputSize) throw new Error("size does not match input size");
+                if(input.length != this.inputSize) throw new Error("size does not match input size: "+ input.length);
 
                 let values = [];
                 for (let i = 0; i < this.layerShape.length; i++) {
@@ -186,14 +191,50 @@
 
             }
 
+            draw(ctx) {
+                let height = ctx.canvas.height;
+                let width = ctx.canvas.width;
+                ctx.clearRect(0,0,width,height);
+                let circleRadius = 10;
+
+                
+                for(let layer = 0; layer < this.layerShape.length; layer++) {
+                for(let i = 0; i < this.layerShape[layer]; i++){
+                    let drawX = circleRadius+layer*width/this.layerShape.length;
+                    let drawY = circleRadius+i * height / this.layerShape[layer];
+                    ctx.fillStyle = "green";
+                    ctx.beginPath();
+                    ctx.arc(drawX,drawY, circleRadius, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.strokeStyle = "black";
+                    for(let j = 0; j < this.layerShape[layer + 1]; j++){
+                        let nextDrawX = circleRadius+(layer+1)*width/this.layerShape.length;
+                        let nextDrawY = circleRadius+j * height / this.layerShape[layer + 1];
+                        ctx.beginPath();
+                        ctx.moveTo(drawX,drawY);
+                        ctx.lineWidth = this.weights[layer][i][j] * 1;
+                        ctx.lineTo(nextDrawX,nextDrawY);
+                        ctx.stroke();
+                    }
+                    
+
+                }
+            }
+
+
+            }
+
+
         }
 
-        let sim = new Simulation(10);
+        let sim = new Simulation(50);
         
         function loop(){
             sim.update();
             sim.render(ctx);
+            sim.fishes[0].brain.draw(inspectCtx);
             requestAnimationFrame(loop);
+
         }
         loop();
 
