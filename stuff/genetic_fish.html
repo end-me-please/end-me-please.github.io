@@ -97,7 +97,7 @@
             }
             mutate(factor){
                 for (let i = 0; i < this.fishes.length; i++) {
-                    this.fishes[i].mutate();
+                    if(Math.random()>0.7)this.fishes[i].mutate();
                 }
             }
 
@@ -194,7 +194,7 @@
                 newColor += ")";
                 this.color = newColor;
 
-                this.brain.mutate(0.4);
+                this.brain.mutate(0.2);
 
             }
 
@@ -235,6 +235,7 @@
                     for (let j = 0; j < this.weights[i].length; j++) {
                         for (let k = 0; k < this.weights[i][j].length; k++) {
                             this.weights[i][j][k] += factor*(Math.random() * 2 - 1);
+                            if(Math.random() < factor/10) this.weights[i][j][k] = (Math.random() * 2 - 1) * 0.5;
                         }
                     }
                 }
@@ -242,6 +243,7 @@
                 for (let i = 0; i < this.biases.length; i++) {
                     for (let j = 0; j < this.biases[i].length; j++) {
                         this.biases[i][j] += (factor/5)*(Math.random() * 2 - 1);
+                        if(Math.random() < factor/10) this.biases[i][j] = (Math.random() * 2 - 1) * 0.02;
                     }
                 }
             }
@@ -250,8 +252,10 @@
                 for (let i = 0; i < this.weights.length; i++) {
                     for (let j = 0; j < this.weights[i].length; j++) {
                         for (let k = 0; k < this.weights[i][j].length; k++) {
-                            child.weights[i][j][k] = Math.random() < 0.8 ? this.weights[i][j][k] : other.weights[i][j][k];
-                            if(Math.random() < 0.01) child.weights[i][j][k] += (Math.random() * 2 - 1) * 0.5;
+                            child.weights[i][j][k] = Math.random() < 0.5 ? this.weights[i][j][k] : other.weights[i][j][k];
+                            if(Math.random() < 0.3) {
+                                child.weights[i][j][k] = (this.weights[i][j][k] + other.weights[i][j][k]) / 2;
+                            }
                         }
                     }
                 }
@@ -259,7 +263,9 @@
                 for (let i = 0; i < this.biases.length; i++) {
                     for (let j = 0; j < this.biases[i].length; j++) {
                         child.biases[i][j] = Math.random() < 0.8 ? this.biases[i][j] : other.biases[i][j];
-                        if(Math.random() < 0.01) child.biases[i][j] += (Math.random() * 2 - 1) * 0.5;
+                        if(Math.random() < 0.3) {
+                            child.biases[i][j] = (this.biases[i][j] + other.biases[i][j]) / 2;
+                        }
                     }
                 }
 
