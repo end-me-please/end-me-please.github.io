@@ -53,6 +53,8 @@
             update(){
                 for (let i = 0; i < this.fishes.length; i++) {
                     this.fishes[i].act();
+                    this.fishes[i].x = this.fishes[i].x % this.width;
+                    this.fishes[i].y = this.fishes[i].y % this.height;
                 }
             }
             render(ctx){
