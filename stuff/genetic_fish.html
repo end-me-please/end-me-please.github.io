@@ -1,0 +1,205 @@
+<html>
+    <head></head>
+
+
+
+    <body>
+        <canvas id="canvas" width="600" height="600" style="border: 1px solid red; background-color: aliceblue;"></canvas>
+        
+    </body>
+
+
+
+
+    <script>
+        let canvas = document.getElementById("canvas");
+        let ctx = canvas.getContext("2d");
+
+
+        class Simulation {
+            constructor(numFish) {
+                this.width = 600;
+                this.height = 600;
+                this.numFish = numFish;
+                this.fishes = [];
+                for (let i = 0; i < numFish; i++) {
+                    this.fishes.push(new Fish(this,Math.random() * this.width, Math.random() * this.height));
+                }
+            }
+            fishIntensities(fish,channels){
+                let intensities = [];
+                for (let i = 0; i < channels; i++) {
+                    intensities.push(0);
+                }
+                //offset angle by fish.angle
+                for (let i = 0; i < this.fishes.length; i++) {
+                    let otherFish = this.fishes[i];
+                    if(otherFish == fish) continue;
+                    let angle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x) - fish.angle;
+                    if(angle < 0) angle += 2 * Math.PI;
+                    let channel = Math.floor(angle / (2 * Math.PI / channels));
+                    let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
+                    intensities[channel] += 1 / distance;
+                }
+
+                return intensities;
+            }
+            update(){
+                for (let i = 0; i < this.fishes.length; i++) {
+                    this.fishes[i].act();
+                }
+            }
+            render(ctx){
+                ctx.clearRect(0,0,this.width,this.height);
+                for (let i = 0; i < this.fishes.length; i++) {
+                    let fish = this.fishes[i];
+                    ctx.fillStyle = fish.color;
+                    ctx.beginPath();
+                    ctx.arc(fish.x,fish.y,fish.size,0,2 * Math.PI);
+                    ctx.fill();
+                    //tail
+                    ctx.beginPath();
+                    ctx.moveTo(fish.x + Math.cos(fish.angle) * fish.size, fish.y + Math.sin(fish.angle) * fish.size);
+                    ctx.lineTo(fish.x + Math.cos(fish.angle + 2 * Math.PI / 3) * fish.size, fish.y + Math.sin(fish.angle + 2 * Math.PI / 3) * fish.size);
+                    ctx.lineTo(fish.x + Math.cos(fish.angle - 2 * Math.PI / 3) * fish.size, fish.y + Math.sin(fish.angle - 2 * Math.PI / 3) * fish.size);
+                    ctx.fill();
+                    
+                }
+            }
+            mutate(factor){
+                for (let i = 0; i < this.fishes.length; i++) {
+                    this.fishes[i].brain.mutate(factor);
+                }
+            }
+
+            evolve(){
+                //get the top 10% of fishes
+                let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
+                let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 10));
+                let newFishes = [];
+                //randomly match top fish and pair them to create numFish new fishes
+                for (let i = 0; i < this.numFish; i++) {
+                    let fish1 = topFishes[Math.floor(Math.random() * topFishes.length)];
+                    let fish2 = topFishes[Math.floor(Math.random() * topFishes.length)];
+                    newFishes.push(fish1.pair(fish2));
+                }
+                this.fishes = newFishes;
+            }
+
+        }
+
+
+        class Fish {
+            constructor(world,x,y){
+                this.world = world;
+                this.x = x;
+                this.y = y;
+                this.angle = Math.random() * 2 * Math.PI;
+                this.speed = 8;
+                this.turnSpeed = 0.1;
+                this.size = 10;
+                this.color = "black";
+                this.score = 0;
+                this.sensorDirections = 8;
+                this.brain = new FishBrain();
+            }
+            act(){
+                let intensities = this.world.fishIntensities(this,this.sensorDirections);
+                let output = this.brain.think(intensities);
+                this.angle += output[0] * this.turnSpeed;
+                this.x += Math.cos(this.angle) * (this.speed*output[1]);
+                this.y += Math.sin(this.angle) * (this.speed*output[1]);
+                //if distance to nearest fish is greater or lower than 3*size, subtract from score
+                let minDistance = Math.min(this.world.fishes.map(fish => Math.sqrt((fish.x - this.x) ** 2 + (fish.y - this.y) ** 2)));
+                //size/2 wiggle room is okay, after that slowly subtract from score
+                if(minDistance > 3 * this.size) this.score -= (minDistance - 3 * this.size) / 10;
+                else if(minDistance < 1.5 * this.size) this.score -= (1.5 * this.size - minDistance) / 10;
+                else this.score += 1;
+
+            }
+            pair(other){
+                let child = new Fish(this.world,this.world.width*Math.random(),this.world.height*Math.random());
+                child.brain = this.brain.pair(other.brain);
+                return child;
+            }
+
+        }
+
+        class FishBrain {
+            constructor() {
+                this.inputSize = 8;
+                this.outputSize = 2;
+                this.layerShape = [this.inputSize, 5, this.outputSize];
+                //count total number of nodes
+                
+                //all values from previous layer are multiplied by weights of their connections and added to all values of the next layer
+                this.weights = [];
+                for (let i = 0; i < this.layerShape.length - 1; i++) {
+                    this.weights.push([]);
+                    for (let j = 0; j < this.layerShape[i]; j++) {
+                        this.weights[i].push([]);
+                        for (let k = 0; k < this.layerShape[i + 1]; k++) {
+                            this.weights[i][j].push(Math.random() * 2 - 1);
+                        }
+                    }
+                }
+
+            }
+            mutate(factor){
+                for (let i = 0; i < this.weights.length; i++) {
+                    for (let j = 0; j < this.weights[i].length; j++) {
+                        for (let k = 0; k < this.weights[i][j].length; k++) {
+                            this.weights[i][j][k] += factor*(Math.random() * 2 - 1);
+                        }
+                    }
+                }
+            }
+            pair (other) {
+                let child = new FishBrain();
+                for (let i = 0; i < this.weights.length; i++) {
+                    for (let j = 0; j < this.weights[i].length; j++) {
+                        for (let k = 0; k < this.weights[i][j].length; k++) {
+                            child.weights[i][j][k] = Math.random() < 0.5 ? this.weights[i][j][k] : other.weights[i][j][k];
+                        }
+                    }
+                }
+                return child;
+            }
+            think (input) {
+                if(input.length != this.inputSize) throw new Error("size does not match input size");
+
+                let values = [];
+                for (let i = 0; i < this.layerShape.length; i++) {
+                    values.push(Array(this.layerShape[i]).fill(0));
+                }
+                values[0] = input;
+                for (let i = 0; i < this.layerShape.length - 1; i++) {
+                    for (let j = 0; j < this.layerShape[i]; j++) {
+                        for (let k = 0; k < this.layerShape[i + 1]; k++) {
+                            //weight array is of shape [layer][node][next node]
+                            values[i + 1][k] += values[i][j] * this.weights[i][j][k];
+                        }
+                    }
+                }
+                return values[values.length - 1];
+
+            }
+
+        }
+
+        let sim = new Simulation(10);
+        
+        function loop(){
+            sim.update();
+            sim.render(ctx);
+            requestAnimationFrame(loop);
+        }
+        loop();
+
+    
+
+
+
+
+    </script>
+</html>
