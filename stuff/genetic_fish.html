@@ -65,12 +65,12 @@
                     ctx.beginPath();
                     ctx.arc(fish.x,fish.y,fish.size,0,2 * Math.PI);
                     ctx.fill();
-                    //tail
+                    //draw fish eye in direction it is facing
+                    ctx.fillStyle = "white";
                     ctx.beginPath();
-                    ctx.moveTo(fish.x + Math.cos(fish.angle) * fish.size, fish.y + Math.sin(fish.angle) * fish.size);
-                    ctx.lineTo(fish.x + Math.cos(fish.angle + 2 * Math.PI / 3) * fish.size, fish.y + Math.sin(fish.angle + 2 * Math.PI / 3) * fish.size);
-                    ctx.lineTo(fish.x + Math.cos(fish.angle - 2 * Math.PI / 3) * fish.size, fish.y + Math.sin(fish.angle - 2 * Math.PI / 3) * fish.size);
+                    ctx.arc(fish.x + Math.cos(fish.angle) * (fish.size*0.6),fish.y + Math.sin(fish.angle) * (fish.size*0.6),fish.size/3,0,2 * Math.PI);
                     ctx.fill();
+
                     
                 }
             }
