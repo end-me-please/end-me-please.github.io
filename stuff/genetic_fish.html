@@ -164,7 +164,7 @@
                     if(distance < minDistance) minDistance = distance;
                 }
 
-                if(minDistance > 7 * this.size) {this.score -=5;}
+                if(minDistance > 7 * this.size) {this.score -=2;}
                 if(minDistance > 4.5 * this.size) {this.score +=4;}
                 if (minDistance < 1*this.size) {this.score -=10;}
 
@@ -180,7 +180,7 @@
                     let otherFish = this.world.fishes[i];
                     if(otherFish == this) continue;
                     let distance = Math.sqrt((otherFish.x - this.x) ** 2 + (otherFish.y - this.y) ** 2);
-                    if(distance < 7 * this.size) fishCount++;
+                    if(distance < 5 * this.size) fishCount++;
                 }
                 this.score += fishCount;
 
