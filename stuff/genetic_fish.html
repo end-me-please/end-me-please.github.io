@@ -4,7 +4,7 @@
 
 
     <body>
-        <canvas id="canvas" width="600" height="600" style="border: 1px solid red; background-color: aliceblue;"></canvas>
+        <canvas id="canvas" width="800" height="800" style="border: 1px solid red; background-color: aliceblue;"></canvas>
         <br>
         <div>
             <label id="stats">Stats:</label>
@@ -32,8 +32,8 @@
 
         class Simulation {
             constructor(numFish) {
-                this.width = 600;
-                this.height = 600;
+                this.width = 800;
+                this.height = 800;
                 this.numFish = numFish;
                 this.fishes = [];
                 for (let i = 0; i < numFish; i++) {
@@ -56,13 +56,13 @@
                     let channel = Math.floor(angle / (2 * Math.PI / channels));
                     if(channel >= channels) continue;
                     let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
+                    if(distance > 200) continue;
                     intensities[channel] += 1 / distance;
                 }
                 
 
 
 
-                //if(distance > 80) continue;
 
                 if(intensities.length != channels) {console.log(intensities);};
                 
@@ -165,7 +165,7 @@
                     let distance = Math.sqrt((otherFish.x - this.x) ** 2 + (otherFish.y - this.y) ** 2);
                     if(distance < 8 * this.size) fishCount++;
                 }
-                let fishCountReward = fishCount>10?fishCount:-1;
+                let fishCountReward = fishCount>3?fishCount:-fishCount;
 
                 this.score += fishCountReward;
 
@@ -228,7 +228,7 @@
             constructor() {
                 this.inputSize = 8;
                 this.outputSize = 2;
-                this.layerShape = [this.inputSize,4,this.outputSize];
+                this.layerShape = [this.inputSize,6,4,this.outputSize];
                 //count total number of nodes
                 
                 //all values from previous layer are multiplied by weights of their connections and added to all values of the next layer
@@ -379,6 +379,19 @@
                             ctx.arc(layerX[i][j],layerY[i][j],circleRadius*1.5,0,2 * Math.PI);
                             ctx.stroke();
                         }
+
+                        //draw red or green circle in node depending on value
+                        try{
+                        ctx.fillStyle = this.lastValues[i][j] > 0 ? "green" : "red";
+                        ctx.beginPath();
+                        ctx.arc(layerX[i][j],layerY[i][j],circleRadius*0.5,0,2 * Math.PI);
+                        ctx.fill();
+                        } catch (error) {
+                         console.log(this.lastValues);
+                            console.log(error);
+                        }
+
+
                     }
                 }
 
@@ -501,7 +514,6 @@
         class ctrlBrain extends FishBrain {
             constructor(){
                 super();
-
 
             }
             think(input){
