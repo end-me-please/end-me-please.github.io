@@ -182,7 +182,7 @@
                 //mutate color
                 let color = this.color.match(/\d+/g).map(Number);
                 for (let i = 0; i < color.length; i++) {
-                    color[i] += Math.floor(Math.random() * 20 - 10);
+                    color[i] += Math.floor(Math.random() * 50 - 25);
                     if(color[i] < 0) color[i] = 0;
                     if(color[i] > 255) color[i] = 255;
                 }
@@ -204,7 +204,7 @@
             constructor() {
                 this.inputSize = 8;
                 this.outputSize = 2;
-                this.layerShape = [this.inputSize, 6, this.outputSize];
+                this.layerShape = [this.inputSize, this.outputSize];
                 //count total number of nodes
                 
                 //all values from previous layer are multiplied by weights of their connections and added to all values of the next layer
