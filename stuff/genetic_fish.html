@@ -6,6 +6,10 @@
     <body>
         <canvas id="canvas" width="600" height="600" style="border: 1px solid red; background-color: aliceblue;"></canvas>
         <br>
+        <div>
+            <label id="stats">Stats:</label>
+        </div>
+        <br>
         <canvas id="inspect" width="400" height="400" style="border: 1px solid black; background-color: aliceblue;"></canvas>
         <button id="mutate" onclick="sim.mutate(0.1)">Mutate</button>
         <button id="evolve" onclick="sim.evolve()">next generation</button>
@@ -40,18 +44,7 @@
                 for (let i = 0; i < channels; i++) {
                     intensities[i]=0;
                 }
-                /*
-                for (let i = 0; i < this.fishes.length; i++) {
-                    let otherFish = this.fishes[i];
-                    if(otherFish == fish) continue;
-                    let angle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x) - fish.angle;
-                    if(angle < 0) angle += 2 * Math.PI;
-                    let channel = Math.floor(angle / (2 * Math.PI / channels));
-                    if(channel >= channels) continue;
-                    let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
-                    intensities[channel] += 1 / distance;
-                }
-                */
+                
                 //consider fish around the wrap around
                 for (let i = 0; i < this.fishes.length; i++) {
                     let otherFish = this.fishes[i];
@@ -111,7 +104,7 @@
             evolve(){
                 //get the top 10% of fishes
                 let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
-                let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 10));
+                let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 5));
                 let newFishes = [];
                 //randomly match top fish and pair them to create numFish new fishes
                 for (let i = 0; i < this.numFish; i++) {
@@ -131,7 +124,7 @@
                 this.x = x;
                 this.y = y;
                 this.angle = Math.random() * 2 * Math.PI;
-                this.speed = 8;
+                this.speed = 5;
                 this.turnSpeed = 0.1;
                 this.size = 10;
                 this.color = "black";
@@ -157,6 +150,14 @@
                 if(minDistance > 3.1 * this.size) {this.score +=4;}
                 if (minDistance < 3 * this.size) {this.score -=10;}
                 if (minDistance < 1*this.size) {this.score -=100;}
+
+                //close proximity to wall is highly discouraged
+                if(this.x < 5) this.score -= 80;
+                if(this.x > this.world.width - 5) this.score -= 80;
+                if(this.y < 5) this.score -= 80;
+                if(this.y > this.world.height - 5) this.score -= 80;
+
+
                 this.score = this.score * 0.999;
 
             }
@@ -187,10 +188,11 @@
                     }
                 }
                 this.biases = [];
-                for (let i = 1; i < this.layerShape.length-1; i++) {
-                    this.biases[i]=[];
+                //no biases for input and output layer
+                for (let i = 1; i < this.layerShape.length - 1; i++) {
+                    this.biases.push([]);
                     for (let j = 0; j < this.layerShape[i]; j++) {
-                        this.biases[i].push(Math.random() * 0.1 - 0.05);
+                        this.biases[i-1].push(Math.random() * 0.02 - 0.01);
                     }
                 }
 
@@ -216,6 +218,7 @@
                         }
                     }
                 }
+                
                 for (let i = 0; i < this.biases.length; i++) {
                     for (let j = 0; j < this.biases[i].length; j++) {
                         child.biases[i][j] = Math.random() < 0.8 ? this.biases[i][j] : other.biases[i][j];
@@ -237,7 +240,9 @@
                     for (let j = 0; j < this.layerShape[i]; j++) {
                         for (let k = 0; k < this.layerShape[i + 1]; k++) {
                             //weight array is of shape [layer][node][next node]
-                            values[i + 1][k] += activation((values[i][j]+((i==0||i==this.layerShape.length-1)?0:this.biases[i][j])) * this.weights[i][j][k]);
+                            let weightedValue = values[i][j] * this.weights[i][j][k];
+                            let bias = (i==0||i==this.layerShape.length-1)?0:this.biases[i-1][j];
+                            values[i + 1][k] += activation(weightedValue + bias);
                         }
                     }
                 }
@@ -295,10 +300,11 @@
 
         }
 
-        let sim = new Simulation(35);
+        let sim = new Simulation(60);
         let inspectedFish = 0;
+        sim.update();
         function loop(){
-            sim.update();
+            try {
             sim.render(ctx);
             sim.fishes[inspectedFish].brain.draw(inspectCtx);
             //draw rectangle around observed fish
@@ -310,11 +316,29 @@
             inspectCtx.fillStyle = "black";
             inspectCtx.font = "15px Arial";
             inspectCtx.fillText("fitness: "+sim.fishes[inspectedFish].score, inspectCanvas.width*0.76, inspectCanvas.height*0.95);
-            requestAnimationFrame(loop);
 
+            let highScore = 0;
+            let lowScore = Infinity;
+            let avgScore = 0;
+            for (let i = 0; i < sim.fishes.length; i++) {
+                avgScore += sim.fishes[i].score;
+                if(sim.fishes[i].score > highScore) highScore = sim.fishes[i].score;
+                if(sim.fishes[i].score < lowScore) lowScore = sim.fishes[i].score;
+            }
+            avgScore /= sim.fishes.length;
+            
+            document.getElementById("stats").innerHTML = "high score: "+highScore.toPrecision(3)+"<br>low score: "+lowScore.toPrecision(3)+"<br>avg score: "+avgScore.toPrecision(3);
+
+            } catch (error) {
+                console.log(error);
+            }
+            requestAnimationFrame(loop);
         }
         loop();
 
+        setInterval(() => {
+            sim.update();
+        }, 1.5);
     
         canvas.addEventListener("click", e => {
             let rect = canvas.getBoundingClientRect();
