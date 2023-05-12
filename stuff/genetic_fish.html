@@ -166,14 +166,13 @@
 
                 if(minDistance > 7 * this.size) {this.score -=5;}
                 if(minDistance > 4.5 * this.size) {this.score +=4;}
-                if (minDistance < 4 * this.size) {this.score -=5;}
-                if (minDistance < 1*this.size) {this.score -=20;}
+                if (minDistance < 1*this.size) {this.score -=10;}
 
-                //close proximity to wall is highly discouraged
-                if(this.x < 5) this.score -= 80;
-                if(this.x > this.world.width - 5) this.score -= 80;
-                if(this.y < 5) this.score -= 80;
-                if(this.y > this.world.height - 5) this.score -= 80;
+                //close proximity to wall bad
+                if(this.x < 5) this.score -= 4;
+                if(this.x > this.world.width - 5) this.score -= 4;
+                if(this.y < 5) this.score -= 4;
+                if(this.y > this.world.height - 5) this.score -= 4;
 
                 //count fish in a radius of 7*size
                 let fishCount = 0;
@@ -295,6 +294,9 @@
                             child.weights[i][j][k] = Math.random() < 0.5 ? this.weights[i][j][k] : other.weights[i][j][k];
                             if(Math.random() < 0.3) {
                                 child.weights[i][j][k] = (this.weights[i][j][k] + other.weights[i][j][k]) / 2;
+                            }
+                            if(Math.random() < 0.05) {
+                                child.weights[i][j][k] *=-1;
                             }
                         }
                     }
