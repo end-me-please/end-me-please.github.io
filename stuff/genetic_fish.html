@@ -293,6 +293,9 @@
                             if(Math.random() < 0.3) {
                                 child.weights[i][j][k] = (this.weights[i][j][k] + other.weights[i][j][k]) / 2;
                             }
+                            if(Math.random()<0.5){
+                                child.weights[i][j][k] += (Math.random() * 2 - 1) * 0.09;
+                            }
                             if(Math.random() < 0.05) {
                                 child.weights[i][j][k] *=-1;
                             }
