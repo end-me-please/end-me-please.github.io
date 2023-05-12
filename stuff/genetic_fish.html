@@ -164,9 +164,9 @@
                     if(distance < minDistance) minDistance = distance;
                 }
 
-                if(minDistance > 5 * this.size) {this.score -=5;}
-                if(minDistance > 3.1 * this.size) {this.score +=4;}
-                if (minDistance < 3 * this.size) {this.score -=10;}
+                if(minDistance > 7 * this.size) {this.score -=5;}
+                if(minDistance > 4.5 * this.size) {this.score +=4;}
+                if (minDistance < 4 * this.size) {this.score -=10;}
                 if (minDistance < 1*this.size) {this.score -=100;}
 
                 //close proximity to wall is highly discouraged
@@ -175,6 +175,15 @@
                 if(this.y < 5) this.score -= 80;
                 if(this.y > this.world.height - 5) this.score -= 80;
 
+                //count fish in a radius of 7*size
+                let fishCount = 0;
+                for(let i = 0; i < this.world.fishes.length; i++) {
+                    let otherFish = this.world.fishes[i];
+                    if(otherFish == this) continue;
+                    let distance = Math.sqrt((otherFish.x - this.x) ** 2 + (otherFish.y - this.y) ** 2);
+                    if(distance < 7 * this.size) fishCount++;
+                }
+                this.score += fishCount;
 
 
             }
