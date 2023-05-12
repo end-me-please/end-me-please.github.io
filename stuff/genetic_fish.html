@@ -97,7 +97,7 @@
             }
             mutate(factor){
                 for (let i = 0; i < this.fishes.length; i++) {
-                    this.fishes[i].brain.mutate(factor);
+                    this.fishes[i].mutate();
                 }
             }
 
@@ -175,6 +175,7 @@
                 child.color = childColor;
 
                 child.brain = this.brain.pair(other.brain);
+                if(Math.random() < 0.01) child.mutate();
                 return child;
             }
             mutate(){
@@ -191,7 +192,9 @@
                     if(i < color.length - 1) newColor += ",";
                 }
                 newColor += ")";
-                
+                this.color = newColor;
+
+                this.brain.mutate(0.4);
 
             }
 
@@ -233,6 +236,12 @@
                         for (let k = 0; k < this.weights[i][j].length; k++) {
                             this.weights[i][j][k] += factor*(Math.random() * 2 - 1);
                         }
+                    }
+                }
+                //bias mutation
+                for (let i = 0; i < this.biases.length; i++) {
+                    for (let j = 0; j < this.biases[i].length; j++) {
+                        this.biases[i][j] += (factor/5)*(Math.random() * 2 - 1);
                     }
                 }
             }
@@ -369,7 +378,7 @@
 
         setInterval(() => {
             sim.update();
-        }, 1.5);
+        }, 6);
     
         canvas.addEventListener("click", e => {
             let rect = canvas.getBoundingClientRect();
