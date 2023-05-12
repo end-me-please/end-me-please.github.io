@@ -154,6 +154,7 @@
                 let intensities = this.world.fishIntensities(this,this.sensorDirections);
                 let output = this.brain.think(intensities);
                 this.angle += output[0] * this.turnSpeed;
+                output[1]+=0.05;
                 this.x += Math.cos(this.angle) * (this.speed*output[1]);
                 this.y += Math.sin(this.angle) * (this.speed*output[1]);
                 let minDistance = Infinity;
