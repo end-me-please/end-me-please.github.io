@@ -244,15 +244,15 @@
         }
 
         let sim = new Simulation(50);
-        
+        let inspectedFish = 0;
         function loop(){
             sim.update();
             sim.render(ctx);
-            sim.fishes[0].brain.draw(inspectCtx);
+            sim.fishes[inspectedFish].brain.draw(inspectCtx);
             //draw rectangle around observed fish
             ctx.strokeStyle = "red";
             ctx.beginPath();
-            ctx.rect(sim.fishes[0].x - sim.fishes[0].size, sim.fishes[0].y - sim.fishes[0].size, sim.fishes[0].size * 2, sim.fishes[0].size * 2);
+            ctx.rect(sim.fishes[inspectedFish].x - sim.fishes[inspectedFish].size, sim.fishes[inspectedFish].y - sim.fishes[inspectedFish].size, sim.fishes[inspectedFish].size * 2, sim.fishes[inspectedFish].size * 2);
             ctx.stroke();
 
             requestAnimationFrame(loop);
@@ -261,7 +261,18 @@
         loop();
 
     
-
+        canvas.addEventListener("click", e => {
+            let rect = canvas.getBoundingClientRect();
+            let x = e.clientX - rect.left;
+            let y = e.clientY - rect.top;
+            for (let i = 0; i < sim.fishes.length; i++) {
+                let fish = sim.fishes[i];
+                if(x > fish.x - fish.size && x < fish.x + fish.size && y > fish.y - fish.size && y < fish.y + fish.size) {
+                    inspectedFish = i;
+                    break;
+                }
+            }
+        });
 
 
 
