@@ -142,9 +142,9 @@
                 this.x = x;
                 this.y = y;
                 this.angle = Math.random() * 2 * Math.PI;
-                this.speed = 5;
+                this.speed = 2.5;
                 this.turnSpeed = 0.1;
-                this.size = 10;
+                this.size = 8.5;
                 this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
                 this.score = 0;
                 this.sensorDirections = 8;
@@ -363,7 +363,7 @@
             }
         }
 
-        let sim = new Simulation(60);
+        let sim = new Simulation(100);
         let inspectedFish = 0;
         sim.update();
         function loop(){
