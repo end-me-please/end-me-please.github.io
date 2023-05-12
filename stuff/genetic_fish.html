@@ -221,7 +221,7 @@
             constructor() {
                 this.inputSize = 8;
                 this.outputSize = 2;
-                this.layerShape = [this.inputSize,9,5,this.outputSize];
+                this.layerShape = [this.inputSize,8,4,this.outputSize];
                 //count total number of nodes
                 
                 //all values from previous layer are multiplied by weights of their connections and added to all values of the next layer
@@ -240,7 +240,7 @@
                 for (let i = 1; i < this.layerShape.length - 1; i++) {
                     this.biases.push([]);
                     for (let j = 0; j < this.layerShape[i]; j++) {
-                        this.biases[i-1].push(Math.random() * 0.02 - 0.01);
+                        this.biases[i-1].push((Math.random() * 2 - 1)*0.001);
                     }
                 }
 
