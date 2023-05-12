@@ -164,8 +164,6 @@
                     if(distance < minDistance) minDistance = distance;
                 }
 
-                if(minDistance > 7 * this.size) {this.score -=2;}
-                if(minDistance > 4.5 * this.size) {this.score +=4;}
                 if (minDistance < 1*this.size) {this.score -=10;}
 
                 //close proximity to wall bad
