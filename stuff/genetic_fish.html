@@ -45,6 +45,7 @@
                     intensities[i]=0;
                 }
                 
+                /*
                 //consider fish around the wrap around
                 for (let i = 0; i < this.fishes.length; i++) {
                     let otherFish = this.fishes[i];
@@ -59,8 +60,23 @@
                     if(otherFish.y < fish.y - this.height / 2) distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y + this.height - fish.y) ** 2);
                     if(otherFish.y > fish.y + this.height / 2) distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - this.height - fish.y) ** 2);
                     intensities[channel] += 1 / distance;
+                }*/
+                //dont consider fish around the wrap around
+
+                for (let i = 0; i < this.fishes.length; i++) {
+                    let otherFish = this.fishes[i];
+                    if(otherFish == fish) continue;
+                    let angle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x) - fish.angle;
+                    if(angle < 0) angle += 2 * Math.PI;
+                    let channel = Math.floor(angle / (2 * Math.PI / channels));
+                    if(channel >= channels) continue;
+                    let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
+                    intensities[channel] += 1 / distance;
                 }
                 
+
+
+
                 //if(distance > 80) continue;
 
                 if(intensities.length != channels) {console.log(intensities);};
@@ -384,7 +400,7 @@
 
         setInterval(() => {
             sim.update();
-        }, 6);
+        }, 1);
     
         canvas.addEventListener("click", e => {
             let rect = canvas.getBoundingClientRect();
