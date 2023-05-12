@@ -384,7 +384,14 @@
                         ctx.beginPath();
                         ctx.arc(layerX[i][j],layerY[i][j],circleRadius,0,2 * Math.PI);
                         ctx.fill();
-
+                        //draw red or green circle around node depending on bias
+                        if(i != 0 && i != this.layerShape.length - 1) {
+                            ctx.strokeStyle = this.biases[i-1][j] > 0 ? "green" : "red";
+                            ctx.lineWidth = Math.abs(this.biases[i-1][j]) * 5;
+                            ctx.beginPath();
+                            ctx.arc(layerX[i][j],layerY[i][j],circleRadius*1.5,0,2 * Math.PI);
+                            ctx.stroke();
+                        }
                     }
                 }
 
@@ -440,6 +447,7 @@
         loop();
 
         setInterval(() => {
+            sim.update();
             sim.update();
             sim.update();
             sim.update();
