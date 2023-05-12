@@ -144,7 +144,7 @@
                 this.angle = Math.random() * 2 * Math.PI;
                 this.speed = 2.5;
                 this.turnSpeed = 0.1;
-                this.size = 8.5;
+                this.size = 10;
                 this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
                 this.score = 0;
                 this.sensorDirections = 8;
@@ -422,7 +422,7 @@
             
             //calculate mean score (not average)
             //sort and take middle value
-            let sortedFishes = sim.fishes.sort((a,b) => a.score - b.score);
+            let sortedFishes = [...sim.fishes].sort((a,b) => a.score - b.score);
             let medianScore = sortedFishes[Math.floor(sortedFishes.length / 2)].score;
             document.getElementById("stats").innerHTML = "high score: "+highScore.toPrecision(3)+"<br>low score: "+lowScore.toPrecision(3)+"<br>avg score: "+avgScore.toPrecision(3)+"<br>median score: "+medianScore.toPrecision(3);
 
