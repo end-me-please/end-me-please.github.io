@@ -121,7 +121,7 @@
             evolve(){
                 //get the top 10% of fishes
                 let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
-                let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 5));
+                let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 15));
                 let newFishes = [];
                 //randomly match top fish and pair them to create numFish new fishes
                 for (let i = 0; i < this.numFish; i++) {
@@ -192,7 +192,21 @@
                 child.color = childColor;
 
                 child.brain = this.brain.pair(other.brain);
-                if(Math.random() < 0.08) child.mutate();
+                if(Math.random()>0.7){
+                let checksum = child.brain.checksum();
+                //somehow generate a rgb color from the checksum
+                let color = "rgb(";
+                for (let i = 0; i < 3; i++) {
+                    color += checksum % 256;
+                    if(i < 2) color += ",";
+                    checksum = Math.floor(checksum / 256);
+                }
+                color += ")";
+                child.color = color;    
+                }
+
+
+                if(Math.random() < 0.1) child.mutate();
                 return child;
             }
             mutate(){
@@ -361,8 +375,15 @@
 
             
             }
+            checksum(){
+                let str = JSON.stringify(this);
+                let sum = 0;
+                for (let i = 0; i < str.length; i++) {
+                    sum += str.charCodeAt(i);
+                }
+                return sum;
         }
-
+        }
         let sim = new Simulation(40);
         let inspectedFish = 0;
         sim.update();
@@ -419,7 +440,8 @@
         });
 
         function activation(x) {
-            return (Math.tanh(x));
+            return x;
+            //return (Math.tanh(x));
         }
 
 
