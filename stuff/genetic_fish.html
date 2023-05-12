@@ -153,9 +153,11 @@
                     if(distance < minDistance) minDistance = distance;
                 }
 
-                if(minDistance > 4 * this.size) {this.score -=3;}
-                if (minDistance < 3 * this.size) {this.score -=4;}
-                if (minDistance < 1*this.size) {this.score -=90;}
+                if(minDistance > 5 * this.size) {this.score -=5;}
+                if(minDistance > 3.1 * this.size) {this.score +=4;}
+                if (minDistance < 3 * this.size) {this.score -=10;}
+                if (minDistance < 1*this.size) {this.score -=100;}
+                this.score = this.score * 0.999;
 
             }
             pair(other){
@@ -184,6 +186,15 @@
                         }
                     }
                 }
+                this.biases = [];
+                for (let i = 1; i < this.layerShape.length-1; i++) {
+                    this.biases[i]=[];
+                    for (let j = 0; j < this.layerShape[i]; j++) {
+                        this.biases[i].push(Math.random() * 0.5 - 0.25);
+                    }
+                }
+
+                
                 this.lastValues = [];
             }
             mutate(factor){
@@ -200,10 +211,18 @@
                 for (let i = 0; i < this.weights.length; i++) {
                     for (let j = 0; j < this.weights[i].length; j++) {
                         for (let k = 0; k < this.weights[i][j].length; k++) {
-                            child.weights[i][j][k] = Math.random() < 0.5 ? this.weights[i][j][k] : other.weights[i][j][k];
+                            child.weights[i][j][k] = Math.random() < 0.8 ? this.weights[i][j][k] : other.weights[i][j][k];
+                            if(Math.random() < 0.01) child.weights[i][j][k] += (Math.random() * 2 - 1) * 0.5;
                         }
                     }
                 }
+                for (let i = 0; i < this.biases.length; i++) {
+                    for (let j = 0; j < this.biases[i].length; j++) {
+                        child.biases[i][j] = Math.random() < 0.8 ? this.biases[i][j] : other.biases[i][j];
+                        if(Math.random() < 0.01) child.biases[i][j] += (Math.random() * 2 - 1) * 0.5;
+                    }
+                }
+
                 return child;
             }
             think (input) {
@@ -218,7 +237,7 @@
                     for (let j = 0; j < this.layerShape[i]; j++) {
                         for (let k = 0; k < this.layerShape[i + 1]; k++) {
                             //weight array is of shape [layer][node][next node]
-                            values[i + 1][k] += activation(values[i][j] * this.weights[i][j][k]);
+                            values[i + 1][k] += activation((values[i][j]+((i==0||i==this.layerShape.length-1)?0:this.biases[i][j])) * this.weights[i][j][k]);
                         }
                     }
                 }
