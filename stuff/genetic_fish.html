@@ -46,23 +46,7 @@
                     intensities[i]=0;
                 }
                 
-                /*
-                //consider fish around the wrap around
-                for (let i = 0; i < this.fishes.length; i++) {
-                    let otherFish = this.fishes[i];
-                    if(otherFish == fish) continue;
-                    let angle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x) - fish.angle;
-                    if(angle < 0) angle += 2 * Math.PI;
-                    let channel = Math.floor(angle / (2 * Math.PI / channels));
-                    if(channel >= channels) continue;
-                    let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
-                    if(otherFish.x < fish.x - this.width / 2) distance = Math.sqrt((otherFish.x + this.width - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
-                    if(otherFish.x > fish.x + this.width / 2) distance = Math.sqrt((otherFish.x - this.width - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
-                    if(otherFish.y < fish.y - this.height / 2) distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y + this.height - fish.y) ** 2);
-                    if(otherFish.y > fish.y + this.height / 2) distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - this.height - fish.y) ** 2);
-                    intensities[channel] += 1 / distance;
-                }*/
-                //dont consider fish around the wrap around
+                
 
                 for (let i = 0; i < this.fishes.length; i++) {
                     let otherFish = this.fishes[i];
@@ -142,7 +126,7 @@
                 this.x = x;
                 this.y = y;
                 this.angle = Math.random() * 2 * Math.PI;
-                this.speed = 2.5;
+                this.speed = 1.5;
                 this.turnSpeed = 0.1;
                 this.size = 10;
                 this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
@@ -165,7 +149,7 @@
                     if(distance < minDistance) minDistance = distance;
                 }
 
-                //if (minDistance < 1*this.size) {this.score -=10;}
+                if (minDistance < 1*this.size) {this.score -=10;}
 
                 //close proximity to wall bad
                 if(this.x < 5) this.score -= 4;
@@ -179,9 +163,9 @@
                     let otherFish = this.world.fishes[i];
                     if(otherFish == this) continue;
                     let distance = Math.sqrt((otherFish.x - this.x) ** 2 + (otherFish.y - this.y) ** 2);
-                    if(distance < 5 * this.size) fishCount++;
+                    if(distance < 8 * this.size) fishCount++;
                 }
-                let fishCountReward = fishCount>6?fishCount:-1;
+                let fishCountReward = fishCount>10?fishCount:-1;
 
                 this.score += fishCountReward;
 
@@ -282,8 +266,8 @@
                 //bias mutation
                 for (let i = 0; i < this.biases.length; i++) {
                     for (let j = 0; j < this.biases[i].length; j++) {
-                        this.biases[i][j] += (factor/5)*((Math.random() * 2 - 1)*0.002);
-                        if(Math.random() < factor/10) this.biases[i][j] = (Math.random() * 2 - 1) * 0.0002;
+                        this.biases[i][j] += (factor/5)*((Math.random() * 2 - 1)*0.001);
+                        if(Math.random() < factor/10) this.biases[i][j] = (Math.random() * 2 - 1) * 0.0001;
                     }
                 }
             }
@@ -453,7 +437,6 @@
             sim.update();
             sim.update();
             sim.update();
-            sim.update();
         }, 1);
     
         canvas.addEventListener("click", e => {
@@ -494,8 +477,48 @@
             generation++;
             document.getElementById("evolve").innerHTML = "next generation ("+generation+")";
             sim.evolve();
+            sim.fishes[inspectedFish].brain = new ctrlBrain();
 
         }, 15000);
+
+        let pressLeft = false;
+        let pressRight = false;
+        let pressUp = false;
+        let pressDown = false;
+        document.addEventListener("keydown", e => {
+            if(e.key == "ArrowLeft") pressLeft = true;
+            if(e.key == "ArrowRight") pressRight = true;
+            if(e.key == "ArrowUp") pressUp = true;
+            if(e.key == "ArrowDown") pressDown = true;
+        });
+        document.addEventListener("keyup", e => {
+            if(e.key == "ArrowLeft") pressLeft = false;
+            if(e.key == "ArrowRight") pressRight = false;
+            if(e.key == "ArrowUp") pressUp = false;
+            if(e.key == "ArrowDown") pressDown = false;
+        });
+
+        class ctrlBrain extends FishBrain {
+            constructor(){
+                super();
+
+
+            }
+            think(input){
+                let output = [0,0];
+                if(pressLeft) output[0] = -0.1;
+                if(pressRight) output[0] = 0.1;
+                if(pressUp) output[1] = 0.1;
+                if(pressDown) output[1] = -0.1;
+                return output;
+            }
+        }
+        
+
+
+
+
+
 
 
     </script>
