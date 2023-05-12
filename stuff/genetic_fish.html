@@ -117,6 +117,7 @@
 
         }
 
+        
 
         class Fish {
             constructor(world,x,y){
@@ -127,7 +128,7 @@
                 this.speed = 5;
                 this.turnSpeed = 0.1;
                 this.size = 10;
-                this.color = "black";
+                this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
                 this.score = 0;
                 this.sensorDirections = 8;
                 this.brain = new FishBrain();
@@ -158,13 +159,40 @@
                 if(this.y > this.world.height - 5) this.score -= 80;
 
 
-                this.score = this.score * 0.999;
 
             }
             pair(other){
                 let child = new Fish(this.world,this.world.width*Math.random(),this.world.height*Math.random());
+                //average color
+                let color1 = this.color.match(/\d+/g).map(Number);
+                let color2 = other.color.match(/\d+/g).map(Number);
+                let childColor = "rgb(";
+                for (let i = 0; i < color1.length; i++) {
+                    childColor += Math.floor((color1[i] + color2[i]) / 2);
+                    if(i < color1.length - 1) childColor += ",";
+                }
+                childColor += ")";
+                child.color = childColor;
+
                 child.brain = this.brain.pair(other.brain);
                 return child;
+            }
+            mutate(){
+                //mutate color
+                let color = this.color.match(/\d+/g).map(Number);
+                for (let i = 0; i < color.length; i++) {
+                    color[i] += Math.floor(Math.random() * 20 - 10);
+                    if(color[i] < 0) color[i] = 0;
+                    if(color[i] > 255) color[i] = 255;
+                }
+                let newColor = "rgb(";
+                for (let i = 0; i < color.length; i++) {
+                    newColor += color[i];
+                    if(i < color.length - 1) newColor += ",";
+                }
+                newColor += ")";
+                
+
             }
 
         }
@@ -256,48 +284,51 @@
                 ctx.clearRect(0,0,width,height);
                 let circleRadius = 10;
 
-                
-                for(let layer = 0; layer < this.layerShape.length; layer++) {
-                for(let i = 0; i < this.layerShape[layer]; i++){
-                    let drawX = 0;
-                    let drawY = 0;
-                    if(layer > 0){
-                    drawX = circleRadius+layer*width/this.layerShape.length;
-                    drawY = circleRadius+i * height / this.layerShape[layer];
+                //distribute nodes around layers of circles, output layer being in the center
+                let centerX = width / 2;
+                let centerY = height / 2;
+                let outerRadius = width / 2 - circleRadius;
+               //start with outermost layer, the input layer
+
+                let layerX = [];
+                let layerY = [];
+                for (let i = 0; i < this.layerShape.length; i++) {
+                    layerX.push([]);
+                    layerY.push([]);
+                    for (let j = 0; j < this.layerShape[i]; j++) {
+                        let angle = j / this.layerShape[i] * 2 * Math.PI;
+                        layerX[i].push(centerX + Math.cos(angle) * outerRadius * (i+1) / this.layerShape.length);
+                        layerY[i].push(centerY + Math.sin(angle) * outerRadius * (i+1) / this.layerShape.length);
                     }
-                    ctx.fillStyle = "green";
-                    ctx.beginPath();
-                    ctx.arc(drawX,drawY, circleRadius, 0, 2 * Math.PI);
-                    ctx.fill();
-                    let lastNodeValue = this.lastValues[layer][i];
-                    //
-                    ctx.fillStyle = lastNodeValue > 0 ? "red" : "blue";
-                    ctx.beginPath();
-                    ctx.arc(drawX,drawY, Math.abs(circleRadius * lastNodeValue * 4), 0, 2 * Math.PI);
-                    ctx.fill();
-
-
-
-
-                    ctx.strokeStyle = "black";
-                    for(let j = 0; j < this.layerShape[layer + 1]; j++){
-                        let nextDrawX = circleRadius+(layer+1)*width/this.layerShape.length;
-                        let nextDrawY = circleRadius+j * height / this.layerShape[layer + 1];
-                        ctx.beginPath();
-                        ctx.moveTo(drawX,drawY);
-                        ctx.lineWidth = this.weights[layer][i][j] * 1;
-                        ctx.lineTo(nextDrawX,nextDrawY);
-                        ctx.stroke();
-                    }
-                    
-
                 }
+
+                //draw connections
+                for (let i = 0; i < this.layerShape.length - 1; i++) {
+                    for (let j = 0; j < this.layerShape[i]; j++) {
+                        for (let k = 0; k < this.layerShape[i + 1]; k++) {
+                            ctx.strokeStyle = this.weights[i][j][k] > 0 ? "green" : "red";
+                            ctx.lineWidth = Math.abs(this.weights[i][j][k]) * 5;
+                            ctx.beginPath();
+                            ctx.moveTo(layerX[i][j],layerY[i][j]);
+                            ctx.lineTo(layerX[i+1][k],layerY[i+1][k]);
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                //draw nodes
+                for (let i = 0; i < this.layerShape.length; i++) {
+                    for (let j = 0; j < this.layerShape[i]; j++) {
+                        ctx.fillStyle = "black";
+                        ctx.beginPath();
+                        ctx.arc(layerX[i][j],layerY[i][j],circleRadius,0,2 * Math.PI);
+                        ctx.fill();
+
+                    }
+                }
+
+            
             }
-
-
-            }
-
-
         }
 
         let sim = new Simulation(60);
