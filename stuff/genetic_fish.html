@@ -106,6 +106,7 @@
                 //get the top 10% of fishes
                 let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
                 let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 15));
+                topFishes.push(new Fish(this,this.width*Math.random(),this.height*Math.random()));
                 let newFishes = [];
                 //randomly match top fish and pair them to create numFish new fishes
                 for (let i = 0; i < this.numFish; i++) {
