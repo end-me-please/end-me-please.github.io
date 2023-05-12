@@ -56,8 +56,8 @@
                     let channel = Math.floor(angle / (2 * Math.PI / channels));
                     if(channel >= channels) continue;
                     let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
-                    if(distance > 200) continue;
-                    intensities[channel] += 1 / distance;
+                    if(distance > 400) continue;
+                    intensities[channel] += 3 / distance;
                 }
                 
 
@@ -126,7 +126,7 @@
                 this.x = x;
                 this.y = y;
                 this.angle = Math.random() * 2 * Math.PI;
-                this.speed = 1.5;
+                this.speed = 0.89;
                 this.turnSpeed = 0.1;
                 this.size = 10;
                 this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
@@ -138,7 +138,7 @@
                 let intensities = this.world.fishIntensities(this,this.sensorDirections);
                 let output = this.brain.think(intensities);
                 this.angle += output[0] * this.turnSpeed;
-                output[1]+=0.05;
+                output[1]+=0.005;
                 this.x += Math.cos(this.angle) * (this.speed*output[1]);
                 this.y += Math.sin(this.angle) * (this.speed*output[1]);
                 let minDistance = Infinity;
@@ -384,13 +384,11 @@
                         try{
                         ctx.fillStyle = this.lastValues[i][j] > 0 ? "green" : "red";
                         ctx.beginPath();
-                        ctx.arc(layerX[i][j],layerY[i][j],circleRadius*0.5,0,2 * Math.PI);
+                        let value = Math.min(1.2,20*Math.abs(this.lastValues[i][j]));
+                        ctx.arc(layerX[i][j],layerY[i][j],circleRadius*value*0.5,0,2 * Math.PI);
                         ctx.fill();
                         } catch (error) {
-                         console.log(this.lastValues);
-                            console.log(error);
                         }
-
 
                     }
                 }
@@ -499,12 +497,14 @@
         let pressUp = false;
         let pressDown = false;
         document.addEventListener("keydown", e => {
+            e.preventDefault();
             if(e.key == "ArrowLeft") pressLeft = true;
             if(e.key == "ArrowRight") pressRight = true;
             if(e.key == "ArrowUp") pressUp = true;
             if(e.key == "ArrowDown") pressDown = true;
         });
         document.addEventListener("keyup", e => {
+            e.preventDefault();
             if(e.key == "ArrowLeft") pressLeft = false;
             if(e.key == "ArrowRight") pressRight = false;
             if(e.key == "ArrowUp") pressUp = false;
@@ -517,6 +517,7 @@
 
             }
             think(input){
+                super.think(input);
                 let output = [0,0];
                 if(pressLeft) output[0] = -0.1;
                 if(pressRight) output[0] = 0.1;
