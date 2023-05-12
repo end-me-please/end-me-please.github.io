@@ -180,7 +180,9 @@
                     let distance = Math.sqrt((otherFish.x - this.x) ** 2 + (otherFish.y - this.y) ** 2);
                     if(distance < 5 * this.size) fishCount++;
                 }
-                this.score += fishCount;
+                let fishCountReward = fishCount>6?fishCount:-1;
+
+                this.score += fishCountReward;
 
 
             }
