@@ -166,8 +166,8 @@
 
                 if(minDistance > 7 * this.size) {this.score -=5;}
                 if(minDistance > 4.5 * this.size) {this.score +=4;}
-                if (minDistance < 4 * this.size) {this.score -=10;}
-                if (minDistance < 1*this.size) {this.score -=100;}
+                if (minDistance < 4 * this.size) {this.score -=5;}
+                if (minDistance < 1*this.size) {this.score -=20;}
 
                 //close proximity to wall is highly discouraged
                 if(this.x < 5) this.score -= 80;
