@@ -165,7 +165,7 @@
                     if(distance < minDistance) minDistance = distance;
                 }
 
-                if (minDistance < 1*this.size) {this.score -=10;}
+                //if (minDistance < 1*this.size) {this.score -=10;}
 
                 //close proximity to wall bad
                 if(this.x < 5) this.score -= 4;
@@ -263,7 +263,7 @@
                 for (let i = 1; i < this.layerShape.length - 1; i++) {
                     this.biases.push([]);
                     for (let j = 0; j < this.layerShape[i]; j++) {
-                        this.biases[i-1].push((Math.random() * 2 - 1)*0.001);
+                        this.biases[i-1].push((Math.random() * 2 - 1)*0.0001);
                     }
                 }
 
@@ -282,8 +282,8 @@
                 //bias mutation
                 for (let i = 0; i < this.biases.length; i++) {
                     for (let j = 0; j < this.biases[i].length; j++) {
-                        this.biases[i][j] += (factor/5)*(Math.random() * 2 - 1);
-                        if(Math.random() < factor/10) this.biases[i][j] = (Math.random() * 2 - 1) * 0.02;
+                        this.biases[i][j] += (factor/5)*((Math.random() * 2 - 1)*0.002);
+                        if(Math.random() < factor/10) this.biases[i][j] = (Math.random() * 2 - 1) * 0.0002;
                     }
                 }
             }
@@ -381,13 +381,16 @@
                 for (let i = 0; i < this.layerShape.length; i++) {
                     for (let j = 0; j < this.layerShape[i]; j++) {
                         ctx.fillStyle = "black";
+                        ctx.strokeStyle = "black";
+                        ctx.lineWidth = 1;
                         ctx.beginPath();
                         ctx.arc(layerX[i][j],layerY[i][j],circleRadius,0,2 * Math.PI);
                         ctx.fill();
                         //draw red or green circle around node depending on bias
-                        if(i != 0 && i != this.layerShape.length - 1) {
+                        if(i > 0 && i < this.layerShape.length - 1) {
                             ctx.strokeStyle = this.biases[i-1][j] > 0 ? "green" : "red";
-                            ctx.lineWidth = Math.abs(this.biases[i-1][j]) * 5;
+                            ctx.lineWidth = 2+(Math.abs(this.biases[i-1][j]) * 50);
+
                             ctx.beginPath();
                             ctx.arc(layerX[i][j],layerY[i][j],circleRadius*1.5,0,2 * Math.PI);
                             ctx.stroke();
