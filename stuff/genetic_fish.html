@@ -9,6 +9,10 @@
         <canvas id="inspect" width="400" height="400" style="border: 1px solid black; background-color: aliceblue;"></canvas>
         <button id="mutate" onclick="sim.mutate(0.1)">Mutate</button>
         <button id="evolve" onclick="sim.evolve()">next generation</button>
+        </br>
+        </br>
+        <button id="save" onclick="saveAllWeights()">save</button>
+        <button id="load" onclick="loadAllWeights()">load</button>
     </body>
 
 
@@ -280,6 +284,22 @@
 
         function activation(x) {
             return (Math.tanh(x));
+        }
+
+
+
+        function saveAllWeights() {
+            let weights = [];
+            for (let i = 0; i < sim.fishes.length; i++) {
+                weights.push(sim.fishes[i].brain.weights);
+            }
+            localStorage.setItem("weights",JSON.stringify(weights));
+        }
+        function loadAllWeights() {
+            let weights = JSON.parse(localStorage.getItem("weights"));
+            for (let i = 0; i < sim.fishes.length; i++) {
+                sim.fishes[i].brain.weights = weights[i];
+            }
         }
 
 
