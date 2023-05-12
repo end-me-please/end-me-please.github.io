@@ -53,8 +53,12 @@
             update(){
                 for (let i = 0; i < this.fishes.length; i++) {
                     this.fishes[i].act();
-                    this.fishes[i].x = this.fishes[i].x % this.width;
-                    this.fishes[i].y = this.fishes[i].y % this.height;
+                    //wrap around
+                    if(this.fishes[i].x < -5) this.fishes[i].x += this.width;
+                    if(this.fishes[i].x > this.width+5) this.fishes[i].x -= this.width;
+                    if(this.fishes[i].y < -5) this.fishes[i].y += this.height;
+                    if(this.fishes[i].y > this.height+5) this.fishes[i].y -= this.height;
+
                 }
             }
             render(ctx){
@@ -151,7 +155,7 @@
                         }
                     }
                 }
-
+                this.lastValues = [];
             }
             mutate(factor){
                 for (let i = 0; i < this.weights.length; i++) {
