@@ -24,6 +24,7 @@
 
 
     <script>
+        let generation = 0;
         let canvas = document.getElementById("canvas");
         let ctx = canvas.getContext("2d");
         let inspectCanvas = document.getElementById("inspect");
@@ -434,6 +435,11 @@
                 sim.fishes[i].brain.weights = weights[i];
             }
         }
+
+        setInterval(() => {
+            generation++;
+            document.getElementById("evolve").innerHTML = "next generation ("+generation+")";
+        }, 5000);
 
 
     </script>
