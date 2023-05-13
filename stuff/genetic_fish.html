@@ -137,6 +137,20 @@
                     newFishes.push(fish1.pair(fish2));
                 }
                 newFishes[0]=(new Fish(this,this.width*Math.random(),this.height*Math.random()));
+                //resolve collisions
+                for (let i = 0; i < newFishes.length; i++) {
+                    let fish = newFishes[i];
+                    for (let j = 0; j < newFishes.length; j++) {
+                        let otherFish = newFishes[j];
+                        if(otherFish == fish) continue;
+                        let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
+                        if(distance < 2*fish.size) {
+                            fish.x = Math.random() * this.width;
+                            fish.y = Math.random() * this.height;
+                        }
+                    }
+                }
+
                 this.fishes = newFishes;
             }
 
@@ -175,8 +189,11 @@
             act(){
                 let intensities = this.world.fishIntensities(this,this.sensorDirections);
                 let output = this.brain.think(intensities);
+                if(output[1]<0.1) {this.score -= 0.01;}
                 this.angle += output[0] * this.turnSpeed;
                 output[1]+=0.005;
+                let oldX = this.x;
+                let oldY = this.y;
                 this.x += Math.cos(this.angle) * (this.speed*output[1]);
                 this.y += Math.sin(this.angle) * (this.speed*output[1]);
                 let minDistance = Infinity;
@@ -187,13 +204,13 @@
                     if(distance < minDistance) minDistance = distance;
                 }
 
-                if (minDistance < 1*this.size) {this.score -=10;}
+                if (minDistance < 2*this.size) {this.score -=1; this.x = oldX; this.y = oldY;}
 
                 //close proximity to wall bad
-                if(this.x < 5) this.score -= 4;
-                if(this.x > this.world.width - 5) this.score -= 4;
-                if(this.y < 5) this.score -= 4;
-                if(this.y > this.world.height - 5) this.score -= 4;
+                if(this.x < 5) this.score -= 1;
+                if(this.x > this.world.width - 5) this.score -= 1;
+                if(this.y < 5) this.score -= 1;
+                if(this.y > this.world.height - 5) this.score -= 1;
 
                 //count fish in a radius of 7*size
                 let fishCount = 0;
@@ -201,9 +218,9 @@
                     let otherFish = this.world.fishes[i];
                     if(otherFish == this) continue;
                     let distance = Math.sqrt((otherFish.x - this.x) ** 2 + (otherFish.y - this.y) ** 2);
-                    if(distance < 8 * this.size) fishCount++;
+                    if(distance < 5 * this.size) fishCount++;
                 }
-                let fishCountReward = fishCount>3?fishCount:-fishCount;
+                let fishCountReward = fishCount<6?fishCount:-1;
 
                 this.score += fishCountReward;
 
@@ -213,7 +230,7 @@
                     let distance = Math.sqrt((food.x - this.x) ** 2 + (food.y - this.y) ** 2);
                     if(distance < 1 * this.size) {
                         this.world.food.splice(i,1);
-                        this.score += 10;
+                        this.score += 100;
                         this.world.food.push(new Food(this.world,this.world.width*Math.random(),this.world.height*Math.random()));
                     }
                 }
@@ -497,6 +514,8 @@
             sim.update();
             sim.update();
             sim.update();
+            sim.update();
+            sim.update();
         }, 1);
     
         canvas.addEventListener("click", e => {
@@ -513,8 +532,8 @@
         });
 
         function activation(x) {
-            //return x;
-            return (Math.tanh(x));
+            return x;
+            //return (Math.tanh(x));
         }
 
 
