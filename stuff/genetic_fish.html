@@ -197,14 +197,15 @@
                 this.x += Math.cos(this.angle) * (this.speed*output[1]);
                 this.y += Math.sin(this.angle) * (this.speed*output[1]);
                 let minDistance = Infinity;
+                let otherAngle = 0;
                 for(let i = 0; i < this.world.fishes.length; i++) {
                     let otherFish = this.world.fishes[i];
                     if(otherFish == this) continue;
                     let distance = Math.sqrt((otherFish.x - this.x) ** 2 + (otherFish.y - this.y) ** 2);
-                    if(distance < minDistance) minDistance = distance;
+                    if(distance < minDistance) {minDistance = distance; otherAngle = Math.atan2(otherFish.y - this.y, otherFish.x - this.x) - this.angle;};
                 }
 
-                if (minDistance < 2*this.size) {this.score -=1; this.x = oldX; this.y = oldY;this.angle += Math.PI;}
+                if (minDistance < 2*this.size) {this.score -=1; this.x = oldX; this.y = oldY;this.angle += Math.PI;this.x += Math.cos(otherAngle)*this.size;this.y += Math.sin(otherAngle)*this.size;};
 
                 //close proximity to wall bad
                 if(this.x < 5) this.score -= 1;
