@@ -36,13 +36,18 @@
                 this.height = 800;
                 this.numFish = numFish;
                 this.fishes = [];
+                this.food = [];
                 for (let i = 0; i < numFish; i++) {
                     this.fishes.push(new Fish(this,Math.random() * this.width, Math.random() * this.height));
+                }
+                //populate food
+                for (let i = 0; i < 50; i++) {
+                    this.food.push(new Food(this,Math.random() * this.width, Math.random() * this.height));
                 }
             }
             fishIntensities(fish,channels){
                 let intensities = [];
-                for (let i = 0; i < channels; i++) {
+                for (let i = 0; i < channels*2; i++) {
                     intensities[i]=0;
                 }
                 
@@ -57,14 +62,27 @@
                     if(channel >= channels) continue;
                     let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
                     if(distance > 400) continue;
-                    intensities[channel] += 3 / distance;
+                    intensities[channel] += 1 / distance;
                 }
                 
+                //food
+                for (let i = channels; i < channels*2; i++) {
+                    intensities[i] = 0;
+                }
+                for(let i = 0; i < this.food.length; i++){
+                    let food = this.food[i];
+                    let angle = Math.atan2(food.y - fish.y, food.x - fish.x) - fish.angle;
+                    if(angle < 0) angle += 2 * Math.PI;
+                    let channel = Math.floor(angle / (2 * Math.PI / channels));
+                    if(channel >= channels) continue;
+                    let distance = Math.sqrt((food.x - fish.x) ** 2 + (food.y - fish.y) ** 2);
+                    if(distance > 400) continue;
+                    intensities[channel+channels] += 1 / distance;
+                }
 
 
 
 
-                if(intensities.length != channels) {console.log(intensities);};
                 
                 return intensities;
             }
@@ -95,6 +113,9 @@
 
                     
                 }
+                for (let i = 0; i < this.food.length; i++) {
+                    this.food[i].draw(ctx);
+                }
             }
             mutate(factor){
                 for (let i = 0; i < this.fishes.length; i++) {
@@ -106,7 +127,8 @@
                 //get the top 10% of fishes
                 let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
                 let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 15));
-                topFishes.push(new Fish(this,this.width*Math.random(),this.height*Math.random()));
+                
+                
                 let newFishes = [];
                 //randomly match top fish and pair them to create numFish new fishes
                 for (let i = 0; i < this.numFish; i++) {
@@ -114,11 +136,26 @@
                     let fish2 = topFishes[Math.floor(Math.random() * topFishes.length)];
                     newFishes.push(fish1.pair(fish2));
                 }
+                newFishes[0]=(new Fish(this,this.width*Math.random(),this.height*Math.random()));
                 this.fishes = newFishes;
             }
 
-        }
 
+        }
+        class Food {
+            constructor(world,x,y){
+                this.world = world;
+                this.x = x;
+                this.y = y;
+                this.size = 5;
+            }
+            draw(ctx){
+                ctx.fillStyle = "green";
+                ctx.beginPath();
+                ctx.arc(this.x,this.y,this.size,0,2 * Math.PI);
+                ctx.fill();
+            }
+        }
         
 
         class Fish {
@@ -169,6 +206,17 @@
                 let fishCountReward = fishCount>3?fishCount:-fishCount;
 
                 this.score += fishCountReward;
+
+                //eat food
+                for(let i = 0; i < this.world.food.length; i++){
+                    let food = this.world.food[i];
+                    let distance = Math.sqrt((food.x - this.x) ** 2 + (food.y - this.y) ** 2);
+                    if(distance < 1 * this.size) {
+                        this.world.food.splice(i,1);
+                        this.score += 10;
+                        this.world.food.push(new Food(this.world,this.world.width*Math.random(),this.world.height*Math.random()));
+                    }
+                }
 
 
             }
@@ -227,7 +275,7 @@
 
         class FishBrain {
             constructor() {
-                this.inputSize = 8;
+                this.inputSize = 16;
                 this.outputSize = 2;
                 this.layerShape = [this.inputSize,6,4,this.outputSize];
                 //count total number of nodes
