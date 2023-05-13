@@ -189,9 +189,9 @@
             act(){
                 let intensities = this.world.fishIntensities(this,this.sensorDirections);
                 let output = this.brain.think(intensities);
-                if(output[1]<0.1) {this.score -= 0.01;}
+                if(output[1]<0.05) {this.score -= 0.01;}
                 this.angle += output[0] * this.turnSpeed;
-                output[1]+=0.005;
+                
                 let oldX = this.x;
                 let oldY = this.y;
                 this.x += Math.cos(this.angle) * (this.speed*output[1]);
@@ -204,7 +204,7 @@
                     if(distance < minDistance) minDistance = distance;
                 }
 
-                if (minDistance < 2*this.size) {this.score -=1; this.x = oldX; this.y = oldY;}
+                if (minDistance < 2*this.size) {this.score -=1; this.x = oldX; this.y = oldY;this.angle += Math.PI;}
 
                 //close proximity to wall bad
                 if(this.x < 5) this.score -= 1;
@@ -220,9 +220,9 @@
                     let distance = Math.sqrt((otherFish.x - this.x) ** 2 + (otherFish.y - this.y) ** 2);
                     if(distance < 5 * this.size) fishCount++;
                 }
-                let fishCountReward = fishCount<6?fishCount:-1;
+                //let fishCountReward = fishCount<6?fishCount:-1;
 
-                this.score += fishCountReward;
+                //this.score += fishCountReward;
 
                 //eat food
                 for(let i = 0; i < this.world.food.length; i++){
@@ -294,7 +294,7 @@
             constructor() {
                 this.inputSize = 16;
                 this.outputSize = 2;
-                this.layerShape = [this.inputSize,6,4,this.outputSize];
+                this.layerShape = [this.inputSize,12,this.outputSize];
                 //count total number of nodes
                 
                 //all values from previous layer are multiplied by weights of their connections and added to all values of the next layer
@@ -532,8 +532,8 @@
         });
 
         function activation(x) {
-            return x;
-            //return (Math.tanh(x));
+            //return x;
+            return Math.tanh(x);
         }
 
 
