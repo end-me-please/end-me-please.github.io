@@ -55,8 +55,6 @@
                     intensities[i]=0;
                 }
                 
-                
-
                 for (let i = 0; i < this.fishes.length; i++) {
                     let otherFish = this.fishes[i];
                     if(otherFish == fish) continue;
@@ -88,26 +86,6 @@
                     if(distance==0){distance=0.0001};
                     if(isNaN(channel)) continue;
                     intensities[channel+channels] += 1 / distance;
-                }
-
-
-
-                //check for nan, log everything and throw
-
-                let nan = false;
-                for (let i = 0; i < intensities.length; i++) {
-                    if(isNaN(intensities[i])) {
-                        nan = true;
-                        console.log("fish: "+fish.x+","+fish.y);
-                        console.log("other fish: "+otherFish.x+","+otherFish.y);
-                        console.log("angle: "+angle);
-                        console.log("channel: "+channel);
-                        console.log("distance: "+distance);
-                        console.log("intensity: "+intensities[i]);
-                        console.log("fishes: "+this.fishes.length);
-                        console.log("food: "+this.food.length);
-                        throw new Error("nan");
-                    }
                 }
 
                 
@@ -205,7 +183,7 @@
                 this.x = x;
                 this.y = y;
                 this.angle = Math.random() * 2 * Math.PI;
-                this.speed = 1.70;
+                this.speed = 2.10;
                 this.turnSpeed = 0.1;
                 this.size = 10;
                 this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
@@ -216,7 +194,6 @@
             act(){
                 let intensities = this.world.fishIntensities(this,this.sensorDirections);
                 //if selected fish, log
-            
                 //if(this == this.world.fishes[inspectedFish]) {console.log(intensities)};
                 let output = this.brain.think(intensities);
                 //make sure output is between limits for [angle,speed]
@@ -244,7 +221,7 @@
                     if(distance < minDistance) {minDistance = distance; otherAngle = Math.atan2(otherFish.y - this.y, otherFish.x - this.x) - this.angle;};
                 }
 
-                if (minDistance < 2*this.size) {this.score -=1;this.angle += Math.PI;this.x += Math.cos(otherAngle)*this.size;this.y += Math.sin(otherAngle)*this.size;};
+                if (minDistance < 2*this.size) {this.score -=1;this.angle += Math.PI;this.x = oldX;this.y = oldY;};
 
                 //close proximity to wall bad
                 if(this.x < 5) this.score -= 1;
@@ -653,6 +630,7 @@
         let pressRight = false;
         let pressUp = false;
         let pressDown = false;
+        /*
         document.addEventListener("keydown", e => {
             e.preventDefault();
             if(e.key == "ArrowLeft") pressLeft = true;
@@ -667,7 +645,7 @@
             if(e.key == "ArrowUp") pressUp = false;
             if(e.key == "ArrowDown") pressDown = false;
         });
-
+        */
         class ctrlBrain extends FishBrain {
             constructor(){
                 super();
