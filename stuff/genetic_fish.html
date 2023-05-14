@@ -183,7 +183,7 @@
                 this.x = x;
                 this.y = y;
                 this.angle = Math.random() * 2 * Math.PI;
-                this.speed = 2.10;
+                this.speed = 2.7;
                 this.turnSpeed = 0.1;
                 this.size = 10;
                 this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
@@ -218,10 +218,10 @@
                     let otherFish = this.world.fishes[i];
                     if(otherFish == this) continue;
                     let distance = Math.sqrt((otherFish.x - this.x) ** 2 + (otherFish.y - this.y) ** 2);
-                    if(distance < minDistance) {minDistance = distance; otherAngle = Math.atan2(otherFish.y - this.y, otherFish.x - this.x) - this.angle;};
+                    if(distance < minDistance) {minDistance = distance; otherAngle = Math.atan2(otherFish.y - this.y, otherFish.x - this.x)};
                 }
 
-                if (minDistance < 2*this.size) {this.score -=1;this.angle += Math.PI;this.x = oldX;this.y = oldY;};
+                if (minDistance < 2*this.size) {this.score -=1;this.x = oldX;this.y = oldY; this.x+=Math.cos(-otherAngle);this.y+=Math.sin(-otherAngle);};
 
                 //close proximity to wall bad
                 if(this.x < 5) this.score -= 1;
@@ -526,10 +526,13 @@
             requestAnimationFrame(loop);
         }
         loop();
+        let tick = 0;
+        let autoUpdate = true;
 
         setInterval(() => {
             sim.update();
-        }, 1);
+            tick++;
+        }, 2);
     
         canvas.addEventListener("click", e => {
             let rect = canvas.getBoundingClientRect();
@@ -548,6 +551,25 @@
             //return x;
             return Math.tanh(x);
         }
+
+
+        function fastForward(generations) {
+            autoUpdate = false;
+            for (let i = 0; i < generations; i++) {
+                let generationTicks = 700;
+                for (let j = 0; j < generationTicks; j++) {
+                    sim.update();
+                }
+                sim.evolve();
+            }
+            autoUpdate = true;
+        }
+
+
+
+
+
+
 
 
 
@@ -619,11 +641,14 @@
 
 
         setInterval(() => {
+            if(autoUpdate&&tick>2000){
             generation++;
             document.getElementById("evolve").innerHTML = "next generation ("+generation+")";
             sim.evolve();
+            console.log("generation "+generation + " finished, ticks: "+tick);
+            tick = 0;
             //sim.fishes[inspectedFish].brain = new ctrlBrain();
-
+            }
         }, 15000);
 
         let pressLeft = false;
