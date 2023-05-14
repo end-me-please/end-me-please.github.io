@@ -28,6 +28,9 @@
 
 
     <script>
+    
+        let autoUpdate = true;
+
         let generation = 0;
         let canvas = document.getElementById("canvas");
         let ctx = canvas.getContext("2d");
@@ -36,6 +39,7 @@
 
         class Simulation {
             constructor(numFish) {
+                this.numFood = 0;
                 this.width = 800;
                 this.height = 800;
                 this.numFish = numFish;
@@ -44,8 +48,9 @@
                 for (let i = 0; i < numFish; i++) {
                     this.fishes.push(new Fish(this,Math.random() * this.width, Math.random() * this.height));
                 }
+                
                 //populate food
-                for (let i = 0; i < 50; i++) {
+                for (let i = 0; i < this.numFood; i++) {
                     this.food.push(new Food(this,Math.random() * this.width, Math.random() * this.height));
                 }
             }
@@ -102,7 +107,7 @@
 
                 }
                 //if no food, evolve
-                if(this.food.length == 0&&!autoUpdate) {
+                if(this.food.length == 0&&this.numFood>0) {
                     this.evolve();
                     generation++;
                 }
@@ -188,7 +193,7 @@
 
                 //reset food
                 this.food = [];
-                for (let i = 0; i < 50; i++) {
+                for (let i = 0; i < this.numFood; i++) {
                     this.food.push(new Food(this,Math.random() * this.width, Math.random() * this.height));
                 }
 
@@ -265,7 +270,7 @@
                     if(distance < minDistance) {minDistance = distance; otherAngle = Math.atan2(otherFish.y - this.y, otherFish.x - this.x)};
                 }
 
-                if (minDistance < 2*this.size) {this.score -=1;this.x = oldX;this.y = oldY; this.x+=Math.cos(-otherAngle);this.y+=Math.sin(-otherAngle);};
+                if (minDistance < 2*this.size) {this.score -=0.5;this.x = oldX;this.y = oldY; this.x+=Math.cos(-otherAngle);this.y+=Math.sin(-otherAngle);};
 
                 //close proximity to wall bad
                 if(this.x < 5) this.score -= 1;
@@ -555,7 +560,7 @@
                 return sum;
         }
         }
-        let sim = new Simulation(70);
+        let sim = new Simulation(50);
         let inspectedFish = 0;
         sim.update();
         function loop(){
@@ -595,7 +600,6 @@
         }
         loop();
         let tick = 0;
-        let autoUpdate = false;
 
         setInterval(() => {
             sim.update();
