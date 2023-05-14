@@ -183,7 +183,7 @@
                 this.x = x;
                 this.y = y;
                 this.angle = Math.random() * 2 * Math.PI;
-                this.speed = 2.7;
+                this.speed = 4;
                 this.turnSpeed = 0.1;
                 this.size = 10;
                 this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
@@ -303,6 +303,18 @@
 
                 this.brain.mutate(0.2);
 
+            }
+            clone(){
+                let clone = new Fish(this.world,this.x,this.y);
+                clone.angle = this.angle;
+                clone.speed = this.speed;
+                clone.turnSpeed = this.turnSpeed;
+                clone.size = this.size;
+                clone.color = this.color;
+                clone.score = 0;
+                clone.sensorDirections = this.sensorDirections;
+                clone.brain = this.brain;
+                return clone;
             }
 
         }
@@ -556,11 +568,12 @@
         function fastForward(generations) {
             autoUpdate = false;
             for (let i = 0; i < generations; i++) {
-                let generationTicks = 700;
+                let generationTicks = 2000;
                 for (let j = 0; j < generationTicks; j++) {
                     sim.update();
                 }
                 sim.evolve();
+                generation++;
             }
             autoUpdate = true;
         }
