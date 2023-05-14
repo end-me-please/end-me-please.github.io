@@ -18,6 +18,10 @@
         </br>
         <button id="save" onclick="saveAllWeights()">save</button>
         <button id="load" onclick="loadAllWeights()">load</button>
+
+    </br>
+    <button id="importClipboard" onclick="importClipboard()">import clipboard</button>
+    <button id="exportClipboard" onclick="exportClipboard()">export clipboard</button>
     </body>
 
 
@@ -205,7 +209,7 @@
                     if(distance < minDistance) {minDistance = distance; otherAngle = Math.atan2(otherFish.y - this.y, otherFish.x - this.x) - this.angle;};
                 }
 
-                if (minDistance < 2*this.size) {this.score -=1; this.x = oldX; this.y = oldY;this.angle += Math.PI;this.x += Math.cos(otherAngle)*this.size;this.y += Math.sin(otherAngle)*this.size;};
+                if (minDistance < 2*this.size) {this.score -=1;this.angle += Math.PI;this.x += Math.cos(otherAngle)*this.size;this.y += Math.sin(otherAngle)*this.size;};
 
                 //close proximity to wall bad
                 if(this.x < 5) this.score -= 1;
@@ -542,13 +546,50 @@
                 weights.push(sim.fishes[i].brain.weights);
             }
             localStorage.setItem("weights",JSON.stringify(weights));
+            let biases = [];
+            for (let i = 0; i < sim.fishes.length; i++) {
+                biases.push(sim.fishes[i].brain.biases);
+            }
+            localStorage.setItem("biases",JSON.stringify(biases));
+            
         }
         function loadAllWeights() {
             let weights = JSON.parse(localStorage.getItem("weights"));
             for (let i = 0; i < sim.fishes.length; i++) {
                 sim.fishes[i].brain.weights = weights[i];
             }
+            let biases = JSON.parse(localStorage.getItem("biases"));
+            for (let i = 0; i < sim.fishes.length; i++) {
+                sim.fishes[i].brain.biases = biases[i];
+            }
         }
+
+        function exportClipboard() {
+            let weights = [];
+            for (let i = 0; i < sim.fishes.length; i++) {
+                weights.push(sim.fishes[i].brain.weights);
+            }
+            let biases = [];
+            for (let i = 0; i < sim.fishes.length; i++) {
+                biases.push(sim.fishes[i].brain.biases);
+            }
+            let data = {weights:weights,biases:biases};
+            navigator.clipboard.writeText(JSON.stringify(data));
+        }
+
+        function importClipboard() {
+            navigator.clipboard.readText().then(text => {
+                let data = JSON.parse(text);
+                for (let i = 0; i < sim.fishes.length; i++) {
+                    sim.fishes[i].brain.weights = data.weights[i];
+                }
+                for (let i = 0; i < sim.fishes.length; i++) {
+                    sim.fishes[i].brain.biases = data.biases[i];
+                }
+            });
+        }
+
+
 
         setInterval(() => {
             generation++;
