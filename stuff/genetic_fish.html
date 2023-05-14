@@ -66,6 +66,10 @@
                     if(channel >= channels) continue;
                     let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
                     if(distance > 400) continue;
+                    if(distance==0){distance=0.0001};
+                    //check channel for nan
+                    if(isNaN(channel)) continue;
+
                     intensities[channel] += 1 / distance;
                 }
                 
@@ -81,11 +85,30 @@
                     if(channel >= channels) continue;
                     let distance = Math.sqrt((food.x - fish.x) ** 2 + (food.y - fish.y) ** 2);
                     if(distance > 400) continue;
+                    if(distance==0){distance=0.0001};
+                    if(isNaN(channel)) continue;
                     intensities[channel+channels] += 1 / distance;
                 }
 
 
 
+                //check for nan, log everything and throw
+
+                let nan = false;
+                for (let i = 0; i < intensities.length; i++) {
+                    if(isNaN(intensities[i])) {
+                        nan = true;
+                        console.log("fish: "+fish.x+","+fish.y);
+                        console.log("other fish: "+otherFish.x+","+otherFish.y);
+                        console.log("angle: "+angle);
+                        console.log("channel: "+channel);
+                        console.log("distance: "+distance);
+                        console.log("intensity: "+intensities[i]);
+                        console.log("fishes: "+this.fishes.length);
+                        console.log("food: "+this.food.length);
+                        throw new Error("nan");
+                    }
+                }
 
                 
                 return intensities;
@@ -192,10 +215,16 @@
             }
             act(){
                 let intensities = this.world.fishIntensities(this,this.sensorDirections);
+                //if selected fish, log
+            
+                //if(this == this.world.fishes[inspectedFish]) {console.log(intensities)};
                 let output = this.brain.think(intensities);
                 if(output[1]<0.05) {this.score -= 0.01;}
                 this.angle += output[0] * this.turnSpeed;
-                
+                //make sure angle is between 0 and 2pi
+                if(this.angle < 0) this.angle += 2 * Math.PI;
+                if(this.angle > 2 * Math.PI) this.angle -= 2 * Math.PI;
+
                 let oldX = this.x;
                 let oldY = this.y;
                 this.x += Math.cos(this.angle) * (this.speed*output[1]);
