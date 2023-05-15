@@ -189,7 +189,7 @@ class Fish {
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
         this.sensorDirections = 8;
-        this.brain = new FishBrainGPU();
+        this.brain = new FishBrain();
         this.speed = 4.5;
     }
     act(){
@@ -368,7 +368,7 @@ class FishBrain {
         }
     }
     pair (other) {
-        let child = new FishBrainGPU();
+        let child = new FishBrain();
         for (let i = 0; i < this.weights.length; i++) {
             for (let j = 0; j < this.weights[i].length; j++) {
                 for (let k = 0; k < this.weights[i][j].length; k++) {
@@ -397,27 +397,33 @@ class FishBrain {
 
         return child;
     }
-    think (input) {
+    think(input) {
+        //use matrix operations instead
         if(input.length != this.inputSize) throw new Error("size does not match input size: "+ input.length);
-
         let values = [];
         for (let i = 0; i < this.layerShape.length; i++) {
-            values.push(Array(this.layerShape[i]).fill(0));
-        }
-        values[0] = input;
-        for (let i = 0; i < this.layerShape.length - 1; i++) {
+            values[i] = [];
             for (let j = 0; j < this.layerShape[i]; j++) {
-                for (let k = 0; k < this.layerShape[i + 1]; k++) {
-                    //weight array is of shape [layer][node][next node]
-                    let weightedValue = values[i][j] * this.weights[i][j][k];
-                    let bias = this.biases[i][j];
-                    values[i + 1][k] += activation(weightedValue + bias);
-                }
+                values[i][j] = 0;
             }
         }
+        values[0] = input;
+        //weight array is of shape weight=[layer][node][next node]
+        for (let i = 0; i < this.layerShape.length - 1; i++) {
+            let matrix = new Matrix(this.weights[i]);
+            let inputMatrix = new Matrix([values[i]]);
+            let result = inputMatrix.multiply(matrix);
+            
+            result.add(new Matrix([this.biases[i+1]]));
+            result.map(Math.tanh);
+            values[i+1] = result.data[0];
+        }
+
+
         this.lastValues = values;
         return values[values.length - 1];
     }
+
 
     draw(ctx) {
         let height = ctx.canvas.height;
