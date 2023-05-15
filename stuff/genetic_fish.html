@@ -40,7 +40,7 @@
 
         class Simulation {
             constructor(numFish) {
-                this.numFood = 0;
+                this.numFood = 50;
                 this.width = 800;
                 this.height = 800;
                 this.numFish = numFish;
@@ -126,30 +126,6 @@
                     ctx.beginPath();
                     ctx.arc(fish.x + Math.cos(fish.angle) * (fish.size*0.6),fish.y + Math.sin(fish.angle) * (fish.size*0.6),fish.size/3,0,2 * Math.PI);
                     ctx.fill();
-                    //blue ring around fish if defending
-                    if(fish.defend) {
-                        ctx.strokeStyle = "blue";
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.arc(fish.x,fish.y,fish.size*1.5,0,2 * Math.PI);
-                        ctx.stroke();
-                    }
-                    //red ring around fish if attacking
-                    if(fish.attack) {
-                        ctx.strokeStyle = "red";
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.arc(fish.x,fish.y,fish.size*1.2,0,2 * Math.PI);
-                        ctx.stroke();
-                        //target line
-                        ctx.strokeStyle = "red";
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.moveTo(fish.x,fish.y);
-                        ctx.lineTo(fish.x + Math.cos(fish.angle) * fish.size*1.7,fish.y + Math.sin(fish.angle) * fish.size*1.7);
-                        ctx.stroke();
-
-                    }
                     
                 }
                 for (let i = 0; i < this.food.length; i++) {
@@ -230,8 +206,6 @@
                 this.score = 0;
                 this.sensorDirections = 8;
                 this.brain = new FishBrain();
-                this.attack = false;
-                this.defend = false;
                 this.speed = 4;
             }
             act(){
@@ -239,13 +213,6 @@
                 //if selected fish, log
                 //if(this == this.world.fishes[inspectedFish]) {console.log(intensities)};
                 let output = this.brain.think(intensities);
-                let attack = output[2] > 0.1;
-                let defend = output[2] < -0.1;
-                if(attack || defend) this.speed = 0.7;
-                else this.speed = 4;
-                this.defend = defend;
-                this.attack = attack;
-
                 //make sure output is between limits for [angle,speed]
                 if(output[0] < -1) output[0] = -1;	
                 if(output[0] > 1) output[0] = 1;
@@ -293,27 +260,6 @@
                         }
                     }
                 }
-                //eat each other
-                if(attack){
-                    let targetX = this.x + Math.cos(this.angle) * this.size;
-                    let targetY = this.y + Math.sin(this.angle) * this.size;
-                    //find fish within other fish's radius
-                    for(let i = 0; i < this.world.fishes.length; i++){
-                        let otherFish = this.world.fishes[i];
-                        if(otherFish == this) continue;
-                        let distance = Math.sqrt((otherFish.x - targetX) ** 2 + (otherFish.y - targetY) ** 2);
-                        if(distance < 1 * otherFish.size) {
-                            if(otherFish.defend){
-                                this.score -= 1;
-                            } else {
-                                otherFish.score -= 70;
-                                this.score += 100;
-                            }
-                        }
-                    }
-                }
-
-                
 
             }
             pair(other){
@@ -384,7 +330,7 @@
         class FishBrain {
             constructor() {
                 this.inputSize = 16;
-                this.outputSize = 3;
+                this.outputSize = 2;
                 this.layerShape = [this.inputSize,12,this.outputSize];
                 //count total number of nodes
                 
