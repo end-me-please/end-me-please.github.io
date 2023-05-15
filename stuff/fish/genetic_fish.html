@@ -1,5 +1,6 @@
 <html>
-    <head></head>
+    <head>
+    </head>
 
 
 
@@ -71,8 +72,6 @@
                     let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
                     if(distance > 400) continue;
                     if(distance==0){distance=0.0001};
-                    //check channel for nan
-                    if(isNaN(channel)) continue;
 
                     intensities[channel] += 1 / distance;
                 }
@@ -670,43 +669,6 @@
             //sim.fishes[inspectedFish].brain = new ctrlBrain();
             }
         }, 15000);
-
-        let pressLeft = false;
-        let pressRight = false;
-        let pressUp = false;
-        let pressDown = false;
-        /*
-        document.addEventListener("keydown", e => {
-            e.preventDefault();
-            if(e.key == "ArrowLeft") pressLeft = true;
-            if(e.key == "ArrowRight") pressRight = true;
-            if(e.key == "ArrowUp") pressUp = true;
-            if(e.key == "ArrowDown") pressDown = true;
-        });
-        document.addEventListener("keyup", e => {
-            e.preventDefault();
-            if(e.key == "ArrowLeft") pressLeft = false;
-            if(e.key == "ArrowRight") pressRight = false;
-            if(e.key == "ArrowUp") pressUp = false;
-            if(e.key == "ArrowDown") pressDown = false;
-        });
-        */
-        class ctrlBrain extends FishBrain {
-            constructor(){
-                super();
-
-            }
-            think(input){
-                super.think(input);
-                let output = [0,0];
-                if(pressLeft) output[0] = -0.1;
-                if(pressRight) output[0] = 0.1;
-                if(pressUp) output[1] = 0.1;
-                if(pressDown) output[1] = -0.1;
-                return output;
-            }
-        }
-        
 
 
 
