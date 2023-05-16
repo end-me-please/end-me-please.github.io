@@ -160,7 +160,7 @@ class Fish {
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
         this.sensorDirections = 8;
-        this.brain = new FishBrain2();
+        this.brain = new FishBrain();
         this.speed = 4.5;
     }
     act(){
