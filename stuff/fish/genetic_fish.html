@@ -117,10 +117,13 @@
         function fastForward(generations) {
             autoUpdate = false;
             for (let i = 0; i < generations; i++) {
-                let generationTicks = 2600;
+                let startTime = Date.now();
+                let generationTicks = 3000;
                 for (let j = 0; j < generationTicks; j++) {
                     sim.update();
                 }
+                let endTime = Date.now();
+                console.log("generation "+sim.generation + " finished, ticks: "+generationTicks+", time: "+(endTime-startTime)+"ms");
                 sim.evolve();
                 sim.generation++;
             }

@@ -2,7 +2,7 @@ class FishBrain {
     constructor() {
         this.inputSize = 16;
         this.outputSize = 2;
-        this.layerShape = [this.inputSize,12,8,this.outputSize];
+        this.layerShape = [this.inputSize,8,8,this.outputSize];
         //count total number of nodes
         
         //all values from previous layer are multiplied by weights of their connections and added to all values of the next layer

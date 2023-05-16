@@ -1,6 +1,6 @@
 class Simulation {
     constructor(numFish) {
-        this.numFood = 70;
+        this.numFood = 60;
         this.width = 800;
         this.height = 800;
         this.numFish = numFish;
@@ -27,10 +27,15 @@ class Simulation {
             let otherFish = this.fishes[i];
             if(otherFish == fish) continue;
             let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
-            if(distance > 400) continue;
+            if(distance > 300) continue;
             let angle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x) - fish.angle;
             if(angle < 0) angle += 2 * Math.PI;
-            let channel = Math.floor(angle / (2 * Math.PI / channels));
+            //check if angle is within FoV
+            if(angle > fish.angle + fish.FoV / 2) continue;
+            if(angle < fish.angle - fish.FoV / 2) continue;
+
+            //channels is the number of sensor directions, spread evenly over the FoV
+            let channel = Math.floor(angle / (fish.FoV / channels));
             
             intensities[channel] += 1 / distance;
         }
@@ -41,14 +46,18 @@ class Simulation {
         }
         for(let i = 0; i < this.food.length; i++){
             let food = this.food[i];
-            let angle = Math.atan2(food.y - fish.y, food.x - fish.x) - fish.angle;
-            if(angle < 0) angle += 2 * Math.PI;
-            let channel = Math.floor(angle / (2 * Math.PI / channels));
-            if(channel >= channels) continue;
             let distance = Math.sqrt((food.x - fish.x) ** 2 + (food.y - fish.y) ** 2);
             if(distance > 400) continue;
-            if(distance==0){distance=0.0001};
-            if(isNaN(channel)) continue;
+            let angle = Math.atan2(food.y - fish.y, food.x - fish.x) - fish.angle;
+            if(angle < 0) angle += 2 * Math.PI;
+            //check if angle is within FoV
+            if(angle > fish.angle + fish.FoV / 2) continue;
+            if(angle < fish.angle - fish.FoV / 2) continue;
+
+            //channels is the number of sensor directions, spread evenly over the FoV
+            let channel = Math.floor(angle / (fish.FoV / channels));
+            
+
             intensities[channel+channels] += 1 / distance;
             
         }
@@ -160,6 +169,7 @@ class Fish {
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
         this.sensorDirections = 8;
+        this.FoV = 180;
         this.brain = new FishBrain();
         this.speed = 4.5;
     }
