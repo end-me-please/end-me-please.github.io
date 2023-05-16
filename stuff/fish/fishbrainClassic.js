@@ -183,3 +183,282 @@ class FishBrain {
         return sum;
 }
 }
+
+
+
+
+class FishBrain2 {
+    constructor() {
+        this.inputSize = 16;
+        this.outputSize = 2;
+        this.initShape = [this.inputSize,12,8,this.outputSize];
+        this.lastValues = [];
+        
+        this.net = [];
+        let maxX = 0;
+        let maxY = 0;
+        for (let i = 0; i < this.initShape.length; i++) {
+            maxX = Math.max(maxX,this.initShape[i]);
+            maxY = Math.max(maxY,this.initShape[i]);
+        }
+        //initialize net as 2d array
+        for (let i = 0; i < maxX; i++) {
+            this.net.push([]);
+            for (let j = 0; j < maxY; j++) {
+                this.net[i].push(null);
+            }
+        }
+
+        //create neurons
+        for (let i = 0; i < this.initShape.length; i++) {
+            for (let j = 0; j < this.initShape[i]; j++) {
+                this.net[i][j] = new Neuron(0,[],Math.tanh);
+            }
+        }
+        this.fixConnections();
+
+    }
+    fixConnections(){
+        //check for floating connections and remove them
+        //the [neuron, weight] format contains the Y coordinate of the target neuron in the next layer
+        for (let i = 0; i < this.net.length - 1; i++) {
+            for (let j = 0; j < this.net[i].length; j++) {
+                if(this.net[i][j] == null) continue;
+                for (let k = 0; k < this.net[i][j].connections.length; k++) {
+                    if(this.net[i+1][this.net[i][j].connections[k][0]] == null){
+                        this.net[i][j].connections.splice(k,1);
+                        k--;
+                    }
+                }
+                //now check for missing connections
+                for (let k = 0; k < this.net[i+1].length; k++) {
+                    let found = false;
+                    for (let l = 0; l < this.net[i][j].connections.length; l++) {
+                        if(this.net[i][j].connections[l][0] == k) found = true;
+                    }
+                    if(!found) this.net[i][j].connections.push([k,0]);
+                }
+            }
+        }
+        
+    
+    
+    }
+
+    draw(ctx) {
+        //draw the rectangular net
+        let height = ctx.canvas.height;
+        let width = ctx.canvas.width;
+        ctx.clearRect(0,0,width,height);
+        //aligned to rectangle grid
+        let nodeSize = 20;
+        let nodeSpacing = 10;
+        let layerSpacing = 50;
+        let layerWidth = nodeSize + nodeSpacing;
+        let layerHeight = nodeSize + nodeSpacing;
+        let netWidth = this.net.length * layerWidth;
+        let netHeight = this.net[0].length * layerHeight;
+        let netX = width / 2 - netWidth / 2;
+        let netY = height / 2 - netHeight / 2;
+        //draw connections
+        for (let i = 0; i < this.net.length - 1; i++) {
+            for (let j = 0; j < this.net[i].length; j++) {
+                if(this.net[i][j] == null) continue;
+                for (let k = 0; k < this.net[i][j].connections.length; k++) {
+                    let target = this.net[i][j].connections[k][0];
+                    let weight = this.net[i][j].connections[k][1];
+                    ctx.strokeStyle = weight > 0 ? "green" : "red";
+                    ctx.lineWidth = Math.abs(weight) * 5;
+                    ctx.beginPath();
+                    ctx.moveTo(netX + i * layerWidth + nodeSize / 2,netY + j * layerHeight + nodeSize / 2);
+                    ctx.lineTo(netX + (i+1) * layerWidth + nodeSize / 2,netY + target * layerHeight + nodeSize / 2);
+                    ctx.stroke();
+                }
+            }
+        }
+        //draw nodes
+        for (let i = 0; i < this.net.length; i++) {
+            for (let j = 0; j < this.net[i].length; j++) {
+                ctx.fillStyle = "black";
+                ctx.strokeStyle = "black";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.rect(netX + i * layerWidth,netY + j * layerHeight,nodeSize,nodeSize);
+                ctx.fill();
+                //draw red or green circle around node depending on bias
+                if(i > 0 && i < this.net.length - 1) {
+                    if(this.net[i][j] == null) continue;
+                    ctx.strokeStyle = this.net[i][j].bias > 0 ? "green" : "red";
+                    ctx.lineWidth = 2+(Math.abs(this.net[i][j].bias) * 50);
+
+                    ctx.beginPath();
+                    ctx.arc(netX + i * layerWidth + nodeSize / 2,netY + j * layerHeight + nodeSize / 2,nodeSize*0.75,0,2 * Math.PI);
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+    mutate(factor){
+        //mutate weights
+        for (let i = 0; i < this.net.length - 1; i++) {
+            for (let j = 0; j < this.net[i].length; j++) {
+                if(this.net[i][j] == null) continue;
+                for (let k = 0; k < this.net[i][j].connections.length; k++) {
+                    this.net[i][j].connections[k][1] += factor*(Math.random() * 2 - 1);
+                    if(Math.random() < factor/100) this.net[i][j].connections[k][1] = (Math.random() * 2 - 1) * 0.5;
+                }
+            }
+        }
+        //bias mutation
+        for (let i = 0; i < this.net.length; i++) {
+            for (let j = 0; j < this.net[i].length; j++) {
+                if(this.net[i][j] == null) continue;
+                this.net[i][j].bias += (factor/5)*((Math.random() * 2 - 1)*0.001);
+                if(Math.random() < factor/50) this.net[i][j].bias = (Math.random() * 2 - 1) * 0.0001;
+            }
+        }
+    }
+    pair (other) {
+        let child = new FishBrain2();
+        for (let i = 0; i < this.net.length; i++) {
+            for (let j = 0; j < this.net[i].length; j++) {
+                if(this.net[i][j] == null) continue;
+                child.net[i][j].bias = Math.random() < 0.5 ? this.net[i][j].bias : other.net[i][j].bias;
+                if(Math.random() < 0.3) {
+                    child.net[i][j].bias = (this.net[i][j].bias + other.net[i][j].bias) / 2;
+                }
+                if(Math.random()<0.5){
+                    child.net[i][j].bias += (Math.random() * 2 - 1) * 0.09;
+                }
+                if(Math.random() < 0.05) {
+                    child.net[i][j].bias *=-1;
+                }
+            }
+        }
+        //copy connections
+        for (let i = 0; i < this.net.length - 1; i++) {
+            for (let j = 0; j < this.net[i].length; j++) {
+                if(this.net[i][j] == null) continue;
+                for (let k = 0; k < this.net[i][j].connections.length; k++) {
+                    child.net[i][j].connections[k][1] = Math.random() < 0.5 ? this.net[i][j].connections[k][1] : other.net[i][j].connections[k][1];
+                    if(Math.random() < 0.3) {
+                        child.net[i][j].connections[k][1] = (this.net[i][j].connections[k][1] + other.net[i][j].connections[k][1]) / 2;
+                    }
+                    if(Math.random()<0.5){
+                        child.net[i][j].connections[k][1] += (Math.random() * 2 - 1) * 0.09;
+                    }
+                    if(Math.random() < 0.05) {
+                        child.net[i][j].connections[k][1] *=-1;
+                    }
+                }
+            }
+        }
+        child.fixConnections();
+        return child;
+    }
+
+    think(input) {
+        //use matrix operations instead
+        if(input.length != this.inputSize) throw new Error("size does not match input size: "+ input.length);
+        let values = [];
+        for (let i = 0; i < this.net.length; i++) {
+            values[i] = [];
+            for (let j = 0; j < this.net[i].length; j++) {
+                values[i][j] = 0;
+            }
+        }
+        values[0] = input;
+        //use new node format
+        for (let i = 0; i < this.net.length - 1; i++) {
+            for (let j = 0; j < this.net[i].length; j++) {
+                if(this.net[i][j] == null) continue;
+                for (let k = 0; k < this.net[i][j].connections.length; k++) {
+                    let target = this.net[i][j].connections[k][0];
+                    let weight = this.net[i][j].connections[k][1];
+                    values[i+1][target] += values[i][j] * weight;
+                }
+            }
+        }
+        //apply activation function
+        for (let i = 0; i < values.length; i++) {
+            for (let j = 0; j < values[i].length; j++) {
+                if(this.net[i][j] == null) continue;
+                values[i][j] = this.net[i][j].activation(values[i][j] + this.net[i][j].bias);
+            }
+        }
+        this.lastValues = values;
+        //get output from initial shape
+        let output = [];
+        for (let i = 0; i < this.outputSize; i++) {
+            output.push(values[values.length - 1][i]);
+        }
+
+        return output;
+    }
+
+
+
+
+
+  
+    checksum(){
+        let str = JSON.stringify(this);
+        let sum = 0;
+        for (let i = 0; i < str.length; i++) {
+            sum += str.charCodeAt(i);
+        }
+        return sum;
+}
+}
+
+class Neuron {
+    constructor(bias,connections,activation) {
+        this.bias = bias;
+        this.connections = connections; //array of connections, each connection is Array(2) of [neuron Y,weight]
+        this.activation = activation;
+    }
+    clone(){
+        return new Neuron(this.bias,this.connections,this.activation);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
