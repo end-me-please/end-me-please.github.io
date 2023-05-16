@@ -59,6 +59,8 @@
             ctx.beginPath();
             ctx.rect(sim.fishes[inspectedFish].x - sim.fishes[inspectedFish].size, sim.fishes[inspectedFish].y - sim.fishes[inspectedFish].size, sim.fishes[inspectedFish].size * 2, sim.fishes[inspectedFish].size * 2);
             ctx.stroke();
+         
+
             //on the inspect canvas bottom right, print the fish's score
             inspectCtx.fillStyle = "black";
             inspectCtx.font = "15px Arial";
@@ -192,17 +194,14 @@
         }
 
         function extractOne() {
-            let weights = sim.fishes[inspectedFish].brain.weights;
-            let biases = sim.fishes[inspectedFish].brain.biases;
-            let data = {weights:weights,biases:biases};
+            let data = sim.fishes[inspectedFish].serialize();
             navigator.clipboard.writeText(JSON.stringify(data));
         }
 
         function importOne() {
             navigator.clipboard.readText().then(text => {
                 let data = JSON.parse(text);
-                sim.fishes[inspectedFish].brain.weights = data.weights;
-                sim.fishes[inspectedFish].brain.biases = data.biases;
+                sim.fishes[inspectedFish].deserialize(world,data);
             });
         }
 

@@ -1,6 +1,6 @@
 class Simulation {
     constructor(numFish) {
-        this.numFood = 60;
+        this.numFood = 70;
         this.width = 800;
         this.height = 800;
         this.numFish = numFish;
@@ -30,12 +30,7 @@ class Simulation {
             if(distance > 300) continue;
             let angle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x) - fish.angle;
             if(angle < 0) angle += 2 * Math.PI;
-            //check if angle is within FoV
-            if(angle > fish.angle + fish.FoV / 2) continue;
-            if(angle < fish.angle - fish.FoV / 2) continue;
-
-            //channels is the number of sensor directions, spread evenly over the FoV
-            let channel = Math.floor(angle / (fish.FoV / channels));
+            let channel = Math.floor(angle / (2 * Math.PI / channels));
             
             intensities[channel] += 1 / distance;
         }
@@ -50,14 +45,7 @@ class Simulation {
             if(distance > 400) continue;
             let angle = Math.atan2(food.y - fish.y, food.x - fish.x) - fish.angle;
             if(angle < 0) angle += 2 * Math.PI;
-            //check if angle is within FoV
-            if(angle > fish.angle + fish.FoV / 2) continue;
-            if(angle < fish.angle - fish.FoV / 2) continue;
-
-            //channels is the number of sensor directions, spread evenly over the FoV
-            let channel = Math.floor(angle / (fish.FoV / channels));
-            
-
+            let channel = Math.floor(angle / (2 * Math.PI / channels));
             intensities[channel+channels] += 1 / distance;
             
         }
@@ -169,7 +157,6 @@ class Fish {
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
         this.sensorDirections = 8;
-        this.FoV = 180;
         this.brain = new FishBrain();
         this.speed = 4.5;
     }
@@ -299,5 +286,32 @@ class Fish {
             ctx.arc(this.x + Math.cos(this.angle) * (this.size*0.6),this.y + Math.sin(this.angle) * (this.size*0.6),this.size/3,0,2 * Math.PI);
             ctx.fill();
     }
+    serialize(){
+        return {
+            x: this.x,
+            y: this.y,
+            angle: this.angle,
+            speed: this.speed,
+            turnSpeed: this.turnSpeed,
+            size: this.size,
+            color: this.color,
+            score: this.score,
+            sensorDirections: this.sensorDirections,
+            brain: this.brain.serialize()
+        }
+    }
+    static deserialize(world,serialized){
+        let fish = new Fish(world,serialized.x,serialized.y);
+        fish.angle = serialized.angle;
+        fish.speed = serialized.speed;
+        fish.turnSpeed = serialized.turnSpeed;
+        fish.size = serialized.size;
+        fish.color = serialized.color;
+        fish.score = serialized.score;
+        fish.sensorDirections = serialized.sensorDirections;
+        fish.brain = FishBrain.deserialize(serialized.brain);
+        return fish;
+    }
+    
 }
 

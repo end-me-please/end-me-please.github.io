@@ -2,7 +2,7 @@ class FishBrain {
     constructor() {
         this.inputSize = 16;
         this.outputSize = 2;
-        this.layerShape = [this.inputSize,8,8,this.outputSize];
+        this.layerShape = [this.inputSize,10,6,this.outputSize];
         //count total number of nodes
         
         //all values from previous layer are multiplied by weights of their connections and added to all values of the next layer
@@ -182,6 +182,29 @@ class FishBrain {
         }
         return sum;
 }
+    serialize() {
+        //store important metadata, and weights/biases in binary/bas64 format
+        let data = {
+            inputSize: this.inputSize,
+            outputSize: this.outputSize,
+            layerShape: this.layerShape,
+            weights: this.weights,
+            biases: this.biases
+        };
+
+        return data;
+
+    }
+    static deserialize(data) {
+        let brain = new FishBrain();
+        brain.inputSize = data.inputSize;
+        brain.outputSize = data.outputSize;
+        brain.layerShape = data.layerShape;
+        brain.weights = data.weights;
+        brain.biases = data.biases;
+        
+        return brain;
+    }
 }
 
 
