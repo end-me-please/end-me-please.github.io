@@ -90,7 +90,7 @@ class Simulation {
     }
     mutate(factor){
         for (let i = 0; i < this.fishes.length; i++) {
-            if(Math.random()>0.7)this.fishes[i].mutate();
+            if(Math.random()>0.7)this.fishes[i].mutate(factor);
         }
     }
 
@@ -280,7 +280,7 @@ class Fish {
         }
 
 
-        if(Math.random() < 0.1) child.mutate();
+        if(Math.random() < 0.3) child.mutate(Math.random()*0.5);
         return child;
     }
     mutate(){
