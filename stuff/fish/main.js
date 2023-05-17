@@ -23,7 +23,6 @@ class Simulation {
     runGeneration(ticks){
         for (let i = 0; i < ticks; i++) {
             this.update();
-            this.tick++;
           if(this.food.length == 0) break;
         }
         this.evolve();
@@ -69,6 +68,7 @@ class Simulation {
     }
     update(){
 
+        this.tick++;
         for (let i = 0; i < this.fishes.length; i++) {
             this.fishes[i].update();
             if(this.tick % 12 == 0) this.fishes[i].act();
@@ -182,7 +182,7 @@ class Fish {
         this.score = 0;
         this.sensorDirections = 8;
         this.brain = new FishBrain();
-        this.speed = 0.2; //acceleration
+        this.speed = 0.8; //acceleration
 
     }
     update(){
@@ -283,7 +283,7 @@ class Fish {
         if(Math.random() < 0.3) child.mutate(Math.random()*0.5);
         return child;
     }
-    mutate(){
+    mutate(factor){
         //mutate color
         let color = this.color.match(/\d+/g).map(Number);
         for (let i = 0; i < color.length; i++) {
@@ -299,7 +299,7 @@ class Fish {
         newColor += ")";
         this.color = newColor;
 
-        this.brain.mutate(0.2);
+        this.brain.mutate(factor);
 
     }
     clone(){
