@@ -1,3 +1,4 @@
+
 class Simulation {
     constructor(numFish) {
         this.numFood = 70;
@@ -16,7 +17,17 @@ class Simulation {
         for (let i = 0; i < this.numFood; i++) {
             this.food.push(new Food(this,Math.random() * this.width, Math.random() * this.height));
         }
+        this.topFish = this.fishes[0];
     }
+    runGeneration(ticks){
+        for (let i = 0; i < ticks; i++) {
+            this.update();    
+        if(this.food.length == 0) break;
+        }
+        this.evolve();
+    }
+
+
     fishIntensities(fish,channels){
         let intensities = [];
         for (let i = 0; i < channels*2; i++) {
@@ -53,23 +64,19 @@ class Simulation {
         
         return intensities;
     }
-update(){
-    for (let i = 0; i < this.fishes.length; i++) {
-        this.fishes[i].act();
-        //wrap around
-        if(this.fishes[i].x < -5) this.fishes[i].x += this.width;
-        if(this.fishes[i].x > this.width+5) this.fishes[i].x -= this.width;
-        if(this.fishes[i].y < -5) this.fishes[i].y += this.height;
-        if(this.fishes[i].y > this.height+5) this.fishes[i].y -= this.height;
-
-    }
-
-    //if no food, evolve
-        if(this.food.length == 0&&this.numFood>0) {
-            this.evolve();
-            this.generation++;
+    update(){
+        for (let i = 0; i < this.fishes.length; i++) {
+            this.fishes[i].act();
+            //wrap around
+            if(this.fishes[i].x < -5) this.fishes[i].x += this.width;
+            if(this.fishes[i].x > this.width+5) this.fishes[i].x -= this.width;
+            if(this.fishes[i].y < -5) this.fishes[i].y += this.height;
+            if(this.fishes[i].y > this.height+5) this.fishes[i].y -= this.height;
         }
     }
+
+    
+    
     render(ctx){
         ctx.clearRect(0,0,this.width,this.height);
         for (let i = 0; i < this.fishes.length; i++) {
@@ -90,7 +97,8 @@ update(){
     evolve(){
         //get the top 10% of fishes
         let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
-        
+        //check if top fish is better than previous top fish
+        if(sortedFishes[0].score > this.topFish.score) this.topFish = sortedFishes[0];
         
         //median of
         let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 15));
@@ -105,6 +113,15 @@ update(){
             newFishes.push(fish1.pair(fish2));
         }
         newFishes[0]=(new Fish(this,this.width*Math.random(),this.height*Math.random()));
+        
+        //spread evenly
+
+        for (let i = 0; i < this.numFish; i++) {
+            newFishes[i].x = this.width / 2 + Math.cos(i / this.numFish * 2 * Math.PI) * this.width / 2;
+            newFishes[i].y = this.height / 2 + Math.sin(i / this.numFish * 2 * Math.PI) * this.height / 2;
+        }
+
+
         //resolve collisions
         for (let i = 0; i < newFishes.length; i++) {
             let fish = newFishes[i];
@@ -118,7 +135,8 @@ update(){
                 }
             }
         }
-
+        //keep top fish
+        newFishes[0] = this.topFish.clone();
         this.fishes = newFishes;
 
         //reset food
@@ -126,6 +144,7 @@ update(){
         for (let i = 0; i < this.numFood; i++) {
             this.food.push(new Food(this,Math.random() * this.width, Math.random() * this.height));
         }
+        this.generation++;
     }
 
 
@@ -312,6 +331,6 @@ class Fish {
         fish.brain = FishBrain.deserialize(serialized.brain);
         return fish;
     }
-    
+
 }
 

@@ -118,16 +118,12 @@
 
         function fastForward(generations) {
             autoUpdate = false;
+            let generationTicks = 3000;
             for (let i = 0; i < generations; i++) {
                 let startTime = Date.now();
-                let generationTicks = 3000;
-                for (let j = 0; j < generationTicks; j++) {
-                    sim.update();
-                }
+                sim.runGeneration(3000);
                 let endTime = Date.now();
                 console.log("generation "+sim.generation + " finished, ticks: "+generationTicks+", time: "+(endTime-startTime)+"ms");
-                sim.evolve();
-                sim.generation++;
             }
             autoUpdate = true;
         }
@@ -210,7 +206,6 @@
 
         setInterval(() => {
             if(autoUpdate&&tick>2000){
-            sim.generation++;
             sim.evolve();
             console.log("generation "+sim.generation + " finished, ticks: "+tick);
             tick = 0;

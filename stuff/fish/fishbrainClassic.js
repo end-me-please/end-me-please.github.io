@@ -33,16 +33,18 @@ class FishBrain {
         for (let i = 0; i < this.weights.length; i++) {
             for (let j = 0; j < this.weights[i].length; j++) {
                 for (let k = 0; k < this.weights[i][j].length; k++) {
+                    if(Math.random() < factor/3){
                     this.weights[i][j][k] += factor*(Math.random() * 2 - 1);
-                    if(Math.random() < factor/10) this.weights[i][j][k] = (Math.random() * 2 - 1) * 0.5;
+                    }
+                    if(Math.random() < factor/100) this.weights[i][j][k] = (Math.random() * 2 - 1) * 0.5;
                 }
             }
         }
         //bias mutation
         for (let i = 0; i < this.biases.length; i++) {
             for (let j = 0; j < this.biases[i].length; j++) {
-                this.biases[i][j] += (factor/5)*((Math.random() * 2 - 1)*0.001);
-                if(Math.random() < factor/10) this.biases[i][j] = (Math.random() * 2 - 1) * 0.0001;
+                if(Math.random() < factor/3){this.biases[i][j] += (factor/10)*((Math.random() * 2 - 1)*0.005);}
+                if(Math.random() < factor/100) this.biases[i][j] = (Math.random() * 2 - 1) * 0.009;
             }
         }
     }
@@ -55,19 +57,13 @@ class FishBrain {
                     if(Math.random() < 0.3) {
                         child.weights[i][j][k] = (this.weights[i][j][k] + other.weights[i][j][k]) / 2;
                     }
-                    if(Math.random()<0.5){
-                        child.weights[i][j][k] += (Math.random() * 2 - 1) * 0.09;
-                    }
-                    if(Math.random() < 0.05) {
-                        child.weights[i][j][k] *=-1;
-                    }
                 }
             }
         }
         
         for (let i = 0; i < this.biases.length; i++) {
             for (let j = 0; j < this.biases[i].length; j++) {
-                child.biases[i][j] = Math.random() < 0.8 ? this.biases[i][j] : other.biases[i][j];
+                child.biases[i][j] = Math.random() < 0.5 ? this.biases[i][j] : other.biases[i][j];
                 if(Math.random() < 0.3) {
                     child.biases[i][j] = (this.biases[i][j] + other.biases[i][j]) / 2;
                 }
@@ -202,7 +198,7 @@ class FishBrain {
         brain.layerShape = data.layerShape;
         brain.weights = data.weights;
         brain.biases = data.biases;
-        
+
         return brain;
     }
 }
