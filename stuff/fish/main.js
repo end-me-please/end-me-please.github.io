@@ -71,7 +71,7 @@ class Simulation {
 
         for (let i = 0; i < this.fishes.length; i++) {
             this.fishes[i].update();
-            if(this.tick % 15 == 0) this.fishes[i].act();
+            if(this.tick % 12 == 0) this.fishes[i].act();
         }
     }
 
