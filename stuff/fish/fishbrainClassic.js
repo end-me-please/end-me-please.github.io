@@ -201,6 +201,9 @@ class FishBrain {
 
         return brain;
     }
+    clone() {
+        return FishBrain.deserialize(this.serialize());
+    }
 }
 
 

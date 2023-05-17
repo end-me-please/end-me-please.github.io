@@ -9,6 +9,7 @@ class Simulation {
         this.food = [];
         this.fitnessHistory = [];
         this.generation = 0;
+        this.tick = 0;
         for (let i = 0; i < numFish; i++) {
             this.fishes.push(new Fish(this,Math.random() * this.width, Math.random() * this.height));
         }
@@ -21,10 +22,12 @@ class Simulation {
     }
     runGeneration(ticks){
         for (let i = 0; i < ticks; i++) {
-            this.update();    
-        if(this.food.length == 0) break;
+            this.update();
+            this.tick++;
+          if(this.food.length == 0) break;
         }
         this.evolve();
+        this.tick = 0;
     }
 
 
@@ -65,13 +68,10 @@ class Simulation {
         return intensities;
     }
     update(){
+
         for (let i = 0; i < this.fishes.length; i++) {
-            this.fishes[i].act();
-            //wrap around
-            if(this.fishes[i].x < -5) this.fishes[i].x += this.width;
-            if(this.fishes[i].x > this.width+5) this.fishes[i].x -= this.width;
-            if(this.fishes[i].y < -5) this.fishes[i].y += this.height;
-            if(this.fishes[i].y > this.height+5) this.fishes[i].y -= this.height;
+            this.fishes[i].update();
+            if(this.tick % 15 == 0) this.fishes[i].act();
         }
     }
 
@@ -170,34 +170,35 @@ class Fish {
         this.world = world;
         this.x = x;
         this.y = y;
+        this.vx = 0;
+        this.vy = 0;
+        this.angularVelocity = 0;
+        this.drag = 0.05;
+
         this.angle = Math.random() * 2 * Math.PI;
-        this.turnSpeed = 0.1;
+        this.turnSpeed = 0.01;
         this.size = 10;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
         this.sensorDirections = 8;
         this.brain = new FishBrain();
-        this.speed = 4.5;
-    }
-    act(){
-        let intensities = this.world.fishIntensities(this,this.sensorDirections);
-        let output = this.brain.think(intensities);
-        //make sure output is between limits for [angle,speed]
-        if(output[0] < -1) output[0] = -1;	
-        if(output[0] > 1) output[0] = 1;
-        if(output[1] < -1) output[1] = -1;
-        if(output[1] > 1) output[1] = 1;
+        this.speed = 0.2; //acceleration
 
-        if(output[1]<0.05) {this.score -= 0.01;}
-        this.angle += output[0] * this.turnSpeed;
-        //make sure angle is between 0 and 2pi
+    }
+    update(){
+        this.x += this.vx;
+        this.y += this.vy;
+        this.angle += this.angularVelocity;
+        this.vx *= 1 - this.drag;
+        this.vy *= 1 - this.drag;
+        this.angularVelocity *= 1 - this.drag;
+
         if(this.angle < 0) this.angle += 2 * Math.PI;
         if(this.angle > 2 * Math.PI) this.angle -= 2 * Math.PI;
 
         let oldX = this.x;
         let oldY = this.y;
-        this.x += Math.cos(this.angle) * (this.speed*output[1]);
-        this.y += Math.sin(this.angle) * (this.speed*output[1]);
+
         let minDistance = Infinity;
         let otherAngle = 0;
         for(let i = 0; i < this.world.fishes.length; i++) {
@@ -230,7 +231,26 @@ class Fish {
                 }
             }
         }
+        if(this.x < -5) this.x += this.width;
+        if(this.x > this.world.width+5) this.x -= this.world.width;
+        if(this.y < -5) this.y += this.height;
+        if(this.y > this.world.height+5) this.y -= this.world.height;
+    
+    }
 
+
+    act(){
+        let intensities = this.world.fishIntensities(this,this.sensorDirections);
+        let output = this.brain.think(intensities);
+        //make sure output is between limits for [angle,speed]
+        if(output[0] < -1) output[0] = -1;	
+        if(output[0] > 1) output[0] = 1;
+        if(output[1] < -1) output[1] = -1;
+        if(output[1] > 1) output[1] = 1;
+
+        this.angularVelocity += output[0] * this.turnSpeed;
+        this.vx += Math.cos(this.angle) * (this.speed*output[1]);
+        this.vy += Math.sin(this.angle) * (this.speed*output[1]);
     }
     pair(other){
         let child = new Fish(this.world,this.world.width*Math.random(),this.world.height*Math.random());
@@ -289,9 +309,9 @@ class Fish {
         clone.turnSpeed = this.turnSpeed;
         clone.size = this.size;
         clone.color = this.color;
-        clone.score = 0;
+        clone.score = this.score;
         clone.sensorDirections = this.sensorDirections;
-        clone.brain = this.brain;
+        clone.brain = this.brain.clone();
         return clone;
     }
     draw(ctx){
