@@ -68,7 +68,8 @@ class FishBrain {
         for (let i = 0; i < this.memoryWeights.length; i++) {
             for (let j = 0; j < this.memoryWeights[i].length; j++) {
                 if(Math.random() < factor/2){this.memoryWeights[i][j] += factor*(Math.random() * 2 - 1);}
-                if(Math.random() < factor/60) this.memoryWeights[i][j] = (Math.random() * 2 - 1) * 0.1;
+                if(Math.random() < factor/60) this.memoryWeights[i][j] = (Math.random()) * 0.8;
+                if(this.memoryWeights[i][j] < 0) this.memoryWeights[i][j] = 0;
             }
         }
 
@@ -102,7 +103,7 @@ class FishBrain {
                 }
             }
         }
-        
+
 
 
         return child;
@@ -181,7 +182,9 @@ class FishBrain {
         for (let i = 0; i < this.layerShape.length; i++) {
             for (let j = 0; j < this.layerShape[i]; j++) {
                 ctx.fillStyle = "black";
-                ctx.strokeStyle = "black";
+                //slightly blueish if memory is used
+                if(this.memoryWeights[i][j] != 0) ctx.fillStyle = "rgb(0,0,"+Math.abs(this.memoryWeights[i][j])*255+")";
+
                 ctx.lineWidth = 1;
                 ctx.beginPath();
                 ctx.arc(layerX[i][j],layerY[i][j],circleRadius,0,2 * Math.PI);
