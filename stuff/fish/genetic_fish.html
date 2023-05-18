@@ -151,55 +151,33 @@
 
 
         function saveAllWeights() {
-            let weights = [];
-            for (let i = 0; i < sim.fishes.length; i++) {
-                weights.push(sim.fishes[i].brain.weights);
-            }
-            localStorage.setItem("weights",JSON.stringify(weights));
-            let biases = [];
-            for (let i = 0; i < sim.fishes.length; i++) {
-                biases.push(sim.fishes[i].brain.biases);
-            }
-            localStorage.setItem("biases",JSON.stringify(biases));
-            //save fitnesses history
-            localStorage.setItem("fitnesses",JSON.stringify(sim.fitnessHistory));
+            //serialize simulation
+            let serialized = sim.serialize();
+            //save to local storage
+            localStorage.setItem("simulation",JSON.stringify(serialized));
+
+            
+
+        
         }
         function loadAllWeights() {
-            let weights = JSON.parse(localStorage.getItem("weights"));
-            for (let i = 0; i < sim.fishes.length; i++) {
-                sim.fishes[i].brain.weights = weights[i];
-            }
-            let biases = JSON.parse(localStorage.getItem("biases"));
-            for (let i = 0; i < sim.fishes.length; i++) {
-                sim.fishes[i].brain.biases = biases[i];
-            }
-            //load fitnesses history
-            sim.fitnessHistory = JSON.parse(localStorage.getItem("fitnesses"));
-            sim.generation = sim.fitnessHistory.length;
+            //load from local storage
+            let serialized = JSON.parse(localStorage.getItem("simulation"));
+            //deserialize simulation
+            sim = Simulation.deserialize(serialized);
+            //update graph
+            drawGraph(sim.fitnessHistory);
         }
 
         function exportClipboard() {
-            let weights = [];
-            for (let i = 0; i < sim.fishes.length; i++) {
-                weights.push(sim.fishes[i].brain.weights);
-            }
-            let biases = [];
-            for (let i = 0; i < sim.fishes.length; i++) {
-                biases.push(sim.fishes[i].brain.biases);
-            }
-            let data = {weights:weights,biases:biases};
+            let data = sim.serialize();
             navigator.clipboard.writeText(JSON.stringify(data));
         }
 
         function importClipboard() {
             navigator.clipboard.readText().then(text => {
                 let data = JSON.parse(text);
-                for (let i = 0; i < sim.fishes.length; i++) {
-                    sim.fishes[i].brain.weights = data.weights[i];
-                }
-                for (let i = 0; i < sim.fishes.length; i++) {
-                    sim.fishes[i].brain.biases = data.biases[i];
-                }
+                sim = Simulation.deserialize(data);
             });
         }
 

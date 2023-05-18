@@ -148,6 +148,28 @@ class Simulation {
         this.generation++;
     }
 
+    serialize(){
+        return {
+            fishes: this.fishes.map(fish => fish.serialize()),
+            food: this.food.map(food => food.serialize()),
+            fitnessHistory: this.fitnessHistory,
+            generation: this.generation,
+            tick: this.tick,
+            topFish: this.topFish.serialize()
+        }
+    }
+    static deserialize(serialized){
+        let sim = new Simulation(0);
+        sim.fishes = serialized.fishes.map(fish => Fish.deserialize(sim,fish));
+        sim.food = serialized.food.map(food => Food.deserialize(sim,food));
+        sim.fitnessHistory = serialized.fitnessHistory;
+        sim.generation = serialized.generation;
+        sim.tick = serialized.tick;
+        sim.topFish = Fish.deserialize(sim,serialized.topFish);
+        return sim;
+    }
+    
+
 
 }
 class Food {
@@ -163,6 +185,7 @@ class Food {
         ctx.arc(this.x,this.y,this.size,0,2 * Math.PI);
         ctx.fill();
     }
+    
 }
 
 
