@@ -257,7 +257,7 @@ class Fish {
 
         //for low or high speed, subtract some points, depending on how far away from 1.4 it is
 
-        this.score -= Math.abs(this.angularVelocity);
+        this.score -= Math.abs(this.angularVelocity)*10;
 
 
         //eat food
