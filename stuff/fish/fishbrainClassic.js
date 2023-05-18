@@ -68,7 +68,7 @@ class FishBrain {
         for (let i = 1; i < this.memoryWeights.length-1; i++) {
             for (let j = 0; j < this.memoryWeights[i].length; j++) {
                 if(Math.random() < factor/2){this.memoryWeights[i][j] += factor*(Math.random() * 2 - 1);}
-                if(Math.random() < factor/60) this.memoryWeights[i][j] = (Math.random()) * 0.8;
+                if(Math.random() < factor/60) this.memoryWeights[i][j] = (Math.random()) * 1.5;
                 if(this.memoryWeights[i][j] < 0) this.memoryWeights[i][j] = 0;
             }
         }
