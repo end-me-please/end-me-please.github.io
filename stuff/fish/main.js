@@ -241,7 +241,6 @@ class Fish {
         if(Math.abs(Math.sqrt(this.vx ** 2 + this.vy ** 2) - 0) < 0.1) this.score += 0.15;
 
         //for low or high speed, subtract some points, depending on how far away from 1.4 it is
-        this.score -= Math.abs(Math.sqrt(this.vx ** 2 + this.vy ** 2) - 1.4) * 0.2;
 
         this.score -= Math.abs(this.angularVelocity);
 
