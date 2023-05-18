@@ -2,7 +2,7 @@ class FishBrain {
     constructor() {
         this.inputSize = 16;
         this.outputSize = 2;
-        this.layerShape = [this.inputSize,12,12,8,this.outputSize];
+        this.layerShape = [this.inputSize,8,10,6,this.outputSize];
         //count total number of nodes
         
         //all values from previous layer are multiplied by weights of their connections and added to all values of the next layer
@@ -12,7 +12,7 @@ class FishBrain {
             for (let j = 0; j < this.layerShape[i]; j++) {
                 this.weights[i].push([]);
                 for (let k = 0; k < this.layerShape[i + 1]; k++) {
-                    this.weights[i][j].push(Math.random() * 2 - 1);
+                    this.weights[i][j].push((Math.random() * 2 - 1)*0.1);
                 }
             }
         }
@@ -22,7 +22,7 @@ class FishBrain {
             this.biases.push([]);
             for (let j = 0; j < this.layerShape[i]; j++) {
                 if(i==0||i==this.layerShape.length-1) this.biases[i].push(0);
-                else this.biases[i].push((Math.random() * 2 - 1)*0.0001);
+                else this.biases[i].push((Math.random() * 2 - 1)*0.00001);
             }
         }
         this.memoryWeights = [];

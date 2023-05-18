@@ -199,7 +199,7 @@ class Food {
         food.size = serialized.size;
         return food;
     }
-    
+
 }
 
 
@@ -250,7 +250,9 @@ class Fish {
 
         
         //get points for speed being exactly 1.4
-        if(Math.abs(Math.sqrt(this.vx ** 2 + this.vy ** 2) - 0) < 0.1) this.score += 0.15;
+        let velocity = Math.sqrt(this.vx ** 2 + this.vy ** 2);
+        let diff = Math.abs(velocity - 0.2);
+        this.score -= diff;
 
         //for low or high speed, subtract some points, depending on how far away from 1.4 it is
 
