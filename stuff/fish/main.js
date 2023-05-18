@@ -26,7 +26,9 @@ class Simulation {
           if(this.food.length == 0) break;
         }
         this.evolve();
+        let tmp = this.tick;
         this.tick = 0;
+        return tmp;
     }
 
 
@@ -72,7 +74,7 @@ class Simulation {
         this.tick++;
         for (let i = 0; i < this.fishes.length; i++) {
             this.fishes[i].update();
-            if(this.tick % 12 == 0) this.fishes[i].act();
+            if(this.tick % 8 == 0) this.fishes[i].act();
         }
     }
 
@@ -206,7 +208,7 @@ class Fish {
         this.score = 0;
         this.sensorDirections = 8;
         this.brain = new FishBrain();
-        this.speed = 1.1; //acceleration
+        this.speed = 0.8; //acceleration
 
     }
     update(){
@@ -268,11 +270,14 @@ class Fish {
         }
         */
 
-        if(this.x < -5) this.x += this.world.width;
-        if(this.x > this.world.width+5) this.x -= this.world.width;
-        if(this.y < -5) this.y += this.world.height;
-        if(this.y > this.world.height+5) this.y -= this.world.height;
-    
+        //bounce off the walls, losing speed and points
+        if(this.x < 0) {this.x = 0; this.vx *= -0.5; this.score -= 0.1;}
+        if(this.x > this.world.width) {this.x = this.world.width; this.vx *= -0.5; this.score -= 0.1;}
+        if(this.y < 0) {this.y = 0; this.vy *= -0.5; this.score -= 0.1;}
+        if(this.y > this.world.height) {this.y = this.world.height; this.vy *= -0.5; this.score -= 0.1;}
+
+
+
     }
 
 

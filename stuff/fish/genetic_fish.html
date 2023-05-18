@@ -42,6 +42,7 @@
             <li>actual physics engine (net is only called once every 12 ticks, hopefully doesnt affect behaviour much, has massive performance boost)</li>
             <li>lots of physics stuff, objective now is staying stationary</li>
             <li>blue nodes for memory, carry their values to the next tick</li>
+            <li>walls are bouncy, fine tuning parameters</li>
         </div>
     </body>
 
@@ -136,9 +137,9 @@
             let generationTicks = 3000;
             for (let i = 0; i < generations; i++) {
                 let startTime = Date.now();
-                sim.runGeneration(3000);
+                let ranTicks = sim.runGeneration(3000);
                 let endTime = Date.now();
-                console.log("generation "+sim.generation + " finished, ticks: "+generationTicks+", time: "+(endTime-startTime)+"ms");
+                console.log("generation "+sim.generation + " finished, ticks: "+ranTicks+", time: "+(endTime-startTime)+"ms");
             }
             drawGraph(sim.fitnessHistory);
             autoUpdate = true;
