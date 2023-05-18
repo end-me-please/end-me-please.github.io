@@ -174,7 +174,7 @@ class Fish {
         this.vx = 0;
         this.vy = 0;
         this.angularVelocity = 0;
-        this.drag = 0.006;
+        this.drag = 0;
 
         this.angle = Math.random() * 2 * Math.PI;
         this.turnSpeed = 0.01;
@@ -220,7 +220,18 @@ class Fish {
         if(minDistance > 5 * this.size) this.score += 0.1; else this.score -= 0.1; 
         if(minDistance < 9 * this.size) this.score += 0.05;
 
+        //get points for speed being exactly 1.4
+        if(Math.abs(Math.sqrt(this.vx ** 2 + this.vy ** 2) - 1.4) < 0.1) this.score += 0.15;
+
+        //for low or high speed, subtract some points, depending on how far away from 1.4 it is
+        this.score -= Math.abs(Math.sqrt(this.vx ** 2 + this.vy ** 2) - 1.4) * 0.06;
+
+        this.score -= Math.abs(this.angularVelocity);
+
+
         //eat food
+        //actually dont eat food, food is just a static reference point now
+        /*
         for(let i = 0; i < this.world.food.length; i++){
             let food = this.world.food[i];
             let distance = Math.sqrt((food.x - this.x) ** 2 + (food.y - this.y) ** 2);
@@ -232,6 +243,8 @@ class Fish {
                 }
             }
         }
+        */
+
         if(this.x < -5) this.x += this.world.width;
         if(this.x > this.world.width+5) this.x -= this.world.width;
         if(this.y < -5) this.y += this.world.height;
