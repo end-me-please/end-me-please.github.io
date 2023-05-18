@@ -187,6 +187,18 @@ class Food {
         ctx.arc(this.x,this.y,this.size,0,2 * Math.PI);
         ctx.fill();
     }
+    serialize(){
+        return {
+            x: this.x,
+            y: this.y,
+            size: this.size
+        }
+    }
+    static deserialize(world,serialized){
+        let food = new Food(world,serialized.x,serialized.y);
+        food.size = serialized.size;
+        return food;
+    }
     
 }
 
