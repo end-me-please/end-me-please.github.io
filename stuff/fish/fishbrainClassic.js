@@ -53,15 +53,15 @@ class FishBrain {
                     if(Math.random() < factor/2){
                     this.weights[i][j][k] += factor*(Math.random() * 2 - 1);
                     }
-                    if(Math.random() < factor/60) this.weights[i][j][k] = (Math.random() * 2 - 1) * 0.5;
+                    if(Math.random() < factor/700) this.weights[i][j][k] = (Math.random() * 2 - 1) * 0.5;
                 }
             }
         }
         //bias mutation
         for (let i = 0; i < this.biases.length; i++) {
             for (let j = 0; j < this.biases[i].length; j++) {
-                if(Math.random() < factor/3){this.biases[i][j] += (factor/5)*((Math.random() * 2 - 1)*0.02);}
-                if(Math.random() < factor/100) this.biases[i][j] = (Math.random() * 2 - 1) * 0.07;
+                if(Math.random() < factor/3){this.biases[i][j] += (factor/5)*((Math.random() * 2 - 1)*0.001);}
+                if(Math.random() < factor/100) this.biases[i][j] = 0;
             }
         }
         //memory mutation
