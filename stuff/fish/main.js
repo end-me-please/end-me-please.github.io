@@ -253,6 +253,7 @@ class Fish {
         let velocity = Math.sqrt(this.vx ** 2 + this.vy ** 2);
         let diff = Math.abs(velocity - 0.2);
         this.score -= diff;
+        if(diff < 0.1) this.score += 0.1;
 
         //for low or high speed, subtract some points, depending on how far away from 1.4 it is
 
