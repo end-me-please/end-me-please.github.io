@@ -236,20 +236,12 @@ class Fish {
 
         if (minDistance < 2*this.size) {this.score -=5;this.x = oldX;this.y = oldY; this.x+=Math.cos(-otherAngle);this.y+=Math.sin(-otherAngle);};
 
-        //close proximity to wall bad
-        if(this.x < 5) this.score -= 0.01;
-        if(this.x > this.world.width - 5) this.score -= 0.01;
-        if(this.y < 5) this.score -= 1;
-        if(this.y > this.world.height - 5) this.score -= 0.01;
-
-        if(minDistance > 5 * this.size) this.score += 0.1; else this.score -= 0.1; 
-        if(minDistance < 9 * this.size) this.score += 0.05;
-
+        
         //get points for speed being exactly 1.4
         if(Math.abs(Math.sqrt(this.vx ** 2 + this.vy ** 2) - 0) < 0.1) this.score += 0.15;
 
         //for low or high speed, subtract some points, depending on how far away from 1.4 it is
-        this.score -= Math.abs(Math.sqrt(this.vx ** 2 + this.vy ** 2) - 1.4) * 0.06;
+        this.score -= Math.abs(Math.sqrt(this.vx ** 2 + this.vy ** 2) - 1.4) * 0.2;
 
         this.score -= Math.abs(this.angularVelocity);
 
