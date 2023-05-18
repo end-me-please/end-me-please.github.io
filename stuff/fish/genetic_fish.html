@@ -89,7 +89,7 @@
                 avgScore += sim.fishes[i].score;
                 //log if nan
                 if(isNaN(sim.fishes[i].score)) console.log("nan score");
-                
+
                 if(sim.fishes[i].score > highScore) highScore = sim.fishes[i].score;
                 if(sim.fishes[i].score < lowScore) lowScore = sim.fishes[i].score;
             }
@@ -203,7 +203,7 @@
 
 
         setInterval(() => {
-            if(autoUpdate&&tick>2000){
+            if(autoUpdate&&tick>3000){
             sim.evolve();
             console.log("generation "+sim.generation + " finished, ticks: "+tick);
             tick = 0;
@@ -213,7 +213,7 @@
 
 
         }
-        }, 15000);
+        }, 18000);
 
 
         function drawGraph(data){
