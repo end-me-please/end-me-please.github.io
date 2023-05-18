@@ -44,7 +44,7 @@ class Simulation {
             let angle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x) - fish.angle;
             if(angle < 0) angle += 2 * Math.PI;
             let channel = Math.floor(angle / (2 * Math.PI / channels));
-            
+            //nan check
             intensities[channel] += 1 / distance;
         }
         
@@ -59,6 +59,7 @@ class Simulation {
             let angle = Math.atan2(food.y - fish.y, food.x - fish.x) - fish.angle;
             if(angle < 0) angle += 2 * Math.PI;
             let channel = Math.floor(angle / (2 * Math.PI / channels));
+            
             intensities[channel+channels] += 1 / distance;
             
         }
@@ -231,9 +232,9 @@ class Fish {
                 }
             }
         }
-        if(this.x < -5) this.x += this.width;
+        if(this.x < -5) this.x += this.world.width;
         if(this.x > this.world.width+5) this.x -= this.world.width;
-        if(this.y < -5) this.y += this.height;
+        if(this.y < -5) this.y += this.world.height;
         if(this.y > this.world.height+5) this.y -= this.world.height;
     
     }
@@ -248,9 +249,13 @@ class Fish {
         if(output[1] < -1) output[1] = -1;
         if(output[1] > 1) output[1] = 1;
 
+        
+
         this.angularVelocity += output[0] * this.turnSpeed;
         this.vx += Math.cos(this.angle) * (this.speed*output[1]);
         this.vy += Math.sin(this.angle) * (this.speed*output[1]);
+        //check if anythign is NaN and log it
+
     }
     pair(other){
         let child = new Fish(this.world,this.world.width*Math.random(),this.world.height*Math.random());

@@ -2,7 +2,7 @@ class FishBrain {
     constructor() {
         this.inputSize = 16;
         this.outputSize = 2;
-        this.layerShape = [this.inputSize,10,this.outputSize];
+        this.layerShape = [this.inputSize,12,8,this.outputSize];
         //count total number of nodes
         
         //all values from previous layer are multiplied by weights of their connections and added to all values of the next layer
@@ -65,7 +65,7 @@ class FishBrain {
             }
         }
         //memory mutation
-        for (let i = 0; i < this.memoryWeights.length; i++) {
+        for (let i = 1; i < this.memoryWeights.length-1; i++) {
             for (let j = 0; j < this.memoryWeights[i].length; j++) {
                 if(Math.random() < factor/2){this.memoryWeights[i][j] += factor*(Math.random() * 2 - 1);}
                 if(Math.random() < factor/60) this.memoryWeights[i][j] = (Math.random()) * 0.8;
@@ -117,21 +117,21 @@ class FishBrain {
             values[i] = [];
             for (let j = 0; j < this.layerShape[i]; j++) {
                 values[i][j] = this.lastValues[i][j]*this.memoryWeights[i][j];
-                //if output layer, set values to 0
-                if(i == this.layerShape.length - 1) values[i][j] = 0;
             }
         }
+        //apply memory, multiply lastValues with memoryWeights and add to result
         
+
+
         values[0] = input;
         //weight array is of shape weight=[layer][node][next node]
         for (let i = 0; i < this.layerShape.length - 1; i++) {
-            let matrix = new Matrix(this.weights[i]);
-            let inputMatrix = new Matrix([values[i]]);
-            let result = inputMatrix.multiply(matrix);
-            
-            result.add(new Matrix([this.biases[i+1]]));
-            result.map(Math.tanh);
-            values[i+1] = result.data[0];
+            for (let j = 0; j < this.layerShape[i]; j++) {
+                for (let k = 0; k < this.layerShape[i + 1]; k++) {
+                    values[i + 1][k] += values[i][j] * this.weights[i][j][k];
+                }
+            }    
+        
         }
 
 
@@ -141,6 +141,10 @@ class FishBrain {
 
 
     draw(ctx) {
+      
+
+
+
         let height = ctx.canvas.height;
         let width = ctx.canvas.width;
         ctx.clearRect(0,0,width,height);
@@ -183,7 +187,7 @@ class FishBrain {
             for (let j = 0; j < this.layerShape[i]; j++) {
                 ctx.fillStyle = "black";
                 //slightly blueish if memory is used
-                if(this.memoryWeights[i][j] != 0) ctx.fillStyle = "rgb(0,0,"+Math.abs(this.memoryWeights[i][j])*255+")";
+                if(this.memoryWeights[i][j] != 0) ctx.fillStyle = "rgb(0,0,"+Math.abs(5*this.memoryWeights[i][j])*255+")";
 
                 ctx.lineWidth = 1;
                 ctx.beginPath();
@@ -227,7 +231,8 @@ class FishBrain {
             outputSize: this.outputSize,
             layerShape: this.layerShape,
             weights: this.weights,
-            biases: this.biases
+            biases: this.biases,
+            memoryWeights: this.memoryWeights,
         };
 
         return data;
@@ -240,6 +245,7 @@ class FishBrain {
         brain.layerShape = data.layerShape;
         brain.weights = data.weights;
         brain.biases = data.biases;
+        brain.memoryWeights = data.memoryWeights;
 
         return brain;
     }
