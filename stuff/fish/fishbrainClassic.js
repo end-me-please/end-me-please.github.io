@@ -12,7 +12,7 @@ class FishBrain {
             for (let j = 0; j < this.layerShape[i]; j++) {
                 this.weights[i].push([]);
                 for (let k = 0; k < this.layerShape[i + 1]; k++) {
-                    this.weights[i][j].push((Math.random() * 2 - 1)*0.1);
+                    this.weights[i][j].push((Math.random() * 2 - 1)*0.3);
                 }
             }
         }
@@ -22,7 +22,7 @@ class FishBrain {
             this.biases.push([]);
             for (let j = 0; j < this.layerShape[i]; j++) {
                 if(i==0||i==this.layerShape.length-1) this.biases[i].push(0);
-                else this.biases[i].push((Math.random() * 2 - 1)*0.00001);
+                else this.biases[i].push((Math.random() * 2 - 1)*0.0001);
             }
         }
         this.memoryWeights = [];
@@ -187,7 +187,7 @@ class FishBrain {
             for (let j = 0; j < this.layerShape[i]; j++) {
                 ctx.fillStyle = "black";
                 //slightly blueish if memory is used
-                if(this.memoryWeights[i][j] != 0) ctx.fillStyle = "rgb(0,0,"+Math.abs(5*this.memoryWeights[i][j])*255+")";
+                if(this.memoryWeights[i][j] != 0) ctx.fillStyle = "rgb(0,0,"+Math.abs(2*this.memoryWeights[i][j])*255+")";
 
                 ctx.lineWidth = 1;
                 ctx.beginPath();

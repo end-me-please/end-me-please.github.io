@@ -211,7 +211,7 @@ class Fish {
         this.vx = 0;
         this.vy = 0;
         this.angularVelocity = 0;
-        this.drag = 0;
+        this.drag = 0.01;
 
         this.angle = Math.random() * 2 * Math.PI;
         this.turnSpeed = 0.01;
@@ -220,7 +220,7 @@ class Fish {
         this.score = 0;
         this.sensorDirections = 8;
         this.brain = new FishBrain();
-        this.speed = 0.8; //acceleration
+        this.speed = 0.85; //acceleration
 
     }
     update(){
@@ -245,36 +245,30 @@ class Fish {
             let distance = Math.sqrt((otherFish.x - this.x) ** 2 + (otherFish.y - this.y) ** 2);
             if(distance < minDistance) {minDistance = distance; otherAngle = Math.atan2(otherFish.y - this.y, otherFish.x - this.x)};
         }
+        //nan check
+        if (isNaN(minDistance)) {console.log("minDistance nan");minDistance = 200};
 
-        if (minDistance < 2*this.size) {this.score -=5;this.x = oldX;this.y = oldY; this.x+=Math.cos(-otherAngle);this.y+=Math.sin(-otherAngle);};
-
+        if (minDistance < 2*this.size) {this.score -=5;this.x = oldX;this.y = oldY; this.x+=Math.cos(-otherAngle);this.y+=Math.sin(-otherAngle);this.vx = 0;this.vy = 0;this.angularVelocity = 0;}
         
-        //get points for speed being exactly 1.4
-        let velocity = Math.sqrt(this.vx ** 2 + this.vy ** 2);
-        let diff = Math.abs(velocity - 0.2);
-        this.score -= diff;
-        if(diff < 0.1) this.score += 0.1;
-
-        //for low or high speed, subtract some points, depending on how far away from 1.4 it is
-
-        this.score -= Math.abs(this.angularVelocity)*10;
+        this.score -= minDistance/(10*this.size);
+        this.score -= Math.abs(this.angularVelocity)*3;
 
 
         //eat food
         //actually dont eat food, food is just a static reference point now
-        /*
+        
         for(let i = 0; i < this.world.food.length; i++){
             let food = this.world.food[i];
             let distance = Math.sqrt((food.x - this.x) ** 2 + (food.y - this.y) ** 2);
             if(distance < 1 * this.size) {
                 this.world.food.splice(i,1);
-                this.score += 40;
+                this.score += 25;
                 if(Math.random() > 0.2){
                 this.world.food.push(new Food(this.world,this.world.width*Math.random(),this.world.height*Math.random()));
                 }
             }
         }
-        */
+        
 
         //bounce off the walls, losing speed and points
         if(this.x < 0) {this.x = 0; this.vx *= -0.5; this.score -= 0.1;}
@@ -388,7 +382,7 @@ class Fish {
             color: this.color,
             score: this.score,
             sensorDirections: this.sensorDirections,
-            brain: this.brain.serialize()
+            brain: this.brain.serialize(),
         }
     }
     static deserialize(world,serialized){
