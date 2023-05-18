@@ -2,7 +2,7 @@ class FishBrain {
     constructor() {
         this.inputSize = 16;
         this.outputSize = 2;
-        this.layerShape = [this.inputSize,10,6,this.outputSize];
+        this.layerShape = [this.inputSize,10,this.outputSize];
         //count total number of nodes
         
         //all values from previous layer are multiplied by weights of their connections and added to all values of the next layer
@@ -25,28 +25,53 @@ class FishBrain {
                 else this.biases[i].push((Math.random() * 2 - 1)*0.0001);
             }
         }
+        this.memoryWeights = [];
+        //for each node one
+        for (let i = 0; i < this.layerShape.length; i++) {
+            this.memoryWeights.push([]);
+            for (let j = 0; j < this.layerShape[i]; j++) {
+                this.memoryWeights[i].push(0);
+            }
+        }
+
 
         
         this.lastValues = [];
+        //initialize lastValues
+        for (let i = 0; i < this.layerShape.length; i++) {
+            this.lastValues.push([]);
+            for (let j = 0; j < this.layerShape[i]; j++) {
+                this.lastValues[i].push(0);
+            }
+        }
+
     }
     mutate(factor){
         for (let i = 0; i < this.weights.length; i++) {
             for (let j = 0; j < this.weights[i].length; j++) {
                 for (let k = 0; k < this.weights[i][j].length; k++) {
-                    if(Math.random() < factor/3){
+                    if(Math.random() < factor/2){
                     this.weights[i][j][k] += factor*(Math.random() * 2 - 1);
                     }
-                    if(Math.random() < factor/100) this.weights[i][j][k] = (Math.random() * 2 - 1) * 0.5;
+                    if(Math.random() < factor/60) this.weights[i][j][k] = (Math.random() * 2 - 1) * 0.5;
                 }
             }
         }
         //bias mutation
         for (let i = 0; i < this.biases.length; i++) {
             for (let j = 0; j < this.biases[i].length; j++) {
-                if(Math.random() < factor/3){this.biases[i][j] += (factor/10)*((Math.random() * 2 - 1)*0.005);}
-                if(Math.random() < factor/100) this.biases[i][j] = (Math.random() * 2 - 1) * 0.009;
+                if(Math.random() < factor/3){this.biases[i][j] += (factor/5)*((Math.random() * 2 - 1)*0.02);}
+                if(Math.random() < factor/100) this.biases[i][j] = (Math.random() * 2 - 1) * 0.07;
             }
         }
+        //memory mutation
+        for (let i = 0; i < this.memoryWeights.length; i++) {
+            for (let j = 0; j < this.memoryWeights[i].length; j++) {
+                if(Math.random() < factor/2){this.memoryWeights[i][j] += factor*(Math.random() * 2 - 1);}
+                if(Math.random() < factor/60) this.memoryWeights[i][j] = (Math.random() * 2 - 1) * 0.1;
+            }
+        }
+
     }
     pair (other) {
         let child = new FishBrain();
@@ -69,6 +94,16 @@ class FishBrain {
                 }
             }
         }
+        for (let i = 0; i < this.memoryWeights.length; i++) {
+            for (let j = 0; j < this.memoryWeights[i].length; j++) {
+                child.memoryWeights[i][j] = Math.random() < 0.5 ? this.memoryWeights[i][j] : other.memoryWeights[i][j];
+                if(Math.random() < 0.3) {
+                    child.memoryWeights[i][j] = (this.memoryWeights[i][j] + other.memoryWeights[i][j]) / 2;
+                }
+            }
+        }
+        
+
 
         return child;
     }
@@ -76,12 +111,16 @@ class FishBrain {
         //use matrix operations instead
         if(input.length != this.inputSize) throw new Error("size does not match input size: "+ input.length);
         let values = [];
+        
         for (let i = 0; i < this.layerShape.length; i++) {
             values[i] = [];
             for (let j = 0; j < this.layerShape[i]; j++) {
-                values[i][j] = 0;
+                values[i][j] = this.lastValues[i][j]*this.memoryWeights[i][j];
+                //if output layer, set values to 0
+                if(i == this.layerShape.length - 1) values[i][j] = 0;
             }
         }
+        
         values[0] = input;
         //weight array is of shape weight=[layer][node][next node]
         for (let i = 0; i < this.layerShape.length - 1; i++) {

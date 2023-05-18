@@ -173,7 +173,7 @@ class Fish {
         this.vx = 0;
         this.vy = 0;
         this.angularVelocity = 0;
-        this.drag = 0.05;
+        this.drag = 0.006;
 
         this.angle = Math.random() * 2 * Math.PI;
         this.turnSpeed = 0.01;
@@ -182,7 +182,7 @@ class Fish {
         this.score = 0;
         this.sensorDirections = 8;
         this.brain = new FishBrain();
-        this.speed = 0.8; //acceleration
+        this.speed = 1.1; //acceleration
 
     }
     update(){
@@ -211,12 +211,12 @@ class Fish {
         if (minDistance < 2*this.size) {this.score -=5;this.x = oldX;this.y = oldY; this.x+=Math.cos(-otherAngle);this.y+=Math.sin(-otherAngle);};
 
         //close proximity to wall bad
-        if(this.x < 5) this.score -= 1;
-        if(this.x > this.world.width - 5) this.score -= 1;
+        if(this.x < 5) this.score -= 0.01;
+        if(this.x > this.world.width - 5) this.score -= 0.01;
         if(this.y < 5) this.score -= 1;
-        if(this.y > this.world.height - 5) this.score -= 1;
+        if(this.y > this.world.height - 5) this.score -= 0.01;
 
-        if(minDistance > 5 * this.size) this.score += 0.1;
+        if(minDistance > 5 * this.size) this.score += 0.1; else this.score -= 0.1; 
         if(minDistance < 9 * this.size) this.score += 0.05;
 
         //eat food
@@ -225,7 +225,7 @@ class Fish {
             let distance = Math.sqrt((food.x - this.x) ** 2 + (food.y - this.y) ** 2);
             if(distance < 1 * this.size) {
                 this.world.food.splice(i,1);
-                this.score += 100;
+                this.score += 40;
                 if(Math.random() > 0.2){
                 this.world.food.push(new Food(this.world,this.world.width*Math.random(),this.world.height*Math.random()));
                 }
@@ -280,7 +280,7 @@ class Fish {
         }
 
 
-        if(Math.random() < 0.3) child.mutate(Math.random()*0.5);
+        if(Math.random() < 0.5) child.mutate(Math.random()*0.5);
         return child;
     }
     mutate(factor){

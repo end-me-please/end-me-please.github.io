@@ -137,6 +137,7 @@
                 let endTime = Date.now();
                 console.log("generation "+sim.generation + " finished, ticks: "+generationTicks+", time: "+(endTime-startTime)+"ms");
             }
+            drawGraph(sim.fitnessHistory);
             autoUpdate = true;
         }
 
