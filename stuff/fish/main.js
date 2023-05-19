@@ -46,7 +46,6 @@ class Simulation {
             let angle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x) - fish.angle;
             if(angle < 0) angle += 2 * Math.PI;
             let channel = Math.floor(angle / (2 * Math.PI / channels));
-            //nan check
             intensities[channel] += 1 / distance;
         }
         
@@ -101,7 +100,7 @@ class Simulation {
         //get the top 10% of fishes
         let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
         //check if top fish is better than previous top fish
-        if(sortedFishes[0].score > this.topFish.score) this.topFish = sortedFishes[0];
+        if(sortedFishes[0].score > this.topFish.score) this.topFish = sortedFishes[0].clone();
         
         //median of
         let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 15));
@@ -157,11 +156,14 @@ class Simulation {
             fitnessHistory: this.fitnessHistory,
             generation: this.generation,
             tick: this.tick,
-            topFish: this.topFish.serialize()
+            topFish: this.topFish.serialize(),
+            numFish: this.numFish,
+            numFood: this.numFood,
         }
     }
     static deserialize(serialized){
-        let sim = new Simulation(0);
+        let sim = new Simulation(serialized.numFish);
+        sim.numFood = serialized.numFood;
         sim.fishes = serialized.fishes.map(fish => Fish.deserialize(sim,fish));
         sim.food = serialized.food.map(food => Food.deserialize(sim,food));
         sim.fitnessHistory = serialized.fitnessHistory;
@@ -211,7 +213,7 @@ class Fish {
         this.vx = 0;
         this.vy = 0;
         this.angularVelocity = 0;
-        this.drag = 0.01;
+        this.drag = 0.05;
 
         this.angle = Math.random() * 2 * Math.PI;
         this.turnSpeed = 0.01;
@@ -220,7 +222,7 @@ class Fish {
         this.score = 0;
         this.sensorDirections = 8;
         this.brain = new FishBrain();
-        this.speed = 0.85; //acceleration
+        this.speed = 1.85; //acceleration
 
     }
     update(){
@@ -249,8 +251,8 @@ class Fish {
         if (isNaN(minDistance)) {console.log("minDistance nan");minDistance = 200};
 
         if (minDistance < 2*this.size) {this.score -=5;this.x = oldX;this.y = oldY; this.x+=Math.cos(-otherAngle);this.y+=Math.sin(-otherAngle);this.vx = 0;this.vy = 0;this.angularVelocity = 0;}
-        
-        this.score -= minDistance/(10*this.size);
+        console
+        //this.score -= minDistance/(10*this.size);
         this.score -= Math.abs(this.angularVelocity)*3;
 
 
@@ -295,7 +297,6 @@ class Fish {
         this.angularVelocity += output[0] * this.turnSpeed;
         this.vx += Math.cos(this.angle) * (this.speed*output[1]);
         this.vy += Math.sin(this.angle) * (this.speed*output[1]);
-        //check if anythign is NaN and log it
 
     }
     pair(other){
@@ -326,7 +327,7 @@ class Fish {
         }
 
 
-        if(Math.random() < 0.5) child.mutate(Math.random()*0.5);
+        if(Math.random() < 0.7) child.mutate(Math.random());
         return child;
     }
     mutate(factor){
