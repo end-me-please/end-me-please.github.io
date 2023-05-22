@@ -135,19 +135,24 @@
             }
         });
 
-       
-        //instantiate worker.js
-        let worker = new Worker("./worker.js");
+        let worker = null;
+        let workerBusy = false;
+        //try to instantiate worker.js
+        try{
+        worker = new Worker("./worker.js");
         worker.onmessage = e => {
             //read sim from message
             sim = Simulation.deserialize(e.data.sim);
+            workerBusy = false;
             //update graph
             drawGraph(sim.fitnessHistory);
         }
-
+        } catch (error) {
+            console.log(error);
+        }
 
         function fastForward(generations) {
-            /*
+            if(worker == null) {
             autoUpdate = false;
             let generationTicks = 4000;
             for (let i = 0; i < generations; i++) {
@@ -158,9 +163,10 @@
             }
             drawGraph(sim.fitnessHistory);
             autoUpdate = true;
-            */
+            } else {
             worker.postMessage({sim:sim.serialize(),generations:generations});
-        }
+            workerBusy = true;
+        }}
 
 
 
