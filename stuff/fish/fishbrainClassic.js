@@ -60,7 +60,7 @@ class FishBrain {
         //bias mutation
         for (let i = 0; i < this.biases.length; i++) {
             for (let j = 0; j < this.biases[i].length; j++) {
-                if(Math.random() < factor/3){this.biases[i][j] += (factor/5)*((Math.random() * 2 - 1)*0.0005);}
+                if(Math.random() < factor/5){this.biases[i][j] += (factor/5)*((Math.random() * 2 - 1)*0.0005);}
                 if(Math.random() < factor/100) this.biases[i][j] = 0;
             }
         }
@@ -68,7 +68,6 @@ class FishBrain {
         for (let i = 1; i < this.memoryWeights.length-1; i++) {
             for (let j = 0; j < this.memoryWeights[i].length; j++) {
                 if(Math.random() < factor/2){this.memoryWeights[i][j] += factor*(Math.random() * 2 - 1);}
-                if(Math.random() < factor/60) this.memoryWeights[i][j] = (Math.random()) * 1.5;
                 if(this.memoryWeights[i][j] < 0) this.memoryWeights[i][j] = 0;
             }
         }
@@ -131,7 +130,6 @@ class FishBrain {
                     values[i + 1][k] += values[i][j] * this.weights[i][j][k];
                 }
             }    
-        
         }
 
 
@@ -172,6 +170,8 @@ class FishBrain {
         for (let i = 0; i < this.layerShape.length - 1; i++) {
             for (let j = 0; j < this.layerShape[i]; j++) {
                 for (let k = 0; k < this.layerShape[i + 1]; k++) {
+                    if(this.weights[i][j][k] == 0) continue;
+
                     ctx.strokeStyle = this.weights[i][j][k] > 0 ? "green" : "red";
                     ctx.lineWidth = Math.abs(this.weights[i][j][k]) * 5;
                     ctx.beginPath();
@@ -185,6 +185,9 @@ class FishBrain {
         //draw nodes
         for (let i = 0; i < this.layerShape.length; i++) {
             for (let j = 0; j < this.layerShape[i]; j++) {
+
+                //draw red or green circle in node depending on value
+
                 ctx.fillStyle = "black";
                 //slightly blueish if memory is used
                 if(this.memoryWeights[i][j] != 0) ctx.fillStyle = "rgb(0,0,"+Math.abs(2*this.memoryWeights[i][j])*255+")";
@@ -202,17 +205,17 @@ class FishBrain {
                     ctx.arc(layerX[i][j],layerY[i][j],circleRadius*1.5,0,2 * Math.PI);
                     ctx.stroke();
                 }
-
-                //draw red or green circle in node depending on value
-                try{
+                
+                let value = Math.min(1.2,20*Math.abs(this.lastValues[i][j]));
                 ctx.fillStyle = this.lastValues[i][j] > 0 ? "green" : "red";
                 ctx.beginPath();
-                let value = Math.min(1.2,20*Math.abs(this.lastValues[i][j]));
                 ctx.arc(layerX[i][j],layerY[i][j],circleRadius*value*0.5,0,2 * Math.PI);
+                
                 ctx.fill();
-                } catch (error) {
-                }
 
+
+
+                
             }
         }
     }

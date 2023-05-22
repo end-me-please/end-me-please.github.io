@@ -229,7 +229,7 @@ class Fish {
         this.vx = 0;
         this.vy = 0;
         this.angularVelocity = 0;
-        this.drag = 0.05;
+        this.drag = 0.07;
 
         this.angle = Math.random() * 2 * Math.PI;
         this.turnSpeed = 0.01;
