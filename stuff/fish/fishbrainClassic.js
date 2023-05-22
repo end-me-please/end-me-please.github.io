@@ -50,7 +50,7 @@ class FishBrain {
         for (let i = 0; i < this.weights.length; i++) {
             for (let j = 0; j < this.weights[i].length; j++) {
                 for (let k = 0; k < this.weights[i][j].length; k++) {
-                    if(Math.random() < factor/2){
+                    if(Math.random() < factor){
                     this.weights[i][j][k] += factor*(Math.random() * 2 - 1);
                     }
                     if(Math.random() < factor/700) this.weights[i][j][k] = (Math.random() * 2 - 1) * 0.5;
@@ -60,7 +60,7 @@ class FishBrain {
         //bias mutation
         for (let i = 0; i < this.biases.length; i++) {
             for (let j = 0; j < this.biases[i].length; j++) {
-                if(Math.random() < factor){this.biases[i][j] += (factor/5)*((Math.random() * 2 - 1)*0.0005);}
+                if(Math.random() < factor){this.biases[i][j] += (factor/2)*((Math.random() * 2 - 1)*0.0005);}
                 if(Math.random() < factor/100) this.biases[i][j] = 0;
             }
         }

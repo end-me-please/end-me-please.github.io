@@ -13,7 +13,7 @@ class Simulation {
         this.generation = 0;
         this.tick = 0;
         this.crossover = true;
-        this.mutationFactor = 0.15;
+        this.mutationFactor = 0.25;
 
         for (let i = 0; i < numFish; i++) {
             this.fishes.push(new Fish(this,Math.random() * this.width, Math.random() * this.height));
@@ -134,7 +134,7 @@ class Simulation {
         }
         //add top fish to new fishes
         newFishes[0] = this.topFish.clone();
-        
+
 
         //spread evenly
 
@@ -244,7 +244,7 @@ class Fish {
         this.brain = new FishBrain();
         this.speed = 1.85; //acceleration
         this.scanPosition = 0;
-        this.heartRate = 0.5;
+        this.heartRate = 1;
     }
     update(){
         this.x += this.vx;
@@ -373,7 +373,7 @@ class Fish {
     }
     mutate(factor){
         //mutate heart rate
-        if(Math.random() < 0.3) this.heartRate += Math.random() * 0.02 - 0.01;
+        if(Math.random() < 0.3) this.heartRate += Math.random() * 0.2 - 0.1;
 
         //mutate color
         let color = this.color.match(/\d+/g).map(Number);
@@ -400,7 +400,7 @@ class Fish {
         clone.turnSpeed = this.turnSpeed;
         clone.size = this.size;
         clone.color = this.color;
-        clone.score = this.score;
+        clone.score = 0;
         clone.brain = this.brain.clone();
         return clone;
     }
