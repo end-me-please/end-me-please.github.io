@@ -1,6 +1,6 @@
 class FishBrain {
     constructor() {
-        this.inputSize = 3;
+        this.inputSize = 4;
         this.outputSize = 3;
         this.layerShape = [this.inputSize,8,10,6,this.outputSize];
         //count total number of nodes
@@ -206,7 +206,7 @@ class FishBrain {
                     ctx.stroke();
                 }
 
-                let value = Math.min(1.2,20*Math.abs(this.lastValues[i][j]));
+                let value = Math.min(1.2,3*Math.abs(this.lastValues[i][j]));
                 ctx.fillStyle = this.lastValues[i][j] > 0 ? "green" : "red";
                 ctx.beginPath();
                 ctx.arc(layerX[i][j],layerY[i][j],circleRadius*value*0.5,0,2 * Math.PI);
@@ -214,8 +214,8 @@ class FishBrain {
                 ctx.fill();
                 //if input or output, draw number as text
                 if(i==0||i==this.layerShape.length-1){
-                    ctx.fillStyle = "gray";
-                    ctx.font = "12px Arial";
+                    ctx.fillStyle = "yellow";
+                    ctx.font = "10px Arial";
                     ctx.textAlign = "center";
                     ctx.fillText(j, layerX[i][j], layerY[i][j]);
                 }

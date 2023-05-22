@@ -13,7 +13,7 @@ class Simulation {
         this.generation = 0;
         this.tick = 0;
         this.crossover = true;
-        this.mutationFactor = 0.01;
+        this.mutationFactor = 0.15;
 
 
 
@@ -92,10 +92,10 @@ class Simulation {
             let otherFishAngle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x);
             let otherFishAngleDifference = Math.abs(otherFishAngle - adjustedAngle);
             if(otherFishAngleDifference > Math.PI) otherFishAngleDifference = 2 * Math.PI - otherFishAngleDifference;
-            if(otherFishAngleDifference > Math.PI/4) continue;
+            if(otherFishAngleDifference > Math.PI/32) continue;
             let otherFishCorrelation = 1 - otherFishAngleDifference / Math.PI;
             //correct for distance
-            fishCorrelationSum += otherFishCorrelation/distance;
+            fishCorrelationSum += otherFishCorrelation/(15*(distance/range));
     }
 
         for (let i = 0; i < this.food.length; i++) {
@@ -106,10 +106,10 @@ class Simulation {
             let foodAngle = Math.atan2(food.y - fish.y, food.x - fish.x);
             let foodAngleDifference = Math.abs(foodAngle - adjustedAngle);
             if(foodAngleDifference > Math.PI) foodAngleDifference = 2 * Math.PI - foodAngleDifference;
-            if(foodAngleDifference > Math.PI/4) continue;
+            if(foodAngleDifference > Math.PI/32) continue;
             let foodCorrelation = 1 - foodAngleDifference / Math.PI;
             //correct for distance
-            foodCorrelationSum += foodCorrelation/distance;
+            foodCorrelationSum += foodCorrelation/(15*(distance/range));
         }
         return [fishCorrelationSum,foodCorrelationSum];
     }
@@ -270,7 +270,7 @@ class Fish {
         this.vy = 0;
         this.angularVelocity = 0;
         this.drag = 0.07;
-        this.fov = 1.2 * Math.PI;
+        this.fov = 0.7 * Math.PI;
         this.angle = Math.random() * 2 * Math.PI;
         this.turnSpeed = 0.01;
         this.size = 10;
@@ -279,7 +279,7 @@ class Fish {
         this.brain = new FishBrain();
         this.speed = 1.85; //acceleration
         this.scanPosition = 0;
-
+        this.heartRate = 0.5;
     }
     update(){
         this.x += this.vx;
@@ -348,9 +348,9 @@ class Fish {
 
 
 
-        let tmp = this.world.scan(this,scanRad,300);
+        let tmp = this.world.scan(this,scanRad,250);
         
-        let inputData = [...tmp,this.scanPosition];
+        let inputData = [...tmp,this.scanPosition, Math.sin((this.world.tick/50)*this.heartRate)];
 
         let output = this.brain.think(inputData);
 
@@ -370,7 +370,6 @@ class Fish {
         this.angularVelocity += output[0] * this.turnSpeed;
         this.vx += Math.cos(this.angle) * (this.speed*output[1]);
         this.vy += Math.sin(this.angle) * (this.speed*output[1]);
-
 
     }
     pair(other){
@@ -400,10 +399,17 @@ class Fish {
         child.color = color;    
         }
 
+        //average/crossover heart rate
+        if(Math.random() < 0.5) child.heartRate = (this.heartRate + other.heartRate) / 2;
+        else child.heartRate = Math.random()<0.5?this.heartRate:other.heartRate;
+
         if(Math.random() < 0.4) child.mutate(this.world.mutationFactor);
         return child;
     }
     mutate(factor){
+        //mutate heart rate
+        if(Math.random() < 0.3) this.heartRate += Math.random() * 0.02 - 0.01;
+
         //mutate color
         let color = this.color.match(/\d+/g).map(Number);
         for (let i = 0; i < color.length; i++) {
@@ -444,13 +450,19 @@ class Fish {
             ctx.arc(this.x + Math.cos(this.angle) * (this.size*0.6),this.y + Math.sin(this.angle) * (this.size*0.6),this.size/3,0,2 * Math.PI);
             ctx.fill();
             //draw sensor line in direction of scanPosition
-            ctx.strokeStyle = "green";
+            if(this.world.fishes[inspectedFish] == this) {
+            ctx.strokeStyle = "rgba(0,0,0,0.2)";
             ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(this.x,this.y);
-            ctx.lineTo(this.x + Math.cos(this.angle + this.fov / 2 * this.scanPosition) * 300,this.y + Math.sin(this.angle + this.fov / 2 * this.scanPosition) * 300);
+            ctx.beginPath();            
+            //its actually a pie slice going from -pi/32 to pi/32, draw two arcs
+            ctx.lineTo(this.x,this.y);
+            ctx.arc(this.x,this.y,300,this.angle + this.fov / 2 * this.scanPosition - Math.PI/32,this.angle + this.fov / 2 * this.scanPosition + Math.PI/32);
+            ctx.lineTo(this.x,this.y);
+            //from both ends of the arc, draw a line to the center
+            
+            
             ctx.stroke();
-
+        }
 
     }
     serialize(){
