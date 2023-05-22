@@ -1,4 +1,6 @@
 
+
+
 class Simulation {
     constructor(numFish) {
         this.numFood = 50;
@@ -10,6 +12,12 @@ class Simulation {
         this.fitnessHistory = [];
         this.generation = 0;
         this.tick = 0;
+        this.crossover = false;
+        this.mutationRate = 0.2;
+
+
+
+
         for (let i = 0; i < numFish; i++) {
             this.fishes.push(new Fish(this,Math.random() * this.width, Math.random() * this.height));
         }
@@ -99,9 +107,7 @@ class Simulation {
     evolve(){
         //get the top 10% of fishes
         let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
-        //check if top fish is better than previous top fish
-        if(sortedFishes[0].score > this.topFish.score) this.topFish = sortedFishes[0].clone();
-        
+
         //median of
         let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 15));
         this.fitnessHistory[this.generation]=(topFishes[Math.floor(topFishes.length / 2)].score);
@@ -109,12 +115,21 @@ class Simulation {
         
         let newFishes = [];
         //randomly match top fish and pair them to create numFish new fishes
+        
+        if(this.crossover){
         for (let i = 0; i < this.numFish; i++) {
             let fish1 = topFishes[Math.floor(Math.random() * topFishes.length)];
             let fish2 = topFishes[Math.floor(Math.random() * topFishes.length)];
             newFishes.push(fish1.pair(fish2));
         }
-        newFishes[0]=(new Fish(this,this.width*Math.random(),this.height*Math.random()));
+        }else{
+            for (let i = 0; i < this.numFish; i++) {
+                let fish1 = topFishes[Math.floor(Math.random() * topFishes.length)];
+                let newFish = fish1.clone();
+                newFish.mutate(this.mutationFactor);
+                newFishes.push(newFish);
+            }
+        }
         
         //spread evenly
 
@@ -159,6 +174,7 @@ class Simulation {
             topFish: this.topFish.serialize(),
             numFish: this.numFish,
             numFood: this.numFood,
+
         }
     }
     static deserialize(serialized){
@@ -292,8 +308,6 @@ class Fish {
         if(output[1] < -1) output[1] = -1;
         if(output[1] > 1) output[1] = 1;
 
-        
-
         this.angularVelocity += output[0] * this.turnSpeed;
         this.vx += Math.cos(this.angle) * (this.speed*output[1]);
         this.vy += Math.sin(this.angle) * (this.speed*output[1]);
@@ -326,8 +340,7 @@ class Fish {
         child.color = color;    
         }
 
-
-        if(Math.random() < 0.7) child.mutate(Math.random());
+        if(Math.random() < 0.4) child.mutate(this.parent.mutationFactor);
         return child;
     }
     mutate(factor){
