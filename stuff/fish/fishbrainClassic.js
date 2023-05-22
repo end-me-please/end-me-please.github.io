@@ -1,8 +1,8 @@
 class FishBrain {
-    constructor() {
-        this.inputSize = 4;
-        this.outputSize = 3;
-        this.layerShape = [this.inputSize,5,3,5,this.outputSize];
+    constructor(layerShape) {
+        this.inputSize = layerShape[0];
+        this.outputSize = layerShape[layerShape.length-1];
+        this.layerShape = layerShape;
         //count total number of nodes
         
         //all values from previous layer are multiplied by weights of their connections and added to all values of the next layer
@@ -73,7 +73,14 @@ class FishBrain {
 
     }
     pair (other) {
-        let child = new FishBrain();
+        //deep-check if layer shapes match, iterate through layerShape
+        for (let i = 0; i < this.layerShape.length; i++) {
+            if(this.layerShape[i] != other.layerShape[i]) {console.log("layer shape mismatch");return this.clone();};
+        }
+    
+
+        let child = new FishBrain(this.layerShape.map(x=>x));
+        
         for (let i = 0; i < this.weights.length; i++) {
             for (let j = 0; j < this.weights[i].length; j++) {
                 for (let k = 0; k < this.weights[i][j].length; k++) {
@@ -101,11 +108,10 @@ class FishBrain {
                 }
             }
         }
-
-
-
         return child;
     }
+
+
     think(input) {
         //use matrix operations instead
         if(input.length != this.inputSize) throw new Error("size does not match input size: "+ input.length);
@@ -124,8 +130,6 @@ class FishBrain {
                 values[i][j] += this.biases[i][j];
             }
         }
-
-
         values[0] = input;
         //weight array is of shape weight=[layer][node][next node]
         for (let i = 0; i < this.layerShape.length - 1; i++) {
@@ -143,10 +147,6 @@ class FishBrain {
 
 
     draw(ctx) {
-      
-
-
-
         let height = ctx.canvas.height;
         let width = ctx.canvas.width;
         ctx.clearRect(0,0,width,height);
@@ -239,7 +239,7 @@ class FishBrain {
         return sum;
 }
     serialize() {
-        //store important metadata, and weights/biases in binary/bas64 format
+        //store important metadata, and weights/biases
         let data = {
             inputSize: this.inputSize,
             outputSize: this.outputSize,
@@ -253,7 +253,7 @@ class FishBrain {
 
     }
     static deserialize(data) {
-        let brain = new FishBrain();
+        let brain = new FishBrain(data.layerShape);
         brain.inputSize = data.inputSize;
         brain.outputSize = data.outputSize;
         brain.layerShape = data.layerShape;
@@ -266,6 +266,35 @@ class FishBrain {
     clone() {
         return FishBrain.deserialize(this.serialize());
     }
+
+    expand(layer) {
+        //make sure that layer is not input or output layer
+        if(layer == 0 || layer == this.layerShape.length - 1) layer = 1;
+
+        //add a node to that layer
+        this.layerShape[layer]++;
+        //add a row to the weights array
+        this.weights[layer].push([]);
+        //add 0-weights to the previous layer linking to the new node
+        for (let i = 0; i < this.layerShape[layer-1]; i++) {
+            this.weights[layer-1][i].push(0);
+        }
+        //add 0-weights to the next layer linking from the new node
+        for (let i = 0; i < this.layerShape[layer+1]; i++) {
+            this.weights[layer][this.layerShape[layer]-1].push(0);
+        }
+        //add a bias to the new node
+        this.biases[layer].push(0);
+        //add a memory weight to the new node
+        this.memoryWeights[layer].push(0);
+
+        //add a row to the lastValues array
+        this.lastValues[layer].push(0);
+
+
+
+    }
+
 }
 
 

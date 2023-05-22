@@ -14,7 +14,6 @@ class Simulation {
         this.tick = 0;
         this.crossover = true;
         this.mutationFactor = 0.25;
-
         for (let i = 0; i < numFish; i++) {
             this.fishes.push(new Fish(this,Math.random() * this.width, Math.random() * this.height));
         }
@@ -23,7 +22,6 @@ class Simulation {
         for (let i = 0; i < this.numFood; i++) {
             this.food.push(new Food(this,Math.random() * this.width, Math.random() * this.height));
         }
-        this.topFish = this.fishes[0];
     }
     runGeneration(ticks){
         for (let i = 0; i < ticks; i++) {
@@ -54,7 +52,7 @@ class Simulation {
             if(otherFishAngleDifference > Math.PI/32) continue;
             let otherFishCorrelation = 1 - otherFishAngleDifference / Math.PI;
             //correct for distance
-            fishCorrelationSum += otherFishCorrelation/(15*(distance/range));
+            fishCorrelationSum += otherFishCorrelation/(15*((10+distance)/range));
     }
 
         for (let i = 0; i < this.food.length; i++) {
@@ -68,7 +66,7 @@ class Simulation {
             if(foodAngleDifference > Math.PI/32) continue;
             let foodCorrelation = 1 - foodAngleDifference / Math.PI;
             //correct for distance
-            foodCorrelationSum += foodCorrelation/(15*(distance/range));
+            foodCorrelationSum += foodCorrelation/(15*((10+distance)/range));
         }
         return [fishCorrelationSum,foodCorrelationSum];
     }
@@ -106,12 +104,16 @@ class Simulation {
     evolve(){
         //get the top 10% of fishes
         let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
-        //check if top fish is new top fish
-        if(sortedFishes[0].score > this.topFish.score) this.topFish = sortedFishes[0];
-
+        
 
         //median of
         let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 4));
+        if(this.generation%100==0){
+        this.mutationFactor*=0.9;
+        let layer = Math.floor(Math.random() * 3);
+        topFishes.forEach(fish => fish.brain.expand(layer));
+        this.mutate(0.4);    
+        }
         this.fitnessHistory[this.generation]=(topFishes[Math.floor(topFishes.length / 2)].score);
         
         
@@ -133,9 +135,8 @@ class Simulation {
             }
         }
         //add top fish to new fishes
-        newFishes[0] = this.topFish.clone();
 
-
+        
         //spread evenly
 
         for (let i = 0; i < this.numFish; i++) {
@@ -158,7 +159,6 @@ class Simulation {
             }
         }
         //keep top fish
-        newFishes[0] = this.topFish.clone();
         this.fishes = newFishes;
 
         //reset food
@@ -190,7 +190,6 @@ class Simulation {
         sim.fitnessHistory = serialized.fitnessHistory;
         sim.generation = serialized.generation;
         sim.tick = serialized.tick;
-        sim.topFish = Fish.deserialize(sim,serialized.topFish);
         return sim;
     }
 
@@ -241,10 +240,10 @@ class Fish {
         this.size = 9;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
-        this.brain = new FishBrain();
+        this.brain = new FishBrain([4,5+world.generation,5,3]);
         this.speed = 1.8; //acceleration
         this.scanPosition = 0;
-        this.minDistance = Infinity;
+        this.minDistance = 1000;
     }
     update(){
         this.x += this.vx;
@@ -260,7 +259,7 @@ class Fish {
         let oldX = this.x;
         let oldY = this.y;
 
-        let minDistance = Infinity;
+        let minDistance = 9999;
         let otherAngle = 0;
         for(let i = 0; i < this.world.fishes.length; i++) {
             let otherFish = this.world.fishes[i];
@@ -270,8 +269,17 @@ class Fish {
         }
 
         if (minDistance < 2*this.size) {this.score -=5;this.x = oldX;this.y = oldY; this.x+=Math.cos(-otherAngle);this.y+=Math.sin(-otherAngle);this.vx = 0;this.vy = 0;this.angularVelocity = 0;}
+        //if minDistance is infinity or NaN, log all data
+        if(minDistance == Infinity || isNaN(minDistance)) {
+            console.log("minDistance: " + minDistance);
+            console.log("otherAngle: " + otherAngle);
+            console.log("otherFish: " + otherFish);
+            console.log("this: " + this);
+            //terminate program
+            throw new Error("NaN");
+        }
+
         this.minDistance = minDistance;
-        //this.score -= minDistance/(10*this.size);
         this.score -= Math.abs(this.angularVelocity)*3;
 
 
@@ -317,7 +325,16 @@ class Fish {
         
         let inputData = [...tmp,1/(this.minDistance+0.01),this.scanPosition];
 
+        
         let output = this.brain.think(inputData);
+        //if input or output is NaN, log all data
+        if(isNaN(inputData[0]) || isNaN(inputData[1]) || isNaN(inputData[2]) || isNaN(inputData[3]) || isNaN(output[0]) || isNaN(output[1]) || isNaN(output[2])) {
+            console.log("inputData: " + inputData);
+            console.log("output: " + output);
+            //terminate program
+            throw new Error("NaN");
+        }
+
 
         //make sure output is between limits for [angle,speed]
         if(output[0] < -1) output[0] = -1;	
@@ -338,6 +355,7 @@ class Fish {
     }
     pair(other){
         let child = new Fish(this.world,this.world.width*Math.random(),this.world.height*Math.random());
+
         //average color
         let color1 = this.color.match(/\d+/g).map(Number);
         let color2 = other.color.match(/\d+/g).map(Number);
