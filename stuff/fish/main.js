@@ -321,7 +321,7 @@ class Fish {
 
         //check output for nan
         for (let i = 0; i < output.length; i++) {
-            if(isNaN(output[i])) console.log("nan:" + output);
+            if(isNaN(output[i])) console.log("nan: input:" + inputData + " output: " + output);
         }
 
 
