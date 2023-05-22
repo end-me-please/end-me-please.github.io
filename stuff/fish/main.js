@@ -315,14 +315,9 @@ class Fish {
 
         let tmp = this.world.scan(this,scanRad,250);
         
-        let inputData = [...tmp,1/this.minDistance,this.scanPosition];
+        let inputData = [...tmp,1/(this.minDistance+0.01),this.scanPosition];
 
         let output = this.brain.think(inputData);
-
-        //check output for nan
-        for (let i = 0; i < output.length; i++) {
-            if(isNaN(output[i])) console.log("nan: input:" + inputData + " output: " + output);
-        }
 
         //make sure output is between limits for [angle,speed]
         if(output[0] < -1) output[0] = -1;	
