@@ -13,7 +13,7 @@ class Simulation {
         this.generation = 0;
         this.tick = 0;
         this.crossover = false;
-        this.mutationRate = 0.2;
+        this.mutationFactor = 0.01;
 
 
 
@@ -273,7 +273,6 @@ class Fish {
 
 
         //eat food
-        //actually dont eat food, food is just a static reference point now
         
         for(let i = 0; i < this.world.food.length; i++){
             let food = this.world.food[i];
@@ -289,10 +288,10 @@ class Fish {
         
 
         //bounce off the walls, losing speed and points
-        if(this.x < 0) {this.x = 0; this.vx *= -0.5; this.score -= 0.1;}
-        if(this.x > this.world.width) {this.x = this.world.width; this.vx *= -0.5; this.score -= 0.1;}
-        if(this.y < 0) {this.y = 0; this.vy *= -0.5; this.score -= 0.1;}
-        if(this.y > this.world.height) {this.y = this.world.height; this.vy *= -0.5; this.score -= 0.1;}
+        if(this.x < 0) {this.x = 0; this.vx *= -0.5; this.score -= 1;}
+        if(this.x > this.world.width) {this.x = this.world.width; this.vx *= -0.5; this.score -= 1;}
+        if(this.y < 0) {this.y = 0; this.vy *= -0.5; this.score -= 1;}
+        if(this.y > this.world.height) {this.y = this.world.height; this.vy *= -0.5; this.score -= 1;}
 
 
 

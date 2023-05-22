@@ -89,7 +89,8 @@
             for (let i = 0; i < sim.fishes.length; i++) {
                 avgScore += sim.fishes[i].score;
                 //log if nan
-                if(isNaN(sim.fishes[i].score)) console.log("nan score");
+                if(isNaN(sim.fishes[i].score)) {throw fish};
+
 
                 if(sim.fishes[i].score > highScore) highScore = sim.fishes[i].score;
                 if(sim.fishes[i].score < lowScore) lowScore = sim.fishes[i].score;
