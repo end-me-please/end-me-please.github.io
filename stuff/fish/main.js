@@ -108,8 +108,8 @@ class Simulation {
 
         //median of
         let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 4));
-        if(this.generation%100==0){
-        this.mutationFactor*=0.9;
+        if(this.generation%400==0){
+        this.mutationFactor*=0.96;
         let layer = Math.floor(Math.random() * 3);
         topFishes.forEach(fish => fish.brain.expand(layer));
         this.mutate(0.4);    
@@ -176,7 +176,6 @@ class Simulation {
             fitnessHistory: this.fitnessHistory,
             generation: this.generation,
             tick: this.tick,
-            topFish: this.topFish.serialize(),
             numFish: this.numFish,
             numFood: this.numFood,
 
@@ -240,7 +239,7 @@ class Fish {
         this.size = 9;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
-        this.brain = new FishBrain([4,5+world.generation,5,3]);
+        this.brain = new FishBrain([4,2,2,3]);
         this.speed = 1.8; //acceleration
         this.scanPosition = 0;
         this.minDistance = 1000;
