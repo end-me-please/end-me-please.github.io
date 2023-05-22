@@ -324,7 +324,6 @@ class Fish {
             if(isNaN(output[i])) console.log("nan: input:" + inputData + " output: " + output);
         }
 
-
         //make sure output is between limits for [angle,speed]
         if(output[0] < -1) output[0] = -1;	
         if(output[0] > 1) output[0] = 1;
