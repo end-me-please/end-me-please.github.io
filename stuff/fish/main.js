@@ -15,9 +15,6 @@ class Simulation {
         this.crossover = true;
         this.mutationFactor = 0.15;
 
-
-
-
         for (let i = 0; i < numFish; i++) {
             this.fishes.push(new Fish(this,Math.random() * this.width, Math.random() * this.height));
         }
@@ -37,44 +34,6 @@ class Simulation {
         let tmp = this.tick;
         this.tick = 0;
         return tmp;
-    }
-
-
-    fishIntensities(fish,channels){
-        let intensities = [];
-        for (let i = 0; i < channels*2; i++) {
-            intensities[i]=0;
-        }
-        
-        for (let i = 0; i < this.fishes.length; i++) {
-            let otherFish = this.fishes[i];
-            if(otherFish == fish) continue;
-            let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
-            if(distance > 300) continue;
-            let angle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x) - fish.angle;
-            if(angle < 0) angle += 2 * Math.PI;
-            let channel = Math.floor(angle / (2 * Math.PI / channels));
-            intensities[channel] += 1 / distance;
-        }
-        
-        //food
-        for (let i = channels; i < channels*2; i++) {
-            intensities[i] = 0;
-        }
-        for(let i = 0; i < this.food.length; i++){
-            let food = this.food[i];
-            let distance = Math.sqrt((food.x - fish.x) ** 2 + (food.y - fish.y) ** 2);
-            if(distance > 300) continue;
-            let angle = Math.atan2(food.y - fish.y, food.x - fish.x) - fish.angle;
-            if(angle < 0) angle += 2 * Math.PI;
-            let channel = Math.floor(angle / (2 * Math.PI / channels));
-            
-            intensities[channel+channels] += 1 / distance;
-            
-        }
-
-        
-        return intensities;
     }
 
     scan(fish,angle,range){
@@ -140,13 +99,16 @@ class Simulation {
     }
     mutate(factor){
         for (let i = 0; i < this.fishes.length; i++) {
-            if(Math.random()>0.7)this.fishes[i].mutate(factor);
+            if(Math.random()>0.2)this.fishes[i].mutate(factor);
         }
     }
 
     evolve(){
         //get the top 10% of fishes
         let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
+        //check if top fish is new top fish
+        if(sortedFishes[0].score > this.topFish.score) this.topFish = sortedFishes[0];
+
 
         //median of
         let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 4));
@@ -170,7 +132,10 @@ class Simulation {
                 newFishes.push(newFish);
             }
         }
+        //add top fish to new fishes
+        newFishes[0] = this.topFish.clone();
         
+
         //spread evenly
 
         for (let i = 0; i < this.numFish; i++) {
@@ -363,7 +328,7 @@ class Fish {
         if(output[2] < -1) output[2] = -1;
         if(output[2] > 1) output[2] = 1;
 
-        this.scanPosition += output[2];
+        this.scanPosition = output[2];
 
 
 
