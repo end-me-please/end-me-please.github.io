@@ -1,8 +1,8 @@
 class FishBrain {
     constructor() {
-        this.inputSize = 3;
+        this.inputSize = 4;
         this.outputSize = 3;
-        this.layerShape = [this.inputSize,8,10,6,this.outputSize];
+        this.layerShape = [this.inputSize,5,3,5,this.outputSize];
         //count total number of nodes
         
         //all values from previous layer are multiplied by weights of their connections and added to all values of the next layer
@@ -270,7 +270,9 @@ class FishBrain {
 
 
 
-
+function activation(x) {
+    return Math.tanh(x);
+}
 
 
 

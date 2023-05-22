@@ -244,7 +244,7 @@ class Fish {
         this.brain = new FishBrain();
         this.speed = 1.8; //acceleration
         this.scanPosition = 0;
-        this.heartRate = 1;
+        this.minDistance = Infinity;
     }
     update(){
         this.x += this.vx;
@@ -270,7 +270,7 @@ class Fish {
         }
 
         if (minDistance < 2*this.size) {this.score -=5;this.x = oldX;this.y = oldY; this.x+=Math.cos(-otherAngle);this.y+=Math.sin(-otherAngle);this.vx = 0;this.vy = 0;this.angularVelocity = 0;}
-        console
+        this.minDistance = minDistance;
         //this.score -= minDistance/(10*this.size);
         this.score -= Math.abs(this.angularVelocity)*3;
 
@@ -315,7 +315,7 @@ class Fish {
 
         let tmp = this.world.scan(this,scanRad,250);
         
-        let inputData = [...tmp,this.scanPosition];
+        let inputData = [...tmp,1/this.minDistance,this.scanPosition];
 
         let output = this.brain.think(inputData);
 
@@ -364,16 +364,11 @@ class Fish {
         child.color = color;    
         }
 
-        //average/crossover heart rate
-        if(Math.random() < 0.5) child.heartRate = (this.heartRate + other.heartRate) / 2;
-        else child.heartRate = Math.random()<0.5?this.heartRate:other.heartRate;
 
         if(Math.random() < 0.4) child.mutate(this.world.mutationFactor);
         return child;
     }
     mutate(factor){
-        //mutate heart rate
-        if(Math.random() < 0.3) this.heartRate += Math.random() * 0.2 - 0.1;
 
         //mutate color
         let color = this.color.match(/\d+/g).map(Number);
@@ -402,6 +397,7 @@ class Fish {
         clone.color = this.color;
         clone.score = 0;
         clone.brain = this.brain.clone();
+        clone.fov = this.fov;
         return clone;
     }
     draw(ctx){
@@ -441,6 +437,8 @@ class Fish {
             color: this.color,
             score: this.score,
             brain: this.brain.serialize(),
+            fov: this.fov,
+            drag: this.drag,
         }
     }
     static deserialize(world,serialized){
@@ -452,6 +450,8 @@ class Fish {
         fish.color = serialized.color;
         fish.score = serialized.score;
         fish.brain = FishBrain.deserialize(serialized.brain);
+        fish.fov = serialized.fov,
+        fish.drag = serialized.drag;
         return fish;
     }
 
