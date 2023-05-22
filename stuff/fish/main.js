@@ -319,6 +319,11 @@ class Fish {
 
         let output = this.brain.think(inputData);
 
+        //check output for nan
+        for (let i = 0; i < output.length; i++) {
+            if(isNaN(output[i])) console.log("nan:" + output);
+        }
+
 
         //make sure output is between limits for [angle,speed]
         if(output[0] < -1) output[0] = -1;	
