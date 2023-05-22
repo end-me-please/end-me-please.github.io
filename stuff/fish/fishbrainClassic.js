@@ -1,6 +1,6 @@
 class FishBrain {
     constructor() {
-        this.inputSize = 4;
+        this.inputSize = 3;
         this.outputSize = 3;
         this.layerShape = [this.inputSize,8,10,6,this.outputSize];
         //count total number of nodes
@@ -22,7 +22,7 @@ class FishBrain {
             this.biases.push([]);
             for (let j = 0; j < this.layerShape[i]; j++) {
                 if(i==0||i==this.layerShape.length-1) this.biases[i].push(0);
-                else this.biases[i].push((Math.random() * 2 - 1)*0.0008);
+                else this.biases[i].push((Math.random() * 2 - 1)*0.1);
             }
         }
         this.memoryWeights = [];
@@ -60,8 +60,7 @@ class FishBrain {
         //bias mutation
         for (let i = 0; i < this.biases.length; i++) {
             for (let j = 0; j < this.biases[i].length; j++) {
-                if(Math.random() < factor){this.biases[i][j] += (factor/2)*((Math.random() * 2 - 1)*0.0005);}
-                if(Math.random() < factor/100) this.biases[i][j] = 0;
+                if(Math.random() < factor){this.biases[i][j] += (factor/2)*((Math.random() * 2 - 1)*0.05);}
             }
         }
         //memory mutation
@@ -119,8 +118,13 @@ class FishBrain {
             }
         }
         //apply memory, multiply lastValues with memoryWeights and add to result
+        //apply bias
+        for (let i = 0; i < this.layerShape.length; i++) {
+            for (let j = 0; j < this.layerShape[i]; j++) {
+                values[i][j] += this.biases[i][j];
+            }
+        }
         
-
 
         values[0] = input;
         //weight array is of shape weight=[layer][node][next node]

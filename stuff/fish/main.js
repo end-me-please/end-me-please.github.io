@@ -234,15 +234,15 @@ class Fish {
         this.vx = 0;
         this.vy = 0;
         this.angularVelocity = 0;
-        this.drag = 0.07;
+        this.drag = 0.09;
         this.fov = 0.7 * Math.PI;
         this.angle = Math.random() * 2 * Math.PI;
         this.turnSpeed = 0.01;
-        this.size = 10;
+        this.size = 9;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
         this.brain = new FishBrain();
-        this.speed = 1.85; //acceleration
+        this.speed = 1.8; //acceleration
         this.scanPosition = 0;
         this.heartRate = 1;
     }
@@ -315,7 +315,7 @@ class Fish {
 
         let tmp = this.world.scan(this,scanRad,250);
         
-        let inputData = [...tmp,this.scanPosition, Math.sin((this.world.tick/50)*this.heartRate)];
+        let inputData = [...tmp,this.scanPosition];
 
         let output = this.brain.think(inputData);
 
