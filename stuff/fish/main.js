@@ -397,6 +397,9 @@ class Fish {
         clone.score = 0;
         clone.brain = this.brain.clone();
         clone.fov = this.fov;
+        clone.drag = this.drag;
+        clone.scanPosition = this.scanPosition;
+
         return clone;
     }
     draw(ctx){
