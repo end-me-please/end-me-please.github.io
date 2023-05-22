@@ -12,7 +12,7 @@ class Simulation {
         this.fitnessHistory = [];
         this.generation = 0;
         this.tick = 0;
-        this.crossover = false;
+        this.crossover = true;
         this.mutationFactor = 0.01;
 
 
@@ -64,7 +64,7 @@ class Simulation {
         for(let i = 0; i < this.food.length; i++){
             let food = this.food[i];
             let distance = Math.sqrt((food.x - fish.x) ** 2 + (food.y - fish.y) ** 2);
-            if(distance > 400) continue;
+            if(distance > 300) continue;
             let angle = Math.atan2(food.y - fish.y, food.x - fish.x) - fish.angle;
             if(angle < 0) angle += 2 * Math.PI;
             let channel = Math.floor(angle / (2 * Math.PI / channels));
@@ -76,6 +76,46 @@ class Simulation {
         
         return intensities;
     }
+
+    scan(fish,angle,range){
+        let adjustedAngle = (angle + fish.angle) % (2 * Math.PI);
+        
+        let fishCorrelationSum = 0;
+        let foodCorrelationSum = 0;
+
+        for (let i = 0; i < this.fishes.length; i++) {
+            //check how closely the other fish's angle matches the scan angle
+            let otherFish = this.fishes[i];
+            if(otherFish == fish) continue;
+            let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
+            if(distance > range) continue;
+            let otherFishAngle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x);
+            let otherFishAngleDifference = Math.abs(otherFishAngle - adjustedAngle);
+            if(otherFishAngleDifference > Math.PI) otherFishAngleDifference = 2 * Math.PI - otherFishAngleDifference;
+            if(otherFishAngleDifference > Math.PI/4) continue;
+            let otherFishCorrelation = 1 - otherFishAngleDifference / Math.PI;
+            //correct for distance
+            fishCorrelationSum += otherFishCorrelation/distance;
+    }
+
+        for (let i = 0; i < this.food.length; i++) {
+
+            let food = this.food[i];
+            let distance = Math.sqrt((food.x - fish.x) ** 2 + (food.y - fish.y) ** 2);
+            if(distance > range) continue;
+            let foodAngle = Math.atan2(food.y - fish.y, food.x - fish.x);
+            let foodAngleDifference = Math.abs(foodAngle - adjustedAngle);
+            if(foodAngleDifference > Math.PI) foodAngleDifference = 2 * Math.PI - foodAngleDifference;
+            if(foodAngleDifference > Math.PI/4) continue;
+            let foodCorrelation = 1 - foodAngleDifference / Math.PI;
+            //correct for distance
+            foodCorrelationSum += foodCorrelation/distance;
+        }
+        return [fishCorrelationSum,foodCorrelationSum];
+    }
+
+
+
     update(){
 
         this.tick++;
@@ -109,7 +149,7 @@ class Simulation {
         let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
 
         //median of
-        let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 15));
+        let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 4));
         this.fitnessHistory[this.generation]=(topFishes[Math.floor(topFishes.length / 2)].score);
         
         
@@ -230,15 +270,15 @@ class Fish {
         this.vy = 0;
         this.angularVelocity = 0;
         this.drag = 0.07;
-
+        this.fov = 1.2 * Math.PI;
         this.angle = Math.random() * 2 * Math.PI;
         this.turnSpeed = 0.01;
         this.size = 10;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
-        this.sensorDirections = 8;
         this.brain = new FishBrain();
         this.speed = 1.85; //acceleration
+        this.scanPosition = 0;
 
     }
     update(){
@@ -263,8 +303,6 @@ class Fish {
             let distance = Math.sqrt((otherFish.x - this.x) ** 2 + (otherFish.y - this.y) ** 2);
             if(distance < minDistance) {minDistance = distance; otherAngle = Math.atan2(otherFish.y - this.y, otherFish.x - this.x)};
         }
-        //nan check
-        if (isNaN(minDistance)) {console.log("minDistance nan");minDistance = 200};
 
         if (minDistance < 2*this.size) {this.score -=5;this.x = oldX;this.y = oldY; this.x+=Math.cos(-otherAngle);this.y+=Math.sin(-otherAngle);this.vx = 0;this.vy = 0;this.angularVelocity = 0;}
         console
@@ -293,23 +331,46 @@ class Fish {
         if(this.y < 0) {this.y = 0; this.vy *= -0.5; this.score -= 1;}
         if(this.y > this.world.height) {this.y = this.world.height; this.vy *= -0.5; this.score -= 1;}
 
-
-
     }
 
 
+
+
     act(){
-        let intensities = this.world.fishIntensities(this,this.sensorDirections);
-        let output = this.brain.think(intensities);
+        
+        //scanPosition is from -1 to 1, 0 being straight ahead, -1 being all the way left to this.fov, 1 being all the way right to this.fov
+        //2pi fov means both -1 and 1 are straight behind the fish
+        let scanRad = this.fov / 2 * this.scanPosition;
+
+        //make sure that scanRad is between 0 and 2pi
+        if(scanRad < 0) scanRad += 2 * Math.PI;
+        if(scanRad > 2 * Math.PI) scanRad -= 2 * Math.PI;
+
+
+
+        let tmp = this.world.scan(this,scanRad,300);
+        
+        let inputData = [...tmp,this.scanPosition];
+
+        let output = this.brain.think(inputData);
+
+
         //make sure output is between limits for [angle,speed]
         if(output[0] < -1) output[0] = -1;	
         if(output[0] > 1) output[0] = 1;
         if(output[1] < -1) output[1] = -1;
         if(output[1] > 1) output[1] = 1;
+        if(output[2] < -1) output[2] = -1;
+        if(output[2] > 1) output[2] = 1;
+
+        this.scanPosition += output[2];
+
+
 
         this.angularVelocity += output[0] * this.turnSpeed;
         this.vx += Math.cos(this.angle) * (this.speed*output[1]);
         this.vy += Math.sin(this.angle) * (this.speed*output[1]);
+
 
     }
     pair(other){
@@ -339,7 +400,7 @@ class Fish {
         child.color = color;    
         }
 
-        if(Math.random() < 0.4) child.mutate(this.parent.mutationFactor);
+        if(Math.random() < 0.4) child.mutate(this.world.mutationFactor);
         return child;
     }
     mutate(factor){
@@ -369,7 +430,6 @@ class Fish {
         clone.size = this.size;
         clone.color = this.color;
         clone.score = this.score;
-        clone.sensorDirections = this.sensorDirections;
         clone.brain = this.brain.clone();
         return clone;
     }
@@ -383,6 +443,15 @@ class Fish {
             ctx.beginPath();
             ctx.arc(this.x + Math.cos(this.angle) * (this.size*0.6),this.y + Math.sin(this.angle) * (this.size*0.6),this.size/3,0,2 * Math.PI);
             ctx.fill();
+            //draw sensor line in direction of scanPosition
+            ctx.strokeStyle = "green";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(this.x,this.y);
+            ctx.lineTo(this.x + Math.cos(this.angle + this.fov / 2 * this.scanPosition) * 300,this.y + Math.sin(this.angle + this.fov / 2 * this.scanPosition) * 300);
+            ctx.stroke();
+
+
     }
     serialize(){
         return {
@@ -394,7 +463,6 @@ class Fish {
             size: this.size,
             color: this.color,
             score: this.score,
-            sensorDirections: this.sensorDirections,
             brain: this.brain.serialize(),
         }
     }
@@ -406,7 +474,6 @@ class Fish {
         fish.size = serialized.size;
         fish.color = serialized.color;
         fish.score = serialized.score;
-        fish.sensorDirections = serialized.sensorDirections;
         fish.brain = FishBrain.deserialize(serialized.brain);
         return fish;
     }

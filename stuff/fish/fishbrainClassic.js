@@ -1,7 +1,7 @@
 class FishBrain {
     constructor() {
-        this.inputSize = 16;
-        this.outputSize = 2;
+        this.inputSize = 3;
+        this.outputSize = 3;
         this.layerShape = [this.inputSize,8,10,6,this.outputSize];
         //count total number of nodes
         
@@ -12,7 +12,7 @@ class FishBrain {
             for (let j = 0; j < this.layerShape[i]; j++) {
                 this.weights[i].push([]);
                 for (let k = 0; k < this.layerShape[i + 1]; k++) {
-                    this.weights[i][j].push((Math.random() * 2 - 1)*0.4);
+                    this.weights[i][j].push((Math.random() * 2 - 1)*0.6);
                 }
             }
         }
@@ -22,7 +22,7 @@ class FishBrain {
             this.biases.push([]);
             for (let j = 0; j < this.layerShape[i]; j++) {
                 if(i==0||i==this.layerShape.length-1) this.biases[i].push(0);
-                else this.biases[i].push((Math.random() * 2 - 1)*0.0001);
+                else this.biases[i].push((Math.random() * 2 - 1)*0.001);
             }
         }
         this.memoryWeights = [];
@@ -199,19 +199,26 @@ class FishBrain {
                 //draw red or green circle around node depending on bias
                 if(i > 0 && i < this.layerShape.length - 1) {
                     ctx.strokeStyle = this.biases[i-1][j] > 0 ? "green" : "red";
-                    ctx.lineWidth = 2+(Math.abs(this.biases[i-1][j]) * 50);
+                    ctx.lineWidth = 2+(Math.abs(this.biases[i-1][j]) * 25);
 
                     ctx.beginPath();
                     ctx.arc(layerX[i][j],layerY[i][j],circleRadius*1.5,0,2 * Math.PI);
                     ctx.stroke();
                 }
-                
+
                 let value = Math.min(1.2,20*Math.abs(this.lastValues[i][j]));
                 ctx.fillStyle = this.lastValues[i][j] > 0 ? "green" : "red";
                 ctx.beginPath();
                 ctx.arc(layerX[i][j],layerY[i][j],circleRadius*value*0.5,0,2 * Math.PI);
                 
                 ctx.fill();
+                //if input or output, draw number as text
+                if(i==0||i==this.layerShape.length-1){
+                    ctx.fillStyle = "gray";
+                    ctx.font = "12px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillText(j, layerX[i][j], layerY[i][j]);
+                }
 
 
 

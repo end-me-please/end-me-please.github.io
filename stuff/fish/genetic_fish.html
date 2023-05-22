@@ -45,6 +45,8 @@
             <li>walls are bouncy, fine tuning parameters</li>
             <li>various things are broken</li>
             <li>removed crossover</li>
+            <li>added crossover</li>
+            <li>fish now have single antenna instead of eye array</li>
         </div>
     </body>
 
@@ -62,7 +64,7 @@
         let inspectCtx = inspectCanvas.getContext("2d");
 
         
-        let sim = new Simulation(50);
+        let sim = new Simulation(45);
         
 
         let inspectedFish = 0;
@@ -90,7 +92,7 @@
             for (let i = 0; i < sim.fishes.length; i++) {
                 avgScore += sim.fishes[i].score;
                 //log if nan
-                if(isNaN(sim.fishes[i].score)) {throw fish};
+                if(isNaN(sim.fishes[i].score)) {throw sim.fishes[i]};
 
 
                 if(sim.fishes[i].score > highScore) highScore = sim.fishes[i].score;
