@@ -4,6 +4,7 @@ importScripts("main.js")
 
 //receive message from main thread
 onmessage = function(e) {
+    let totalStart = Date.now();
     let sim = Simulation.deserialize(e.data.sim);
     let generations = e.data.generations;
 
@@ -14,7 +15,11 @@ onmessage = function(e) {
         let endTime = Date.now();
         console.log("generation "+sim.generation + " finished, ticks: "+ranTicks+", time: "+(endTime-startTime)+"ms");
     }
+    let totalEnd = Date.now();
+    console.log("total time: "+(totalEnd-totalStart)+"ms");
+
     postMessage({sim:sim.serialize()});
+
 }
 
 

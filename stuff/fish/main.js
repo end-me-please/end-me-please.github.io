@@ -37,38 +37,39 @@ class Simulation {
     scan(fish,angle,range){
         let adjustedAngle = (angle + fish.angle) % (2 * Math.PI);
         
-        let fishCorrelationSum = 0;
-        let foodCorrelationSum = 0;
+        let fishSum = 0;
+        let foodSum = 0;
 
         for (let i = 0; i < this.fishes.length; i++) {
             //check how closely the other fish's angle matches the scan angle
             let otherFish = this.fishes[i];
             if(otherFish == fish) continue;
-            let distance = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
-            if(distance > range) continue;
+
+            let distanceSquared = (otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2;
+            if(distanceSquared > (range**2)) continue;
             let otherFishAngle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x);
             let otherFishAngleDifference = Math.abs(otherFishAngle - adjustedAngle);
             if(otherFishAngleDifference > Math.PI) otherFishAngleDifference = 2 * Math.PI - otherFishAngleDifference;
             if(otherFishAngleDifference > Math.PI/32) continue;
             let otherFishCorrelation = 1 - otherFishAngleDifference / Math.PI;
             //correct for distance
-            fishCorrelationSum += otherFishCorrelation/(15*((10+distance)/range));
+            fishSum += otherFishCorrelation/(15*((10+Math.sqrt(distanceSquared))/range));
     }
 
         for (let i = 0; i < this.food.length; i++) {
 
             let food = this.food[i];
-            let distance = Math.sqrt((food.x - fish.x) ** 2 + (food.y - fish.y) ** 2);
-            if(distance > range) continue;
+            let distanceSquared = (food.x - fish.x) ** 2 + (food.y - fish.y) ** 2;
+            if(distanceSquared > range**2) continue;
             let foodAngle = Math.atan2(food.y - fish.y, food.x - fish.x);
             let foodAngleDifference = Math.abs(foodAngle - adjustedAngle);
             if(foodAngleDifference > Math.PI) foodAngleDifference = 2 * Math.PI - foodAngleDifference;
             if(foodAngleDifference > Math.PI/32) continue;
             let foodCorrelation = 1 - foodAngleDifference / Math.PI;
             //correct for distance
-            foodCorrelationSum += foodCorrelation/(15*((10+distance)/range));
+            foodSum += foodCorrelation/(15*((10+Math.sqrt(distanceSquared))/range));
         }
-        return [fishCorrelationSum,foodCorrelationSum];
+        return [fishSum,foodSum];
     }
 
 
@@ -116,8 +117,8 @@ class Simulation {
         this.mutate(0.3);    
         }
         }
+
         this.fitnessHistory[this.generation]=(topFishes[Math.floor(topFishes.length / 2)].score);
-        
         
         let newFishes = [];
         //randomly match top fish and pair them to create numFish new fishes
@@ -146,7 +147,6 @@ class Simulation {
             newFishes[i].y = this.height / 2 + Math.sin(i / this.numFish * 2 * Math.PI) * this.height / 2;
         }
 
-
         //resolve collisions
         for (let i = 0; i < newFishes.length; i++) {
             let fish = newFishes[i];
@@ -168,6 +168,12 @@ class Simulation {
         for (let i = 0; i < this.numFood; i++) {
             this.food.push(new Food(this,Math.random() * this.width, Math.random() * this.height));
         }
+
+        if(this.generation<100){
+            let startBoost = Math.max(0,(200-this.generation)/500);
+            this.mutate(startBoost);
+        }
+
         this.generation++;
     }
 
@@ -241,10 +247,11 @@ class Fish {
         this.size = 9;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
-        this.brain = new FishBrain([4,2,2,2,3]);
+        this.brain = new FishBrain([4,3,9,3,3]);
         this.speed = 1.8; //acceleration
         this.scanPosition = 0;
         this.minDistance = 1000;
+        this.range = 100;
     }
     update(){
         this.x += this.vx;
@@ -260,36 +267,33 @@ class Fish {
         let oldX = this.x;
         let oldY = this.y;
 
-        let minDistance = 9999;
+        let minDistanceSq = this.range**2;
         let otherAngle = 0;
         for(let i = 0; i < this.world.fishes.length; i++) {
             let otherFish = this.world.fishes[i];
             if(otherFish == this) continue;
-            let distance = Math.sqrt((otherFish.x - this.x) ** 2 + (otherFish.y - this.y) ** 2);
-            if(distance < minDistance) {minDistance = distance; otherAngle = Math.atan2(otherFish.y - this.y, otherFish.x - this.x)};
-        }
+            
+            let deltaX = otherFish.x - this.x;
+            let deltaY = otherFish.y - this.y;
+            let distanceSquared = deltaX ** 2 + deltaY ** 2;
+            if(distanceSquared > this.range ** 2) continue;
 
-        if (minDistance < 2*this.size) {this.score -=5;this.x = oldX;this.y = oldY; this.x+=Math.cos(-otherAngle);this.y+=Math.sin(-otherAngle);this.vx = 0;this.vy = 0;this.angularVelocity = 0;}
-        //if minDistance is infinity or NaN, log all data
-        if(minDistance == Infinity || isNaN(minDistance)) {
-            console.log("minDistance: " + minDistance);
-            console.log("otherAngle: " + otherAngle);
-            console.log("otherFish: " + otherFish);
-            console.log("this: " + this);
-            //terminate program
-            throw new Error("NaN");
+            if(distanceSquared < minDistanceSq) {minDistanceSq = distanceSquared; otherAngle = Math.atan2(deltaY, deltaX);}
         }
+        let minDistance = Math.sqrt(minDistanceSq);
+        if (minDistance < 2*this.size) {this.score -=1;this.x = oldX;this.y = oldY; this.x+=Math.cos(-otherAngle);this.y+=Math.sin(-otherAngle);this.vx = 0;this.vy = 0;this.angularVelocity = 0;}
+        
 
         this.minDistance = minDistance;
-        this.score -= Math.abs(this.angularVelocity)*3;
 
 
         //eat food
         
         for(let i = 0; i < this.world.food.length; i++){
             let food = this.world.food[i];
-            let distance = Math.sqrt((food.x - this.x) ** 2 + (food.y - this.y) ** 2);
-            if(distance < 1 * this.size) {
+            //let distance = Math.sqrt((food.x - this.x) ** 2 + (food.y - this.y) ** 2);
+            let distanceSquared = (food.x - this.x) ** 2 + (food.y - this.y) ** 2;
+            if(distanceSquared < 1 * (this.size**2)) {
                 this.world.food.splice(i,1);
                 this.score += 25;
                 if(Math.random() > 0.2){
@@ -328,14 +332,7 @@ class Fish {
 
         
         let output = this.brain.think(inputData);
-        //if input or output is NaN, log all data
-        if(isNaN(inputData[0]) || isNaN(inputData[1]) || isNaN(inputData[2]) || isNaN(inputData[3]) || isNaN(output[0]) || isNaN(output[1]) || isNaN(output[2])) {
-            console.log("inputData: " + inputData);
-            console.log("output: " + output);
-            //terminate program
-            throw new Error("NaN");
-        }
-
+        
 
         //make sure output is between limits for [angle,speed]
         if(output[0] < -1) output[0] = -1;	
@@ -345,7 +342,9 @@ class Fish {
         if(output[2] < -1) output[2] = -1;
         if(output[2] > 1) output[2] = 1;
 
-        this.scanPosition = output[2];
+        this.scanPosition += output[2]*this.turnSpeed*2;
+        if(this.scanPosition < -1) this.scanPosition = -1;
+        if(this.scanPosition > 1) this.scanPosition = 1;
 
 
 

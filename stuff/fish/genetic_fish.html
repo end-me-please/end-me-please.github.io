@@ -153,6 +153,7 @@
 
         function fastForward(generations) {
             if(worker == null) {
+            let totalStartTime = Date.now();
             autoUpdate = false;
             let generationTicks = 4000;
             for (let i = 0; i < generations; i++) {
@@ -161,6 +162,8 @@
                 let endTime = Date.now();
                 console.log("generation "+sim.generation + " finished, ticks: "+ranTicks+", time: "+(endTime-startTime)+"ms");
             }
+            let totalEndTime = Date.now();
+            console.log("total time: "+(totalEndTime-totalStartTime)+"ms");
             drawGraph(sim.fitnessHistory);
             autoUpdate = true;
             } else {
@@ -278,8 +281,6 @@
             performanceGraphCtx.stroke();
 
         }
-
-
 
 
     </script>

@@ -3,7 +3,6 @@ class FishBrain {
         this.inputSize = layerShape[0];
         this.outputSize = layerShape[layerShape.length-1];
         this.layerShape = layerShape;
-        //count total number of nodes
         
         //all values from previous layer are multiplied by weights of their connections and added to all values of the next layer
         this.weights = [];
@@ -33,8 +32,6 @@ class FishBrain {
                 this.memoryWeights[i].push(0);
             }
         }
-
-
         
         this.lastValues = [];
         //initialize lastValues
@@ -45,28 +42,40 @@ class FishBrain {
             }
         }
 
+        this.volatilityMap = [];
+        for (let i = 0; i < this.layerShape.length; i++) {
+            this.volatilityMap.push([]);
+            for (let j = 0; j < this.layerShape[i]; j++) {
+                this.volatilityMap[i].push(1);
+            }
+        }
+
+
     }
     mutate(factor){
         for (let i = 0; i < this.weights.length; i++) {
             for (let j = 0; j < this.weights[i].length; j++) {
                 for (let k = 0; k < this.weights[i][j].length; k++) {
-                    if(Math.random() < factor){
+                    let volatility = this.volatilityMap[i][j];
+                    if(Math.random() < volatility*factor){
                     this.weights[i][j][k] += factor*(Math.random() * 2 - 1);
                     }
-                    if(Math.random() < factor/700) this.weights[i][j][k] = (Math.random() * 2 - 1) * 0.5;
+                    if(Math.random() < factor/100) this.weights[i][j][k] = (Math.random() * 2 - 1) * 0.5;
                 }
             }
         }
         //bias mutation
         for (let i = 0; i < this.biases.length; i++) {
             for (let j = 0; j < this.biases[i].length; j++) {
-                if(Math.random() < factor){this.biases[i][j] += (factor/2)*((Math.random() * 2 - 1)*0.1);}
+                let volatility = this.volatilityMap[i][j];
+                if(Math.random() < factor*volatility){this.biases[i][j] += (factor)*((Math.random() * 2 - 1)*0.1);}
             }
         }
         //memory mutation
         for (let i = 1; i < this.memoryWeights.length-1; i++) {
             for (let j = 0; j < this.memoryWeights[i].length; j++) {
-                if(Math.random() < factor/2){this.memoryWeights[i][j] += factor*(Math.random() * 2 - 1);}
+                let volatility = this.volatilityMap[i][j];
+                if(Math.random() < factor*volatility){this.memoryWeights[i][j] += factor*(Math.random() * 2 - 1);}
                 if(this.memoryWeights[i][j] < 0) this.memoryWeights[i][j] = 0;
             }
         }
@@ -85,7 +94,7 @@ class FishBrain {
             for (let j = 0; j < this.weights[i].length; j++) {
                 for (let k = 0; k < this.weights[i][j].length; k++) {
                     child.weights[i][j][k] = Math.random() < 0.5 ? this.weights[i][j][k] : other.weights[i][j][k];
-                    if(Math.random() < 0.3) {
+                    if(Math.random() < 0.2) {
                         child.weights[i][j][k] = (this.weights[i][j][k] + other.weights[i][j][k]) / 2;
                     }
                 }
@@ -95,7 +104,7 @@ class FishBrain {
         for (let i = 0; i < this.biases.length; i++) {
             for (let j = 0; j < this.biases[i].length; j++) {
                 child.biases[i][j] = Math.random() < 0.5 ? this.biases[i][j] : other.biases[i][j];
-                if(Math.random() < 0.3) {
+                if(Math.random() < 0.2) {
                     child.biases[i][j] = (this.biases[i][j] + other.biases[i][j]) / 2;
                 }
             }
@@ -103,11 +112,23 @@ class FishBrain {
         for (let i = 0; i < this.memoryWeights.length; i++) {
             for (let j = 0; j < this.memoryWeights[i].length; j++) {
                 child.memoryWeights[i][j] = Math.random() < 0.5 ? this.memoryWeights[i][j] : other.memoryWeights[i][j];
-                if(Math.random() < 0.3) {
+                if(Math.random() < 0.2) {
                     child.memoryWeights[i][j] = (this.memoryWeights[i][j] + other.memoryWeights[i][j]) / 2;
                 }
             }
         }
+        //volatility map
+        for (let i = 0; i < this.volatilityMap.length; i++) {
+            for (let j = 0; j < this.volatilityMap[i].length; j++) {
+                child.volatilityMap[i][j] = Math.random() < 0.5 ? this.volatilityMap[i][j] : other.volatilityMap[i][j];
+                if(Math.random() < 0.2) {
+                    child.volatilityMap[i][j] = (this.volatilityMap[i][j] + other.volatilityMap[i][j]) / 2;
+                }
+            }
+        }
+
+
+
         return child;
     }
 
@@ -223,10 +244,9 @@ class FishBrain {
                     ctx.textAlign = "center";
                     ctx.fillText(j, layerX[i][j], layerY[i][j]);
                 }
+                //purple square determining volatility
+                ctx.fillStyle = "rgb("+Math.floor(255*(1-this.volatilityMap[i][j]))+","+Math.floor(255*(1-this.volatilityMap[i][j]))+","+Math.floor(255*(1-this.volatilityMap[i][j]))+")";
 
-
-
-                
             }
         }
     }
@@ -247,6 +267,7 @@ class FishBrain {
             weights: this.weights,
             biases: this.biases,
             memoryWeights: this.memoryWeights,
+            volatilityMap: this.volatilityMap
         };
 
         return data;
@@ -260,7 +281,7 @@ class FishBrain {
         brain.weights = data.weights;
         brain.biases = data.biases;
         brain.memoryWeights = data.memoryWeights;
-
+        brain.volatilityMap = data.volatilityMap;
         return brain;
     }
     clone() {
@@ -291,17 +312,17 @@ class FishBrain {
         //add a row to the lastValues array
         this.lastValues[layer].push(0);
 
+        this.volatilityMap[layer].push(1);
+
 
 
     }
-
 }
-
-
 
 function activation(x) {
     return Math.tanh(x);
 }
+
 
 
 
