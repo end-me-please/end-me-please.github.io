@@ -111,8 +111,10 @@ class Simulation {
         if(this.generation%800==0){
         this.mutationFactor*=0.96;
         let layer = Math.floor(Math.random() * 4);
+        if(this.generation<4500){
         topFishes.forEach(fish => fish.brain.expand(layer));
         this.mutate(0.3);    
+        }
         }
         this.fitnessHistory[this.generation]=(topFishes[Math.floor(topFishes.length / 2)].score);
         
