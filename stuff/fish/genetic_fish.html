@@ -228,7 +228,7 @@
 
         setInterval(() => {
             if(autoUpdate&&tick>3000){
-            sim.evolve();
+            sim.evolve(0.1);
             console.log("generation "+sim.generation + " finished, ticks: "+tick);
             tick = 0;
             drawGraph(sim.fitnessHistory);

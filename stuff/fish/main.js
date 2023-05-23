@@ -27,7 +27,7 @@ class Simulation {
         for (let i = 0; i < ticks; i++) {
             this.update();
         }
-        this.evolve();
+        this.evolve(0.1);
         let tmp = this.tick;
         this.tick = 0;
         return tmp;
@@ -75,8 +75,8 @@ class Simulation {
 
     update(){
 
-        if(this.food.length == 0) this.evolve();
-        if(this.fishes.length < this.numFish / 4) this.evolve();
+        if(this.food.length == 0) this.evolve(0.1);
+        if(this.fishes.length < this.numFish / 4) this.evolve(0.9);
 
         this.tick++;
         for (let i = 0; i < this.fishes.length; i++) {
@@ -104,11 +104,11 @@ class Simulation {
         }
     }
 
-    evolve(){
+    evolve(fraction=0.1){
         //get the top 10% of fishes
         let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
         
-        let topFishes = sortedFishes.slice(0,Math.floor(2+this.fishes.length / 10));
+        let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length * fraction));
         
 
         
@@ -243,19 +243,19 @@ class Fish {
         this.vx = 0;
         this.vy = 0;
         this.angularVelocity = 0;
-        this.drag = 0.09;
-        this.fov = 0.7 * Math.PI;
+        this.drag = 0.03;
+        this.fov = 0.9 * Math.PI;
         this.angle = Math.random() * 2 * Math.PI;
         this.turnSpeed = 0.01;
         this.size = 9;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
         this.brain = new FishBrain([4,3,9,3,3]);
-        this.speed = 1.8; //acceleration
+        this.speed = 1.3; //acceleration
         this.scanPosition = 0;
         this.minDistance = 1000;
         this.range = 100;
-        this.calories = 100;
+        this.calories = 185;
     }
     update(){
         this.x += this.vx;
@@ -264,6 +264,12 @@ class Fish {
         this.vx *= 1 - this.drag;
         this.vy *= 1 - this.drag;
         this.angularVelocity *= 1 - this.drag;
+
+        //speed limit
+        if(this.vx > 2) this.vx = 2;
+        if(this.vx < -2) this.vx = -2;
+        if(this.vy > 2) this.vy = 2;
+        if(this.vy < -2) this.vy = -2;
 
         if(this.angle < 0) this.angle += 2 * Math.PI;
         if(this.angle > 2 * Math.PI) this.angle -= 2 * Math.PI;
@@ -347,7 +353,7 @@ class Fish {
         if(output[2] < -1) output[2] = -1;
         if(output[2] > 1) output[2] = 1;
 
-        this.scanPosition += output[2]*this.turnSpeed*2;
+        this.scanPosition += output[2]*this.turnSpeed*4;
         if(this.scanPosition < -1) this.scanPosition = -1;
         if(this.scanPosition > 1) this.scanPosition = 1;
 
@@ -357,7 +363,7 @@ class Fish {
         this.vx += Math.cos(this.angle) * (this.speed*output[1]);
         this.vy += Math.sin(this.angle) * (this.speed*output[1]);
 
-        this.calories -= (Math.abs(output[1])+Math.abs(output[0]));
+        this.calories -= (Math.abs(output[1])+Math.abs(output[0]))**2;
 
         if(this.calories < 0) {
             //turn into food
