@@ -3,7 +3,7 @@
 
 class Simulation {
     constructor(numFish) {
-        this.numFood = 50;
+        this.numFood = 100;
         this.width = 800;
         this.height = 800;
         this.numFish = numFish;
@@ -14,15 +14,31 @@ class Simulation {
         this.tick = 0;
         this.crossover = true;
         this.mutationFactor = 0.25;
+        this.quadtree = new QuadTree (new Rectangle(this.width/2,this.height/2,this.width/2,this.height/2),8);
         for (let i = 0; i < numFish; i++) {
-            this.fishes.push(new Fish(this,Math.random() * this.width, Math.random() * this.height));
+            this.addFish(new Fish(this,Math.random() * this.width, Math.random() * this.height));
         }
         
         //populate food
         for (let i = 0; i < this.numFood; i++) {
-            this.food.push(new Food(this,Math.random() * this.width, Math.random() * this.height));
+            this.addFood(new Food(this,Math.random() * this.width, Math.random() * this.height));
         }
+
+
     }
+    addFish(fish){
+        this.fishes.push(fish);
+        //fish acts as point (has x and y)
+        
+        this.quadtree.insert(fish);
+
+    }
+    addFood(food){
+        this.food.push(food);
+        this.quadtree.insert(food);
+    }
+
+
     runGeneration(ticks){
         for (let i = 0; i < ticks; i++) {
             this.update();
@@ -40,9 +56,12 @@ class Simulation {
         let fishSum = 0;
         let foodSum = 0;
 
-        for (let i = 0; i < this.fishes.length; i++) {
+        let rangeRect = new Rectangle(fish.x,fish.y,range,range);
+        let nearbyObjects = this.quadtree.query(rangeRect);
+
+        for (let i = 0; i < nearbyObjects.length; i++) {
             //check how closely the other fish's angle matches the scan angle
-            let otherFish = this.fishes[i];
+            let otherFish = nearbyObjects[i];
             if(otherFish == fish) continue;
 
             let distanceSquared = (otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2;
@@ -53,21 +72,13 @@ class Simulation {
             if(otherFishAngleDifference > Math.PI/32) continue;
             let otherFishCorrelation = 1 - otherFishAngleDifference / Math.PI;
             //correct for distance
-            fishSum += otherFishCorrelation/(15*((10+Math.sqrt(distanceSquared))/range));
-    }
+            
+            //check if instance of food or fish
+            if(otherFish instanceof Food) foodSum += otherFishCorrelation/(15*((10+Math.sqrt(distanceSquared))/range));
+            else fishSum += otherFishCorrelation/(15*((10+Math.sqrt(distanceSquared))/range));
+    
 
-        for (let i = 0; i < this.food.length; i++) {
 
-            let food = this.food[i];
-            let distanceSquared = (food.x - fish.x) ** 2 + (food.y - fish.y) ** 2;
-            if(distanceSquared > range**2) continue;
-            let foodAngle = Math.atan2(food.y - fish.y, food.x - fish.x);
-            let foodAngleDifference = Math.abs(foodAngle - adjustedAngle);
-            if(foodAngleDifference > Math.PI) foodAngleDifference = 2 * Math.PI - foodAngleDifference;
-            if(foodAngleDifference > Math.PI/32) continue;
-            let foodCorrelation = 1 - foodAngleDifference / Math.PI;
-            //correct for distance
-            foodSum += foodCorrelation/(15*((10+Math.sqrt(distanceSquared))/range));
         }
         return [fishSum,foodSum];
     }
@@ -75,8 +86,8 @@ class Simulation {
 
 
     update(){
-
         this.tick++;
+        this.quadtree.update();
         for (let i = 0; i < this.fishes.length; i++) {
             this.fishes[i].update();
             if(this.tick % 8 == 0) this.fishes[i].act();
@@ -95,6 +106,8 @@ class Simulation {
         for (let i = 0; i < this.food.length; i++) {
             this.food[i].draw(ctx);
         }
+        ctx.fillStyle = "black";
+        this.quadtree.draw(ctx);
     }
     mutate(factor){
         for (let i = 0; i < this.fishes.length; i++) {
@@ -160,14 +173,17 @@ class Simulation {
                 }
             }
         }
-        //keep top fish
-        this.fishes = newFishes;
+
+        this.quadtree.clear();
+        this.fishes = [];
+        newFishes.forEach(fish => this.addFish(fish));
 
         //reset food
         this.food = [];
         for (let i = 0; i < this.numFood; i++) {
-            this.food.push(new Food(this,Math.random() * this.width, Math.random() * this.height));
+            this.addFood(new Food(this,Math.random() * this.width, Math.random() * this.height));
         }
+
 
         if(this.generation<100){
             let startBoost = Math.max(0,(200-this.generation)/500);
@@ -254,6 +270,7 @@ class Fish {
         this.range = 100;
     }
     update(){
+
         this.x += this.vx;
         this.y += this.vy;
         this.angle += this.angularVelocity;
@@ -269,8 +286,12 @@ class Fish {
 
         let minDistanceSq = this.range**2;
         let otherAngle = 0;
-        for(let i = 0; i < this.world.fishes.length; i++) {
-            let otherFish = this.world.fishes[i];
+
+        let nearby = this.world.quadtree.query(new Rectangle(this.x-(this.range/2),this.y-(this.range/2),this.range,this.range));
+        
+        let nearbyFish = nearby.filter(obj => obj instanceof Fish);
+        for(let i = 0; i < nearbyFish.length; i++) {
+            let otherFish = nearbyFish[i];
             if(otherFish == this) continue;
             
             let deltaX = otherFish.x - this.x;
@@ -288,17 +309,19 @@ class Fish {
 
 
         //eat food
-        
-        for(let i = 0; i < this.world.food.length; i++){
-            let food = this.world.food[i];
+        let nearbyFood = nearby.filter(obj => obj instanceof Food);
+        for(let i = 0; i < nearbyFood.length; i++){
+            let food = nearbyFood[i];
             //let distance = Math.sqrt((food.x - this.x) ** 2 + (food.y - this.y) ** 2);
             let distanceSquared = (food.x - this.x) ** 2 + (food.y - this.y) ** 2;
-            if(distanceSquared < 1 * (this.size**2)) {
-                this.world.food.splice(i,1);
+            if(distanceSquared < 2 * (this.size**2)) {
+                
                 this.score += 25;
-                if(Math.random() > 0.2){
-                this.world.food.push(new Food(this.world,this.world.width*Math.random(),this.world.height*Math.random()));
-                }
+                //randomly move food
+                food.x = Math.random() * this.world.width;
+                food.y = Math.random() * this.world.height;
+
+
             }
         }
         

@@ -1,0 +1,122 @@
+<html>
+    <head>
+        <script src="./quadtree.js"></script>
+    </head>
+    <body>
+        <canvas id="canvas" width="500" height="500"></canvas>
+    </body>
+    <script>
+        let canvas = document.getElementById("canvas");
+        let ctx = canvas.getContext("2d");
+        
+//example physics system
+class Physics {
+    constructor() {
+        this.quadTree = new QuadTree(new Rectangle(0, 0, 600, 600), 4);
+        this.points = [];
+    }
+    addPoint(point) {
+        this.points.push(point);
+        this.quadTree.insert(point);
+    }
+    update() {
+        this.quadTree.update();
+        for (let i = 0; i < this.points.length; i++) {
+            let point = this.points[i];
+            let range = new Rectangle(point.x, point.y, 5, 5);
+            let found = this.quadTree.query(range);
+            for (let other of found) {
+                if (point != other) {
+                    let dist = Math.sqrt((point.x - other.x) ** 2 + (point.y - other.y) ** 2);
+                    if (dist < 5) {
+                        let angle = Math.atan2(point.y - other.y, point.x - other.x);
+                        let force = new Point(Math.cos(angle), Math.sin(angle));
+                        point.x += force.x;
+                        point.y += force.y;
+                    }
+                }
+            }
+        }
+    }
+    //draw
+    draw(ctx) {
+        for (let point of this.points) {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+    }
+
+}
+
+
+
+
+
+
+
+let mouseDown = false;
+    canvas.addEventListener("mousedown", function(event) {
+        mouseDown = true;
+    });
+    canvas.addEventListener("mouseup", function(event) {
+        mouseDown = false;
+    });
+    let mousex = 0;
+    let mousey = 0;
+
+
+    canvas.addEventListener("mousemove", function(event) {
+        mousex = event.x;
+        mousey = event.y;
+    });
+
+    let grabbed = null;
+
+    canvas.addEventListener("mousedown", function(event) {
+        //grab a point
+        let x = event.x;
+        let y = event.y;
+        let range = new Rectangle(x, y, 10, 10);
+        let found = sim.quadTree.query(range);
+        if (found.length > 0) {
+            grabbed = found[0];
+        }
+
+    });
+    canvas.addEventListener("mouseup", function(event) {
+        //release point
+        grabbed = null;
+    });
+
+
+    let sim = new Physics();
+    for(let i = 0; i < 100; i++){
+        let x = Math.random()*600;
+        let y = Math.random()*600;
+        sim.addPoint(new Point(x,y));
+    }
+    function tick(){
+        //move grabbed point
+        if(grabbed){
+            grabbed.x = mousex;
+            grabbed.y = mousey;
+        }
+    
+
+        sim.update();
+        //clear
+        ctx.clearRect(0,0,500,500);
+        sim.draw(ctx);
+        sim.quadTree.draw(ctx);
+        requestAnimationFrame(tick);
+    }
+    tick();
+
+ 
+
+
+
+
+    </script>
+</html>
