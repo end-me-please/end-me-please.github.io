@@ -106,9 +106,10 @@ class Simulation {
         //get the top 10% of fishes
         let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
         
-
-        //median of
         let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 4));
+        
+
+        
         if(this.generation%800==0){
         this.mutationFactor*=0.96;
         let layer = Math.floor(Math.random() * 4);
