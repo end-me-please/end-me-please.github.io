@@ -47,6 +47,8 @@
             <li>added crossover</li>
             <li>fish now have single antenna instead of eye array</li>
             <li>fix bias</li>
+            <li>various changes</li>
+            <li>fish can now starve to death</li>
         </div>
     </body>
 
@@ -85,7 +87,7 @@
             inspectCtx.font = "15px Arial";
             inspectCtx.fillText("fitness: "+sim.fishes[inspectedFish].score, inspectCanvas.width*0.76, inspectCanvas.height*0.95);
             //print current velocity (calculate from vx and vy)
-            inspectCtx.fillText("velocity: "+Math.sqrt(sim.fishes[inspectedFish].vx*sim.fishes[inspectedFish].vx+sim.fishes[inspectedFish].vy*sim.fishes[inspectedFish].vy).toFixed(3), inspectCanvas.width*0.76, inspectCanvas.height*0.9);
+            inspectCtx.fillText("calories: "+sim.fishes[inspectedFish].calories, inspectCanvas.width*0.76, inspectCanvas.height*0.9);
             let highScore = 0;
             let lowScore = Infinity;
             let avgScore = 0;

@@ -26,7 +26,6 @@ class Simulation {
     runGeneration(ticks){
         for (let i = 0; i < ticks; i++) {
             this.update();
-          if(this.food.length == 0) break;
         }
         this.evolve();
         let tmp = this.tick;
@@ -76,6 +75,9 @@ class Simulation {
 
     update(){
 
+        if(this.food.length == 0) this.evolve();
+        if(this.fishes.length < this.numFish / 4) this.evolve();
+
         this.tick++;
         for (let i = 0; i < this.fishes.length; i++) {
             this.fishes[i].update();
@@ -106,7 +108,7 @@ class Simulation {
         //get the top 10% of fishes
         let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
         
-        let topFishes = sortedFishes.slice(0,Math.floor(this.fishes.length / 4));
+        let topFishes = sortedFishes.slice(0,Math.floor(2+this.fishes.length / 10));
         
 
         
@@ -253,6 +255,7 @@ class Fish {
         this.scanPosition = 0;
         this.minDistance = 1000;
         this.range = 100;
+        this.calories = 100;
     }
     update(){
         this.x += this.vx;
@@ -297,6 +300,7 @@ class Fish {
             if(distanceSquared < 1 * (this.size**2)) {
                 this.world.food.splice(i,1);
                 this.score += 25;
+                this.calories += 25;
                 if(Math.random() > 0.2){
                 this.world.food.push(new Food(this.world,this.world.width*Math.random(),this.world.height*Math.random()));
                 }
@@ -352,6 +356,14 @@ class Fish {
         this.angularVelocity += output[0] * this.turnSpeed;
         this.vx += Math.cos(this.angle) * (this.speed*output[1]);
         this.vy += Math.sin(this.angle) * (this.speed*output[1]);
+
+        this.calories -= (Math.abs(output[1])+Math.abs(output[0]));
+
+        if(this.calories < 0) {
+            //turn into food
+            this.world.fishes.splice(this.world.fishes.indexOf(this),1);
+            this.world.food.push(new Food(this.world,this.x,this.y));
+        }
 
     }
     pair(other){
@@ -460,6 +472,8 @@ class Fish {
             brain: this.brain.serialize(),
             fov: this.fov,
             drag: this.drag,
+            scanPosition: this.scanPosition,
+            calories: this.calories
         }
     }
     static deserialize(world,serialized){
@@ -473,6 +487,8 @@ class Fish {
         fish.brain = FishBrain.deserialize(serialized.brain);
         fish.fov = serialized.fov,
         fish.drag = serialized.drag;
+        fish.scanPosition = serialized.scanPosition;
+        fish.calories = serialized.calories;
         return fish;
     }
 
