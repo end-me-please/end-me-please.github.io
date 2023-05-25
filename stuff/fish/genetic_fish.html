@@ -66,7 +66,7 @@
         let inspectCtx = inspectCanvas.getContext("2d");
 
         
-        let sim = new Simulation(50);
+        let sim = new Simulation(70);
         
 
         let inspectedFish = 0;
@@ -227,9 +227,9 @@
 
 
         setInterval(() => {
-            if(autoUpdate&&tick>3000){
+            if(autoUpdate&&sim.tick>3000){
+            console.log("generation "+sim.generation + " finished, ticks: "+sim.tick);
             sim.evolve(0.1);
-            console.log("generation "+sim.generation + " finished, ticks: "+tick);
             tick = 0;
             drawGraph(sim.fitnessHistory);
 

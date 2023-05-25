@@ -3,7 +3,7 @@
 
 class Simulation {
     constructor(numFish) {
-        this.numFood = 50;
+        this.numFood = 0;
         this.width = 800;
         this.height = 800;
         this.numFish = numFish;
@@ -52,7 +52,7 @@ class Simulation {
             if(otherFishAngleDifference > Math.PI/32) continue;
             let otherFishCorrelation = 1 - otherFishAngleDifference / Math.PI;
             //correct for distance
-            fishSum += otherFishCorrelation/(15*((10+Math.sqrt(distanceSquared))/range));
+            fishSum += otherFishCorrelation/(4*((1+distanceSquared))/(range**2));
     }
 
         for (let i = 0; i < this.food.length; i++) {
@@ -71,11 +71,9 @@ class Simulation {
         return [fishSum,foodSum];
     }
 
-
-
     update(){
 
-        if(this.food.length == 0) this.evolve(0.1);
+        if(this.food.length == 0 && this.numFood != 0) this.evolve(0.1);
         if(this.fishes.length < this.numFish / 4) this.evolve(0.9);
 
         this.tick++;
@@ -83,6 +81,28 @@ class Simulation {
             this.fishes[i].update();
             if(this.tick % 8 == 0) this.fishes[i].act();
         }
+        //resolve collisions by checking in pairs, don't check twice
+        for (let i = 0; i < this.fishes.length; i++) {
+            let fish1 = this.fishes[i];
+            for (let j = i+1; j < this.fishes.length; j++) {
+                let fish2 = this.fishes[j];
+                let distanceSquared = (fish1.x - fish2.x) ** 2 + (fish1.y - fish2.y) ** 2;
+
+                if(fish1.minDistance > distanceSquared) {fish1.minDistance = distanceSquared};
+                if(fish2.minDistance > distanceSquared) {fish2.minDistance = distanceSquared};
+
+                if(distanceSquared < (fish1.size**2+fish2.size**2)){
+                    let angle = Math.atan2(fish1.y - fish2.y, fish1.x - fish2.x);
+                    let overlap = 2*(fish1.size*0.5+fish2.size*0.5) - Math.sqrt(distanceSquared);
+                    fish1.x += Math.cos(angle) * overlap / 2;
+                    fish1.y += Math.sin(angle) * overlap / 2;
+                    fish2.x -= Math.cos(angle) * overlap / 2;
+                    fish2.y -= Math.sin(angle) * overlap / 2;
+                }
+            }
+        }
+
+
     }
 
     
@@ -173,7 +193,8 @@ class Simulation {
         }
 
         if(this.generation<100){
-            let startBoost = Math.max(0,(200-this.generation)/500);
+            let startBoost = Math.max(0,(100-this.generation)/700);
+            console.log("boosting mutations: " + startBoost);
             this.mutate(startBoost);
         }
 
@@ -202,8 +223,6 @@ class Simulation {
         sim.tick = serialized.tick;
         return sim;
     }
-
-
 
 }
 class Food {
@@ -247,17 +266,21 @@ class Fish {
         this.fov = 0.9 * Math.PI;
         this.angle = Math.random() * 2 * Math.PI;
         this.turnSpeed = 0.01;
-        this.size = 9;
+        this.size = 7;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
-        this.brain = new FishBrain([4,3,9,3,3]);
+        this.brain = new FishBrain([5,9,7,5,3]);
         this.speed = 1.3; //acceleration
         this.scanPosition = 0;
         this.minDistance = 1000;
         this.range = 100;
-        this.calories = 185;
+        this.calories = 250;
+        this.calorieCap = 2000;
     }
+    
     update(){
+        
+        
         this.x += this.vx;
         this.y += this.vy;
         this.angle += this.angularVelocity;
@@ -274,27 +297,6 @@ class Fish {
         if(this.angle < 0) this.angle += 2 * Math.PI;
         if(this.angle > 2 * Math.PI) this.angle -= 2 * Math.PI;
 
-        let oldX = this.x;
-        let oldY = this.y;
-
-        let minDistanceSq = this.range**2;
-        let otherAngle = 0;
-        for(let i = 0; i < this.world.fishes.length; i++) {
-            let otherFish = this.world.fishes[i];
-            if(otherFish == this) continue;
-            
-            let deltaX = otherFish.x - this.x;
-            let deltaY = otherFish.y - this.y;
-            let distanceSquared = deltaX ** 2 + deltaY ** 2;
-            if(distanceSquared > this.range ** 2) continue;
-
-            if(distanceSquared < minDistanceSq) {minDistanceSq = distanceSquared; otherAngle = Math.atan2(deltaY, deltaX);}
-        }
-        let minDistance = Math.sqrt(minDistanceSq);
-        if (minDistance < 2*this.size) {this.score -=1;this.x = oldX;this.y = oldY; this.x+=Math.cos(-otherAngle);this.y+=Math.sin(-otherAngle);this.vx = 0;this.vy = 0;this.angularVelocity = 0;}
-        
-
-        this.minDistance = minDistance;
 
 
         //eat food
@@ -315,9 +317,9 @@ class Fish {
         
 
         //bounce off the walls, losing speed and points
-        if(this.x < 0) {this.x = 0; this.vx *= -0.5; this.score -= 1;}
-        if(this.x > this.world.width) {this.x = this.world.width; this.vx *= -0.5; this.score -= 1;}
-        if(this.y < 0) {this.y = 0; this.vy *= -0.5; this.score -= 1;}
+        if(this.x < 0) {this.x = 0; this.vx *= -0.5; this.score -= 0.1;}
+        if(this.x > this.world.width) {this.x = this.world.width; this.vx *= -0.5; this.score -= 0.1;}
+        if(this.y < 0) {this.y = 0; this.vy *= -0.5; this.score -= 0.1;}
         if(this.y > this.world.height) {this.y = this.world.height; this.vy *= -0.5; this.score -= 1;}
 
     }
@@ -339,8 +341,8 @@ class Fish {
 
         let tmp = this.world.scan(this,scanRad,250);
         
-        let inputData = [...tmp,1/(this.minDistance+0.01),this.scanPosition];
-
+        let inputData = [...tmp,1/(this.minDistance+1),this.scanPosition,this.calories/this.calorieCap];
+        this.minDistance = 100000;
         
         let output = this.brain.think(inputData);
         
@@ -401,7 +403,7 @@ class Fish {
         }
 
 
-        if(Math.random() < 0.4) child.mutate(this.world.mutationFactor);
+        if(Math.random() < 0.8) child.mutate(this.world.mutationFactor);
         return child;
     }
     mutate(factor){
