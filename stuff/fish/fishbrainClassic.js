@@ -336,7 +336,7 @@ class FishBrain {
 }
 
 function activation(x) {
-    return Math.tanh(x);
+    return Math.max(x*0.1,x);
 }
 
 

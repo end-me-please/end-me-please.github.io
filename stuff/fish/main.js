@@ -10,6 +10,8 @@ class Simulation {
         this.fishes = [];
         this.food = [];
         this.fitnessHistory = [];
+        this.speedHistory = [];
+        this.sizeHistory = [];
         this.generation = 0;
         this.tick = 0;
         this.crossover = true;
@@ -27,7 +29,7 @@ class Simulation {
         for (let i = 0; i < ticks; i++) {
             this.update();
         }
-        this.evolve(0.1);
+        this.evolve(0.4);
         let tmp = this.tick;
         this.tick = 0;
         return tmp;
@@ -66,14 +68,18 @@ class Simulation {
             if(foodAngleDifference > Math.PI/32) continue;
             let foodCorrelation = 1 - foodAngleDifference / Math.PI;
             //correct for distance
-            foodSum += foodCorrelation/(15*((10+Math.sqrt(distanceSquared))/range));
+            foodSum += foodCorrelation/(4*((1+distanceSquared)/range));
         }
+    
         return [fishSum,foodSum];
+    
+    
+    
     }
 
     update(){
 
-        if(this.food.length == 0 && this.numFood != 0) this.evolve(0.1);
+        if(this.food.length == 0 && this.numFood != 0) this.evolve(0.5);
         if(this.fishes.length < this.numFish / 4) this.evolve(0.9);
 
         this.tick++;
@@ -94,10 +100,10 @@ class Simulation {
                 if(distanceSquared < (fish1.size**2+fish2.size**2)){
                     let angle = Math.atan2(fish1.y - fish2.y, fish1.x - fish2.x);
                     let overlap = 2*(fish1.size*0.5+fish2.size*0.5) - Math.sqrt(distanceSquared);
-                    fish1.x += Math.cos(angle) * overlap / 2;
-                    fish1.y += Math.sin(angle) * overlap / 2;
-                    fish2.x -= Math.cos(angle) * overlap / 2;
-                    fish2.y -= Math.sin(angle) * overlap / 2;
+                    fish1.x += Math.cos(angle) * overlap * 0.5;
+                    fish1.y += Math.sin(angle) * overlap * 0.5;
+                    fish2.x -= Math.cos(angle) * overlap * 0.5;
+                    fish2.y -= Math.sin(angle) * overlap * 0.5;
                 }
             }
         }
@@ -124,7 +130,7 @@ class Simulation {
         }
     }
 
-    evolve(fraction=0.1){
+    evolve(fraction=0.5){
         //get the top 10% of fishes
         let sortedFishes = this.fishes.sort((a,b) => b.score - a.score);
         
@@ -133,7 +139,7 @@ class Simulation {
 
         
         if(this.generation%800==0){
-        this.mutationFactor*=0.96;
+        this.mutationFactor*=0.94;
         let layer = Math.floor(Math.random() * 4);
         if(this.generation<4500){
         topFishes.forEach(fish => fish.brain.expand(layer));
@@ -142,7 +148,11 @@ class Simulation {
         }
 
         this.fitnessHistory[this.generation]=(topFishes[Math.floor(topFishes.length / 2)].score);
-        
+        this.sizeHistory[this.generation]=(topFishes[Math.floor(topFishes.length / 2)].size);
+        this.speedHistory[this.generation]=(topFishes[Math.floor(topFishes.length / 2)].speed);
+
+
+
         let newFishes = [];
         //randomly match top fish and pair them to create numFish new fishes
         
@@ -206,6 +216,9 @@ class Simulation {
             fishes: this.fishes.map(fish => fish.serialize()),
             food: this.food.map(food => food.serialize()),
             fitnessHistory: this.fitnessHistory,
+            speedHistory: this.speedHistory,
+            sizeHistory: this.sizeHistory,
+            mutationFactor: this.mutationFactor,
             generation: this.generation,
             tick: this.tick,
             numFish: this.numFish,
@@ -218,19 +231,22 @@ class Simulation {
         sim.numFood = serialized.numFood;
         sim.fishes = serialized.fishes.map(fish => Fish.deserialize(sim,fish));
         sim.food = serialized.food.map(food => Food.deserialize(sim,food));
-        sim.fitnessHistory = serialized.fitnessHistory;
         sim.generation = serialized.generation;
         sim.tick = serialized.tick;
+        sim.mutationFactor = serialized.mutationFactor;
+        sim.speedHistory = serialized.speedHistory;
+        sim.sizeHistory = serialized.sizeHistory;
+        sim.fitnessHistory = serialized.fitnessHistory;
         return sim;
     }
 
 }
 class Food {
-    constructor(world,x,y){
+    constructor(world,x,y, size=5){
         this.world = world;
         this.x = x;
         this.y = y;
-        this.size = 5;
+        this.size = size;
     }
     draw(ctx){
         ctx.fillStyle = "green";
@@ -266,16 +282,16 @@ class Fish {
         this.fov = 0.9 * Math.PI;
         this.angle = Math.random() * 2 * Math.PI;
         this.turnSpeed = 0.01;
-        this.size = 7;
+        this.size = Math.random() * 5 + 5;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
-        this.brain = new FishBrain([5,9,7,5,3]);
-        this.speed = 1.3; //acceleration
+        this.brain = new FishBrain([5,5,5,5,3]);
+        this.speed = 0.8; //acceleration
         this.scanPosition = 0;
         this.minDistance = 1000;
         this.range = 100;
-        this.calories = 250;
-        this.calorieCap = 2000;
+        this.calories = 90;
+        this.calorieCap = 1000;
     }
     
     update(){
@@ -288,11 +304,13 @@ class Fish {
         this.vy *= 1 - this.drag;
         this.angularVelocity *= 1 - this.drag;
 
-        //speed limit
-        if(this.vx > 2) this.vx = 2;
-        if(this.vx < -2) this.vx = -2;
-        if(this.vy > 2) this.vy = 2;
-        if(this.vy < -2) this.vy = -2;
+        //speed limit, trigonometry
+        let speed = Math.sqrt(this.vx ** 2 + this.vy ** 2);
+        if(speed > this.speed*1.5){
+            this.vx *= this.speed*1.5 / speed;
+            this.vy *= this.speed*1.5 / speed;
+        }
+
 
         if(this.angle < 0) this.angle += 2 * Math.PI;
         if(this.angle > 2 * Math.PI) this.angle -= 2 * Math.PI;
@@ -305,10 +323,10 @@ class Fish {
             let food = this.world.food[i];
             //let distance = Math.sqrt((food.x - this.x) ** 2 + (food.y - this.y) ** 2);
             let distanceSquared = (food.x - this.x) ** 2 + (food.y - this.y) ** 2;
-            if(distanceSquared < 1 * (this.size**2)) {
+            if(distanceSquared < 1 * ((this.size+food.size)**2)) {
                 this.world.food.splice(i,1);
-                this.score += 25;
-                this.calories += 25;
+                this.score += food.size * 5;
+                this.calories += food.size * 5;
                 if(Math.random() > 0.2){
                 this.world.food.push(new Food(this.world,this.world.width*Math.random(),this.world.height*Math.random()));
                 }
@@ -316,31 +334,37 @@ class Fish {
         }
         
 
+
+        /*
         //bounce off the walls, losing speed and points
         if(this.x < 0) {this.x = 0; this.vx *= -0.5; this.score -= 0.1;}
         if(this.x > this.world.width) {this.x = this.world.width; this.vx *= -0.5; this.score -= 0.1;}
         if(this.y < 0) {this.y = 0; this.vy *= -0.5; this.score -= 0.1;}
         if(this.y > this.world.height) {this.y = this.world.height; this.vy *= -0.5; this.score -= 1;}
+        */
+        //actually apply a force to the fish pushing it back into the world, with a range of 3*radius
+        if(this.x < 5 * this.size) {this.vx += 0.01 * (5 * this.size - this.x);}
+        else if(this.x > this.world.width - 5 * this.size) {this.vx -= 0.01 * (this.x - (this.world.width - 5 * this.size));}
+        if(this.y < 5 * this.size) {this.vy += 0.01 * (5 * this.size - this.y);}
+        else if(this.y > this.world.height - 5 * this.size) {this.vy -= 0.01 * (this.y - (this.world.height - 5 * this.size));}
+        
+
 
     }
-
-
-
 
     act(){
         
         //scanPosition is from -1 to 1, 0 being straight ahead, -1 being all the way left to this.fov, 1 being all the way right to this.fov
         //2pi fov means both -1 and 1 are straight behind the fish
         let scanRad = this.fov / 2 * this.scanPosition;
-
+        
         //make sure that scanRad is between 0 and 2pi
         if(scanRad < 0) scanRad += 2 * Math.PI;
         if(scanRad > 2 * Math.PI) scanRad -= 2 * Math.PI;
 
-
-
         let tmp = this.world.scan(this,scanRad,250);
-        
+
+
         let inputData = [...tmp,1/(this.minDistance+1),this.scanPosition,this.calories/this.calorieCap];
         this.minDistance = 100000;
         
@@ -365,17 +389,36 @@ class Fish {
         this.vx += Math.cos(this.angle) * (this.speed*output[1]);
         this.vy += Math.sin(this.angle) * (this.speed*output[1]);
 
-        this.calories -= (Math.abs(output[1])+Math.abs(output[0]))**2;
+        //depends on max speed and size, fast + big = inefficient
+        let sizeSpeed = this.speed * (this.size*0.1);
+
+        this.calories -= sizeSpeed * (Math.abs(output[1])+Math.abs(output[0]))**2;
 
         if(this.calories < 0) {
             //turn into food
             this.world.fishes.splice(this.world.fishes.indexOf(this),1);
-            this.world.food.push(new Food(this.world,this.x,this.y));
+            this.world.food.push(new Food(this.world,this.x,this.y, this.size));
         }
 
     }
     pair(other){
         let child = new Fish(this.world,this.world.width*Math.random(),this.world.height*Math.random());
+
+
+        //average or select size, 0.3 chance average
+        if(Math.random()>0.7){
+        child.size = (this.size + other.size) / 2;
+        }else{
+        child.size = Math.random() > 0.5 ? this.size : other.size;
+        }
+
+        //average or select speed, 0.3 chance average
+        if(Math.random()>0.7){
+        child.speed = (this.speed + other.speed) / 2;
+        }else{
+        child.speed = Math.random() > 0.5 ? this.speed : other.speed;
+        }
+
 
         //average color
         let color1 = this.color.match(/\d+/g).map(Number);
@@ -407,6 +450,16 @@ class Fish {
         return child;
     }
     mutate(factor){
+
+        //mutate size
+        this.size += Math.random() * factor - factor / 2;
+        if(this.size < 5) this.size = 5;
+
+        //mutate speed
+        this.speed += Math.random() * factor - factor / 2;
+        if(this.speed < 0.1) this.speed = 0.1;
+        //upper bound is 10
+        if(this.speed > 10) this.speed = 10;
 
         //mutate color
         let color = this.color.match(/\d+/g).map(Number);

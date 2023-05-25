@@ -15,7 +15,13 @@
         <div>
             <label id="stats">Stats:</label>
         </div>
-        <canvas id="performanceGraph" width="500" height="300" style="border: 1px solid black; background-color: aliceblue;"></canvas>
+        <p>fitness</p>
+        <canvas id="performanceGraph" width="500" height="155" style="border: 1px solid black; background-color: aliceblue;"></canvas>
+        <p>speed</p>
+        <canvas id="speedGraph" width="500" height="155" style="border: 1px solid black; background-color: aliceblue;"></canvas>
+        <p>size</p>
+        <canvas id="sizeGraph" width="500" height="155" style="border: 1px solid black; background-color: aliceblue;"></canvas>
+        </br>
         <button id="mutate" onclick="sim.mutate(0.3)">Mutate</button>
         <button id="fastForward" onclick="fastForward(10)">fast forward 10 generations</button>
         
@@ -59,7 +65,13 @@
     
         let autoUpdate = true;
         let performanceGraphCanvas = document.getElementById("performanceGraph");
+        let speedGraphCanvas= document.getElementById("speedGraph");
+        let sizeGraphCanvas= document.getElementById("sizeGraph");
+
         let performanceGraphCtx = performanceGraphCanvas.getContext("2d");
+        let speedGraphCtx = speedGraphCanvas.getContext("2d");
+        let sizeGraphCtx = sizeGraphCanvas.getContext("2d");
+
         let canvas = document.getElementById("canvas");
         let ctx = canvas.getContext("2d");
         let inspectCanvas = document.getElementById("inspect");
@@ -146,7 +158,7 @@
             sim = Simulation.deserialize(e.data.sim);
             workerBusy = false;
             //update graph
-            drawGraph(sim.fitnessHistory);
+            drawGraphs();
         }
         } catch (error) {
             console.log(error);
@@ -156,7 +168,7 @@
             if(worker == null) {
             let totalStartTime = Date.now();
             autoUpdate = false;
-            let generationTicks = 4000;
+            let generationTicks = 9000;
             for (let i = 0; i < generations; i++) {
                 let startTime = Date.now();
                 let ranTicks = sim.runGeneration(generationTicks);
@@ -165,7 +177,7 @@
             }
             let totalEndTime = Date.now();
             console.log("total time: "+(totalEndTime-totalStartTime)+"ms");
-            drawGraph(sim.fitnessHistory);
+            drawGraphs();
             autoUpdate = true;
             } else {
             worker.postMessage({sim:sim.serialize(),generations:generations});
@@ -196,7 +208,7 @@
             //deserialize simulation
             sim = Simulation.deserialize(serialized);
             //update graph
-            drawGraph(sim.fitnessHistory);
+            drawGraphs();
         }
 
         function exportClipboard() {
@@ -231,7 +243,7 @@
             console.log("generation "+sim.generation + " finished, ticks: "+sim.tick);
             sim.evolve(0.1);
             tick = 0;
-            drawGraph(sim.fitnessHistory);
+            drawGraphs();
 
 
 
@@ -240,7 +252,16 @@
         }, 20000);
 
 
-        function drawGraph(data){
+        function drawGraphs(){
+
+            drawGraph(sim.fitnessHistory,performanceGraphCtx);
+            drawGraph(sim.sizeHistory,sizeGraphCtx);
+            drawGraph(sim.speedHistory,speedGraphCtx);
+
+        }
+
+
+        function drawGraph(data,ctx){
             //normalize data
             let max = 0;
             for (let i = 0; i < data.length; i++) {
@@ -251,14 +272,14 @@
                 normalizedData.push(data[i] / max);
             }
             //draw graph
-            performanceGraphCtx.clearRect(0,0,performanceGraphCanvas.width,performanceGraphCanvas.height);
-            performanceGraphCtx.strokeStyle = "rgba(0,0,0,0.5)";
-            performanceGraphCtx.beginPath();
-            performanceGraphCtx.moveTo(0,performanceGraphCanvas.height);
+            ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+            ctx.strokeStyle = "rgba(0,0,0,0.5)";
+            ctx.beginPath();
+            ctx.moveTo(0,performanceGraphCanvas.height);
             for (let i = 0; i < normalizedData.length; i++) {
-                performanceGraphCtx.lineTo(i / normalizedData.length * performanceGraphCanvas.width, performanceGraphCanvas.height - normalizedData[i] * performanceGraphCanvas.height);
+                performanceGraphCtx.lineTo(i / normalizedData.length * ctx.canvas.width, ctx.canvas.height - normalizedData[i] * ctx.canvas.height);
             }
-            performanceGraphCtx.stroke();
+            ctx.stroke();
             //trendline
             let trendline = [];
             for (let i = 0; i < normalizedData.length; i++) {
@@ -272,14 +293,14 @@
             for (let i = 0; i < trendline.length; i++) {
                 trendline[i] /= 10;
             }
-            performanceGraphCtx.strokeStyle = "rgba(255,0,0,1)";
-            performanceGraphCanvas.lineWidth = 4;
-            performanceGraphCtx.beginPath();
-            performanceGraphCtx.moveTo(0,performanceGraphCanvas.height);
+            ctx.strokeStyle = "rgba(255,0,0,1)";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0,performanceGraphCanvas.height);
             for (let i = 0; i < trendline.length; i++) {
-                performanceGraphCtx.lineTo(i / trendline.length * performanceGraphCanvas.width, performanceGraphCanvas.height - trendline[i] * performanceGraphCanvas.height);
+                ctx.lineTo(i / trendline.length * ctx.canvas.width, ctx.canvas.height - trendline[i] * ctx.canvas.height);
             }
-            performanceGraphCtx.stroke();
+            ctx.stroke();
 
         }
 
