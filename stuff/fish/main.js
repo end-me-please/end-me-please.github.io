@@ -19,7 +19,17 @@ class Simulation {
         for (let i = 0; i < numFish; i++) {
             this.fishes.push(new Fish(this,Math.random() * this.width, Math.random() * this.height));
         }
-        
+        this.map = [];
+        let numSquares = 5;
+        this.numSquares = numSquares;
+        //populate map
+        for (let i = 0; i < numSquares; i++) {
+            this.map.push([]);
+            for (let j = 0; j < numSquares; j++) {
+                this.map[i].push([]);
+            }
+        }
+
         //populate food
         for (let i = 0; i < this.numFood; i++) {
             this.food.push(new Food(this,Math.random() * this.width, Math.random() * this.height));
@@ -39,11 +49,14 @@ class Simulation {
         let adjustedAngle = (angle + fish.angle) % (2 * Math.PI);
         
         let fishSum = 0;
+        
         let foodSum = 0;
+        
+        let possibleFish = this.fishes;
 
-        for (let i = 0; i < this.fishes.length; i++) {
+        for (let i = 0; i < possibleFish.length; i++) {
             //check how closely the other fish's angle matches the scan angle
-            let otherFish = this.fishes[i];
+            let otherFish = possibleFish[i];
             if(otherFish == fish) continue;
 
             let distanceSquared = (otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2;
@@ -80,13 +93,84 @@ class Simulation {
     update(){
 
         if(this.food.length == 0 && this.numFood != 0) this.evolve(0.5);
-        if(this.fishes.length < this.numFish / 4) this.evolve(0.9);
+        if(this.fishes.length < this.numFish / 4) this.evolve(0.6);
+        let numSquares = this.numSquares;
+        let squareWidth = this.width/numSquares;
+        let squareHeight = this.height/numSquares;
+
+        //assume that the maximum size of a fish is 40, split the map into 40x40 squares
+        for (let i = 0; i < numSquares; i++) {
+            for (let j = 0; j < numSquares; j++) {
+                //empty out the map
+                this.map[i][j] = [];
+            }
+        }
+        
+
 
         this.tick++;
         for (let i = 0; i < this.fishes.length; i++) {
+            //sort into map
+            let fish = this.fishes[i];
+            //find the square that the fish is in
+            let x = Math.floor(fish.x/squareWidth);
+            let y = Math.floor(fish.y/squareHeight);
+            //math.max/min to prevent out of bounds errors
+            
+            x = Math.max(0,Math.min(x,numSquares-1));
+            y = Math.max(0,Math.min(y,numSquares-1));
+            this.map[x][y].push(fish);
+            
+
             this.fishes[i].update();
             if(this.tick % 8 == 0) this.fishes[i].act();
         }
+        let map = this.map;
+
+        //resolve collisions, check each square and the 8 surrounding squares, consider bounds
+        for (let i = 0; i < numSquares; i+=2) {
+            for (let j = 0; j < numSquares; j+=2) {
+                //push all fish in the square and the 8 surrounding squares into an array
+                let fishArray = [];
+                for (let k = -1; k < 2; k++) {
+                    for (let l = -1; l < 2; l++) {
+                        if(i+k < 0 || i+k >= numSquares || j+l < 0 || j+l >= numSquares) continue;
+                        fishArray.push(...map[i+k][j+l]);
+                    }
+                }
+                //resolve collisions
+                for (let k = 0; k < fishArray.length; k++) {
+                    let fish1 = fishArray[k];
+                    for (let l = k+1; l < fishArray.length; l++) {
+                        let fish2 = fishArray[l];
+                        let distanceSquared = (fish1.x - fish2.x) ** 2 + (fish1.y - fish2.y) ** 2;
+                        if(distanceSquared < (fish1.size**2+fish2.size**2)){
+                            let angle = Math.atan2(fish1.y - fish2.y, fish1.x - fish2.x);
+                            let overlap = 2*(fish1.size*0.9+fish2.size*0.9 - Math.sqrt(distanceSquared));
+                            fish1.x += overlap/2 * Math.cos(angle);
+                            fish1.y += overlap/2 * Math.sin(angle);
+                            fish2.x -= overlap/2 * Math.cos(angle);
+                            fish2.y -= overlap/2 * Math.sin(angle);
+                        }
+                        //check min distance
+                        if(fish1.minDistance > distanceSquared) {fish1.minDistance = distanceSquared};
+                        if(fish2.minDistance > distanceSquared) {fish2.minDistance = distanceSquared};
+                        
+                    }
+                }
+            }
+        }
+
+
+
+
+
+
+
+
+
+        //legacy collision detection 
+        /*
         //resolve collisions by checking in pairs, don't check twice
         for (let i = 0; i < this.fishes.length; i++) {
             let fish1 = this.fishes[i];
@@ -105,11 +189,13 @@ class Simulation {
                     fish2.x -= Math.cos(angle) * overlap * 0.5;
                     fish2.y -= Math.sin(angle) * overlap * 0.5;
                     //subtract 1 health from both fish
-                    fish1.life -= 1;
-                    fish2.life -= 1;
+                    fish1.life -= 2 * (fish2.size / fish1.size);
+                    fish2.life -= 2 * (fish1.size / fish2.size);
                 }
             }
         }
+        */
+
 
 
     }
@@ -126,6 +212,19 @@ class Simulation {
         for (let i = 0; i < this.food.length; i++) {
             this.food[i].draw(ctx);
         }
+        //draw the map
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 1;
+        let squareWidth = this.width/this.numSquares;
+        let squareHeight = this.height/this.numSquares;
+        for (let i = 0; i < this.numSquares; i++) {
+            for (let j = 0; j < this.numSquares; j++) {
+                ctx.strokeRect(i*squareWidth,j*squareHeight,squareWidth,squareHeight);
+            }
+        }
+
+
+
     }
     mutate(factor){
         for (let i = 0; i < this.fishes.length; i++) {
@@ -280,23 +379,23 @@ class Fish {
         this.y = y;
         this.vx = 0;
         this.vy = 0;
+        this.angle = Math.random() * 2 * Math.PI;
         this.angularVelocity = 0;
+        this.score = 0;
+        this.scanPosition = 0;
+        this.calories = 90;
+        this.heartRate = 1;
+        this.life = 100;
+        this.minDistance = 1000;
+        this.range = 100;
         this.drag = 0.03;
         this.fov = 0.9 * Math.PI;
-        this.angle = Math.random() * 2 * Math.PI;
         this.turnSpeed = 0.01;
         this.size = Math.random() * 5 + 5;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
-        this.score = 0;
         this.brain = new FishBrain([7,5,5,5,4]);
         this.speed = 0.8; //acceleration
-        this.scanPosition = 0;
-        this.minDistance = 1000;
-        this.range = 100;
-        this.calories = 90;
         this.calorieCap = 1000;
-        this.life = 100;
-        this.heartRate = 1;
     }
     
     update(){
@@ -332,21 +431,14 @@ class Fish {
                 this.world.food.splice(i,1);
                 this.score += food.size * 5;
                 this.calories += food.size * 5;
-                if(Math.random() > 0.2){
+                /*if(Math.random() > 0.2){
                 this.world.food.push(new Food(this.world,this.world.width*Math.random(),this.world.height*Math.random()));
-                }
+                }*/
             }
         }
         
 
 
-        /*
-        //bounce off the walls, losing speed and points
-        if(this.x < 0) {this.x = 0; this.vx *= -0.5; this.score -= 0.1;}
-        if(this.x > this.world.width) {this.x = this.world.width; this.vx *= -0.5; this.score -= 0.1;}
-        if(this.y < 0) {this.y = 0; this.vy *= -0.5; this.score -= 0.1;}
-        if(this.y > this.world.height) {this.y = this.world.height; this.vy *= -0.5; this.score -= 1;}
-        */
         //actually apply a force to the fish pushing it back into the world, with a range of 3*radius
         if(this.x < 5 * this.size) {this.vx += 0.01 * (5 * this.size - this.x);}
         else if(this.x > this.world.width - 5 * this.size) {this.vx -= 0.01 * (this.x - (this.world.width - 5 * this.size));}
@@ -391,8 +483,8 @@ class Fish {
         if(this.scanPosition > 1) this.scanPosition = 1;
 
         this.heartRate += output[3]*0.1;
-        if(this.heartRate < 0) this.heartRate = 0;
-        if(this.heartRate > 2) this.heartRate = 2;
+        if(this.heartRate < 0.4) this.heartRate = 0.4;
+        if(this.heartRate > 3) this.heartRate = 3;
 
 
 
@@ -524,7 +616,16 @@ class Fish {
             ctx.fill();
             //draw sensor line in direction of scanPosition
             if(this.world.fishes[inspectedFish] == this) {
-            ctx.strokeStyle = "rgba(0,0,0,0.2)";
+            
+
+                let scanRad = this.fov / 2 * this.scanPosition;
+        
+                //make sure that scanRad is between 0 and 2pi
+                if(scanRad < 0) scanRad += 2 * Math.PI;
+                if(scanRad > 2 * Math.PI) scanRad -= 2 * Math.PI;
+        
+            let scanResult = this.world.scan(this,scanRad,250);
+            ctx.strokeStyle = "rgba(0,0,0,"+scanResult[0]*50+")";
             ctx.lineWidth = 2;
             ctx.beginPath();            
             //its actually a pie slice going from -pi/32 to pi/32, draw two arcs
@@ -533,6 +634,7 @@ class Fish {
             ctx.lineTo(this.x,this.y);
             //from both ends of the arc, draw a line to the center
             
+
             
             ctx.stroke();
         }
