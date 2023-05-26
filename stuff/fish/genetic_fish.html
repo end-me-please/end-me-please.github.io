@@ -97,9 +97,10 @@
             //on the inspect canvas bottom right, print the fish's score
             inspectCtx.fillStyle = "black";
             inspectCtx.font = "15px Arial";
-            inspectCtx.fillText("fitness: "+sim.fishes[inspectedFish].score, inspectCanvas.width*0.76, inspectCanvas.height*0.95);
             //print current velocity (calculate from vx and vy)
-            inspectCtx.fillText("calories: "+sim.fishes[inspectedFish].calories, inspectCanvas.width*0.76, inspectCanvas.height*0.9);
+            inspectCtx.fillText("calories: "+Math.round(sim.fishes[inspectedFish].calories), inspectCanvas.width*0.76, inspectCanvas.height*0.9);
+            //health
+            inspectCtx.fillText("health: "+Math.round(sim.fishes[inspectedFish].life), inspectCanvas.width*0.76, inspectCanvas.height*0.85);
             let highScore = 0;
             let lowScore = Infinity;
             let avgScore = 0;

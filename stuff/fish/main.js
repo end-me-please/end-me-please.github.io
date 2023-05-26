@@ -104,6 +104,9 @@ class Simulation {
                     fish1.y += Math.sin(angle) * overlap * 0.5;
                     fish2.x -= Math.cos(angle) * overlap * 0.5;
                     fish2.y -= Math.sin(angle) * overlap * 0.5;
+                    //subtract 1 health from both fish
+                    fish1.life -= 1;
+                    fish2.life -= 1;
                 }
             }
         }
@@ -285,13 +288,15 @@ class Fish {
         this.size = Math.random() * 5 + 5;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
-        this.brain = new FishBrain([5,5,5,5,3]);
+        this.brain = new FishBrain([7,5,5,5,4]);
         this.speed = 0.8; //acceleration
         this.scanPosition = 0;
         this.minDistance = 1000;
         this.range = 100;
         this.calories = 90;
         this.calorieCap = 1000;
+        this.life = 100;
+        this.heartRate = 1;
     }
     
     update(){
@@ -365,7 +370,7 @@ class Fish {
         let tmp = this.world.scan(this,scanRad,250);
 
 
-        let inputData = [...tmp,1/(this.minDistance+1),this.scanPosition,this.calories/this.calorieCap];
+        let inputData = [...tmp,1/(this.minDistance+1),this.scanPosition,this.calories/this.calorieCap, Math.sin(this.heartRate*this.world.tick*0.01),this.life/100];
         this.minDistance = 100000;
         
         let output = this.brain.think(inputData);
@@ -378,23 +383,36 @@ class Fish {
         if(output[1] > 1) output[1] = 1;
         if(output[2] < -1) output[2] = -1;
         if(output[2] > 1) output[2] = 1;
+        if(output[3] < -1) output[3] = -1;
+        if(output[3] > 1) output[3] = 1;
 
         this.scanPosition += output[2]*this.turnSpeed*4;
         if(this.scanPosition < -1) this.scanPosition = -1;
         if(this.scanPosition > 1) this.scanPosition = 1;
 
+        this.heartRate += output[3]*0.1;
+        if(this.heartRate < 0) this.heartRate = 0;
+        if(this.heartRate > 2) this.heartRate = 2;
+
 
 
         this.angularVelocity += output[0] * this.turnSpeed;
-        this.vx += Math.cos(this.angle) * (this.speed*output[1]);
-        this.vy += Math.sin(this.angle) * (this.speed*output[1]);
+        this.vx += Math.cos(this.angle) * (this.heartRate*this.speed*output[1]);
+        this.vy += Math.sin(this.angle) * (this.heartRate*this.speed*output[1]);
 
         //depends on max speed and size, fast + big = inefficient
         let sizeSpeed = this.speed * (this.size*0.1);
 
-        this.calories -= sizeSpeed * (Math.abs(output[1])+Math.abs(output[0]))**2;
+        this.calories -= (this.heartRate**2)*sizeSpeed * (Math.abs(output[1])+Math.abs(output[0]))**2;
 
-        if(this.calories < 0) {
+        //heal using calories if life is below max, higher heart rate means more healing
+        if(this.life < 100) {
+            this.life += this.heartRate * 0.3;
+            this.calories -= this.heartRate * 0.3;
+        }
+
+
+        if(this.calories < 0 || this.life < 0) {
             //turn into food
             this.world.fishes.splice(this.world.fishes.indexOf(this),1);
             this.world.food.push(new Food(this.world,this.x,this.y, this.size));
