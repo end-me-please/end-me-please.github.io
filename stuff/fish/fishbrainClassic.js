@@ -62,8 +62,8 @@ class FishBrain {
                     }
                     if(Math.random() < factor/100) this.weights[i][j][k] = (Math.random() * 2 - 1) * 0.5;
                     //keep weights between -1 and 1
-                    if(this.weights[i][j][k] > 3) this.weights[i][j][k] = 3;
-                    if(this.weights[i][j][k] < -3) this.weights[i][j][k] = -3;
+                    if(this.weights[i][j][k] > 5) this.weights[i][j][k] = 5;
+                    if(this.weights[i][j][k] < -5) this.weights[i][j][k] = -5;
 
                 }
             }

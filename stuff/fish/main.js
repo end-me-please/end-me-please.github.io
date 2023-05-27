@@ -151,11 +151,15 @@ class Simulation {
                             fish1.y += overlap/2 * Math.sin(angle);
                             fish2.x -= overlap/2 * Math.cos(angle);
                             fish2.y -= overlap/2 * Math.sin(angle);
+
+                            fish1.life -= 2 * (fish2.size / fish1.size);
+                            fish2.life -= 2 * (fish1.size / fish2.size);
+
                         }
                         //check min distance
                         if(fish1.minDistance > distanceSquared) {fish1.minDistance = distanceSquared};
                         if(fish2.minDistance > distanceSquared) {fish2.minDistance = distanceSquared};
-                        
+
                     }
                 }
             }
@@ -189,8 +193,7 @@ class Simulation {
                     fish2.x -= Math.cos(angle) * overlap * 0.5;
                     fish2.y -= Math.sin(angle) * overlap * 0.5;
                     //subtract 1 health from both fish
-                    fish1.life -= 2 * (fish2.size / fish1.size);
-                    fish2.life -= 2 * (fish1.size / fish2.size);
+
                 }
             }
         }
@@ -383,17 +386,18 @@ class Fish {
         this.angularVelocity = 0;
         this.score = 0;
         this.scanPosition = 0;
+        this.targetRange = 0;
         this.calories = 90;
         this.heartRate = 1;
         this.life = 100;
         this.minDistance = 1000;
-        this.range = 100;
+        this.maxRange = 300;
         this.drag = 0.03;
         this.fov = 0.9 * Math.PI;
         this.turnSpeed = 0.01;
         this.size = Math.random() * 5 + 5;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
-        this.brain = new FishBrain([7,5,5,5,4]);
+        this.brain = new FishBrain([8,5,5,5,5]);
         this.speed = 0.8; //acceleration
         this.calorieCap = 1000;
     }
@@ -458,11 +462,15 @@ class Fish {
         //make sure that scanRad is between 0 and 2pi
         if(scanRad < 0) scanRad += 2 * Math.PI;
         if(scanRad > 2 * Math.PI) scanRad -= 2 * Math.PI;
+        let tmp = [];
+        if(this.targetRange>0){
+        tmp = this.world.scan(this,scanRad,this.targetRange);
+        } else {
+            tmp = [0,0];
+        }
 
-        let tmp = this.world.scan(this,scanRad,250);
 
-
-        let inputData = [...tmp,1/(this.minDistance+1),this.scanPosition,this.calories/this.calorieCap, Math.sin(this.heartRate*this.world.tick*0.01),this.life/100];
+        let inputData = [...tmp,1/(this.minDistance+1),this.scanPosition,this.calories/this.calorieCap, Math.sin(this.heartRate*this.world.tick*0.01),this.life/100, this.targetRange/this.maxRange];
         this.minDistance = 100000;
         
         let output = this.brain.think(inputData);
@@ -477,7 +485,15 @@ class Fish {
         if(output[2] > 1) output[2] = 1;
         if(output[3] < -1) output[3] = -1;
         if(output[3] > 1) output[3] = 1;
+        if(output[4] < -1) output[4] = -1;
+        if(output[4] > 1) output[4] = 1;
 
+        this.targetRange += output[4]*this.maxRange*0.1;
+        if(this.targetRange < -20) this.targetRange = -20;
+        if(this.targetRange > this.maxRange) this.targetRange = this.maxRange;
+        if(this.targetRange > 0) this.calories -= (this.targetRange/this.maxRange)*0.1;
+        
+        
         this.scanPosition += output[2]*this.turnSpeed*4;
         if(this.scanPosition < -1) this.scanPosition = -1;
         if(this.scanPosition > 1) this.scanPosition = 1;
@@ -615,8 +631,10 @@ class Fish {
             ctx.arc(this.x + Math.cos(this.angle) * (this.size*0.6),this.y + Math.sin(this.angle) * (this.size*0.6),this.size/3,0,2 * Math.PI);
             ctx.fill();
             //draw sensor line in direction of scanPosition
-            if(this.world.fishes[inspectedFish] == this) {
+            //if(this.world.fishes[inspectedFish] == this) {
             
+                //if targetRange is negative, return
+                if(this.targetRange < 0) return;
 
                 let scanRad = this.fov / 2 * this.scanPosition;
         
@@ -624,20 +642,20 @@ class Fish {
                 if(scanRad < 0) scanRad += 2 * Math.PI;
                 if(scanRad > 2 * Math.PI) scanRad -= 2 * Math.PI;
         
-            let scanResult = this.world.scan(this,scanRad,250);
-            ctx.strokeStyle = "rgba(0,0,0,"+scanResult[0]*50+")";
+            let scanResult = this.world.scan(this,scanRad, this.targetRange);
+            ctx.strokeStyle = "rgba("+ scanResult[0]*45+","+ scanResult[1]*45 +",0,0.5)";
             ctx.lineWidth = 2;
             ctx.beginPath();            
             //its actually a pie slice going from -pi/32 to pi/32, draw two arcs
             ctx.lineTo(this.x,this.y);
-            ctx.arc(this.x,this.y,300,this.angle + this.fov / 2 * this.scanPosition - Math.PI/32,this.angle + this.fov / 2 * this.scanPosition + Math.PI/32);
+            ctx.arc(this.x,this.y,this.targetRange,this.angle + this.fov / 2 * this.scanPosition - Math.PI/32,this.angle + this.fov / 2 * this.scanPosition + Math.PI/32);
             ctx.lineTo(this.x,this.y);
             //from both ends of the arc, draw a line to the center
             
 
             
             ctx.stroke();
-        }
+        //}
 
     }
     serialize(){
