@@ -383,13 +383,13 @@ class Fish {
         this.heartRate = 1;
         this.life = 100;
         this.minDistance = 1000;
-        this.maxRange = 300;
+        this.maxRange = 210;
         this.drag = 0.03;
         this.fov = 0.9 * Math.PI;
         this.turnSpeed = 0.01;
         this.size = Math.random() * 5 + 5;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
-        this.brain = new FishBrain([8,5,5,5,5]);
+        this.brain = new FishBrain([8,12,8,5]);
         this.speed = 0.8; //acceleration
         this.calorieCap = 1000;
     }
