@@ -3,7 +3,7 @@
 
 class Simulation {
     constructor(numFish) {
-        this.numFood = 0;
+        this.numFood = 20;
         this.width = 800;
         this.height = 800;
         this.numFish = numFish;
@@ -106,8 +106,6 @@ class Simulation {
             }
         }
         
-
-
         this.tick++;
         for (let i = 0; i < this.fishes.length; i++) {
             //sort into map
@@ -165,14 +163,6 @@ class Simulation {
             }
         }
 
-
-
-
-
-
-
-
-
         //legacy collision detection 
         /*
         //resolve collisions by checking in pairs, don't check twice
@@ -215,6 +205,7 @@ class Simulation {
         for (let i = 0; i < this.food.length; i++) {
             this.food[i].draw(ctx);
         }
+        /*
         //draw the map
         ctx.strokeStyle = "black";
         ctx.lineWidth = 1;
@@ -225,7 +216,7 @@ class Simulation {
                 ctx.strokeRect(i*squareWidth,j*squareHeight,squareWidth,squareHeight);
             }
         }
-
+        */
 
 
     }
@@ -328,6 +319,7 @@ class Simulation {
             tick: this.tick,
             numFish: this.numFish,
             numFood: this.numFood,
+
 
         }
     }
@@ -672,7 +664,10 @@ class Fish {
             fov: this.fov,
             drag: this.drag,
             scanPosition: this.scanPosition,
-            calories: this.calories
+            calories: this.calories,
+            life: this.life,
+            maxRange: this.maxRange,
+            targetRange: this.targetRange,
         }
     }
     static deserialize(world,serialized){
@@ -688,6 +683,9 @@ class Fish {
         fish.drag = serialized.drag;
         fish.scanPosition = serialized.scanPosition;
         fish.calories = serialized.calories;
+        fish.life = serialized.life;
+        fish.maxRange = serialized.maxRange;
+        fish.targetRange = serialized.targetRange;
         return fish;
     }
 
