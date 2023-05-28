@@ -3,9 +3,9 @@
 
 class Simulation {
     constructor(numFish) {
-        this.numFood = 20;
-        this.width = 800;
-        this.height = 800;
+        this.numFood = 80;
+        this.width = 2000;
+        this.height = 2000;
         this.numFish = numFish;
         this.fishes = [];
         this.food = [];
@@ -64,10 +64,10 @@ class Simulation {
             let otherFishAngle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x);
             let otherFishAngleDifference = Math.abs(otherFishAngle - adjustedAngle);
             if(otherFishAngleDifference > Math.PI) otherFishAngleDifference = 2 * Math.PI - otherFishAngleDifference;
-            if(otherFishAngleDifference > Math.PI/32) continue;
+            if(otherFishAngleDifference > Math.PI*fish.visionFocus) continue;
             let otherFishCorrelation = 1 - otherFishAngleDifference / Math.PI;
             //correct for distance
-            fishSum += otherFishCorrelation/(4*((1+distanceSquared))/(range**2));
+            fishSum += otherFishCorrelation/(9*((1+(distanceSquared)))/(range**2));
     }
 
         for (let i = 0; i < this.food.length; i++) {
@@ -78,10 +78,10 @@ class Simulation {
             let foodAngle = Math.atan2(food.y - fish.y, food.x - fish.x);
             let foodAngleDifference = Math.abs(foodAngle - adjustedAngle);
             if(foodAngleDifference > Math.PI) foodAngleDifference = 2 * Math.PI - foodAngleDifference;
-            if(foodAngleDifference > Math.PI/32) continue;
+            if(foodAngleDifference > Math.PI*fish.visionFocus) continue;
             let foodCorrelation = 1 - foodAngleDifference / Math.PI;
             //correct for distance
-            foodSum += foodCorrelation/(4*((1+distanceSquared)/range));
+            foodSum += foodCorrelation/(9*((1+(distanceSquared))/(range**2)));
         }
     
         return [fishSum,foodSum];
@@ -196,6 +196,10 @@ class Simulation {
     
     
     render(ctx){
+        //make canvas width and height the same as map width and height
+        ctx.canvas.width = this.width;
+        ctx.canvas.height = this.height;
+        
         ctx.clearRect(0,0,this.width,this.height);
         for (let i = 0; i < this.fishes.length; i++) {
             let fish = this.fishes[i];
@@ -234,10 +238,10 @@ class Simulation {
         
 
         
-        if(this.generation%800==0){
+        if(this.generation%120==0){
         this.mutationFactor*=0.94;
-        let layer = Math.floor(Math.random() * 4);
-        if(this.generation<4500){
+        let layer = 1;
+        if(this.generation<750){
         topFishes.forEach(fish => fish.brain.expand(layer));
         this.mutate(0.3);    
         }
@@ -379,17 +383,18 @@ class Fish {
         this.score = 0;
         this.scanPosition = 0;
         this.targetRange = 0;
-        this.calories = 90;
+        this.calories = 120;
+        this.visionFocus = 0;
         this.heartRate = 1;
         this.life = 100;
         this.minDistance = 1000;
         this.maxRange = 210;
-        this.drag = 0.03;
+        this.drag = 0.055;
         this.fov = 0.9 * Math.PI;
-        this.turnSpeed = 0.01;
+        this.turnSpeed = 0.008;
         this.size = Math.random() * 5 + 5;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
-        this.brain = new FishBrain([8,12,8,5]);
+        this.brain = new FishBrain([9,7,5,6]);
         this.speed = 0.8; //acceleration
         this.calorieCap = 1000;
     }
@@ -427,9 +432,9 @@ class Fish {
                 this.world.food.splice(i,1);
                 this.score += food.size * 5;
                 this.calories += food.size * 5;
-                /*if(Math.random() > 0.2){
+                if(Math.random() > 0.2){
                 this.world.food.push(new Food(this.world,this.world.width*Math.random(),this.world.height*Math.random()));
-                }*/
+                }
             }
         }
         
@@ -462,7 +467,7 @@ class Fish {
         }
 
 
-        let inputData = [...tmp,1/(this.minDistance+1),this.scanPosition,this.calories/this.calorieCap, Math.sin(this.heartRate*this.world.tick*0.01),this.life/100, this.targetRange/this.maxRange];
+        let inputData = [...tmp,1/(this.minDistance+1),this.scanPosition,this.calories/this.calorieCap, Math.sin(this.heartRate*this.world.tick*0.01),this.life/100, this.targetRange/this.maxRange,this.visionFocus*2];
         this.minDistance = 100000;
         
         let output = this.brain.think(inputData);
@@ -479,11 +484,18 @@ class Fish {
         if(output[3] > 1) output[3] = 1;
         if(output[4] < -1) output[4] = -1;
         if(output[4] > 1) output[4] = 1;
-
+        if(output[5] < -1) output[5] = -1;
+        if(output[5] > 1) output[5] = 1;
+        
         this.targetRange += output[4]*this.maxRange*0.1;
-        if(this.targetRange < -20) this.targetRange = -20;
+        if(this.targetRange < 0.1) this.targetRange = 0.1;
         if(this.targetRange > this.maxRange) this.targetRange = this.maxRange;
-        if(this.targetRange > 0) this.calories -= (this.targetRange/this.maxRange)*0.1;
+        if(this.targetRange > 0) this.calories -= (this.targetRange/this.maxRange)*1;
+        
+        this.visionFocus += output[5]*0.03;
+        if(this.visionFocus < 0.01) this.visionFocus = 0.01;
+        if(this.visionFocus > 0.5) this.visionFocus = 0.5;
+        this.calories -= this.visionFocus*0.06;
         
         
         this.scanPosition += output[2]*this.turnSpeed*4;
@@ -501,7 +513,7 @@ class Fish {
         this.vy += Math.sin(this.angle) * (this.heartRate*this.speed*output[1]);
 
         //depends on max speed and size, fast + big = inefficient
-        let sizeSpeed = this.speed * (this.size*0.1);
+        let sizeSpeed = this.speed * (this.size*0.2);
 
         this.calories -= (this.heartRate**2)*sizeSpeed * (Math.abs(output[1])+Math.abs(output[0]))**2;
 
@@ -635,12 +647,12 @@ class Fish {
                 if(scanRad > 2 * Math.PI) scanRad -= 2 * Math.PI;
         
             let scanResult = this.world.scan(this,scanRad, this.targetRange);
-            ctx.strokeStyle = "rgba("+ scanResult[0]*45+","+ scanResult[1]*45 +",0,0.5)";
+            ctx.strokeStyle = "rgba("+ scanResult[0]*25+","+ scanResult[1]*255 +",0,0.5)";
             ctx.lineWidth = 2;
             ctx.beginPath();            
             //its actually a pie slice going from -pi/32 to pi/32, draw two arcs
             ctx.lineTo(this.x,this.y);
-            ctx.arc(this.x,this.y,this.targetRange,this.angle + this.fov / 2 * this.scanPosition - Math.PI/32,this.angle + this.fov / 2 * this.scanPosition + Math.PI/32);
+            ctx.arc(this.x,this.y,this.targetRange,this.angle + this.fov / 2 * this.scanPosition - Math.PI*this.visionFocus,this.angle + this.fov / 2 * this.scanPosition + Math.PI*this.visionFocus);
             ctx.lineTo(this.x,this.y);
             //from both ends of the arc, draw a line to the center
             

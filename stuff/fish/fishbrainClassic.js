@@ -61,10 +61,7 @@ class FishBrain {
                     this.weights[i][j][k] += factor*(Math.random() * 2 - 1);
                     }
                     if(Math.random() < factor/100) this.weights[i][j][k] = (Math.random() * 2 - 1) * 0.5;
-                    //keep weights between -1 and 1
-                    if(this.weights[i][j][k] > 5) this.weights[i][j][k] = 5;
-                    if(this.weights[i][j][k] < -5) this.weights[i][j][k] = -5;
-
+                    
                 }
             }
         }
@@ -74,10 +71,7 @@ class FishBrain {
                 let volatility = this.volatilityMap[i][j];
                 if(Math.random() < factor*volatility){this.biases[i][j] += (factor)*((Math.random() * 2 - 1)*0.1);}
                 
-                //keep biases between -3 and 3
-                if(this.biases[i][j] > 3) this.biases[i][j] = 3;
-                if(this.biases[i][j] < -3) this.biases[i][j] = -3;
-                
+              
             }
         }
         //memory mutation
@@ -172,7 +166,7 @@ class FishBrain {
         for (let i = 0; i < this.layerShape.length - 1; i++) {
             for (let j = 0; j < this.layerShape[i]; j++) {
                 for (let k = 0; k < this.layerShape[i + 1]; k++) {
-                    values[i + 1][k] += values[i][j] * this.weights[i][j][k];
+                    values[i + 1][k] += activation(values[i][j]) * this.weights[i][j][k];
                 }
             }    
         }
@@ -336,7 +330,10 @@ class FishBrain {
 }
 
 function activation(x) {
-    return Math.max(x*0.1,x);
+    return Math.sign(Math.round(Math.tanh(x)));
+
+    //return 1 / (1 + Math.exp(-x));
+    //return Math.max(x*0.1,x);
 }
 
 
