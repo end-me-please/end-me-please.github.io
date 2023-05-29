@@ -57,7 +57,7 @@ class FishBrain {
             for (let j = 0; j < this.weights[i].length; j++) {
                 for (let k = 0; k < this.weights[i][j].length; k++) {
                     let volatility = this.volatilityMap[i][j];
-                    if(Math.random() < volatility*factor){
+                    if(Math.random() < 0.1*volatility*factor){
                     this.weights[i][j][k] += factor*(Math.random() * 2 - 1);
                     }
                     if(Math.random() < factor/100) this.weights[i][j][k] = (Math.random() * 2 - 1) * 0.5;
@@ -69,7 +69,7 @@ class FishBrain {
         for (let i = 0; i < this.biases.length; i++) {
             for (let j = 0; j < this.biases[i].length; j++) {
                 let volatility = this.volatilityMap[i][j];
-                if(Math.random() < factor*volatility){this.biases[i][j] += (factor)*((Math.random() * 2 - 1)*0.1);}
+                if(Math.random() < 0.1*factor*volatility){this.biases[i][j] += (factor)*((Math.random() * 2 - 1)*0.1);}
                 
               
             }
@@ -78,7 +78,7 @@ class FishBrain {
         for (let i = 1; i < this.memoryWeights.length-1; i++) {
             for (let j = 0; j < this.memoryWeights[i].length; j++) {
                 let volatility = this.volatilityMap[i][j];
-                if(Math.random() < factor*volatility){this.memoryWeights[i][j] += factor*(Math.random() * 2 - 1);}
+                if(Math.random() < 0.1*factor*volatility){this.memoryWeights[i][j] += factor*(Math.random() * 2 - 1);}
                 if(this.memoryWeights[i][j] < 0) this.memoryWeights[i][j] = 0;
             }
         }
