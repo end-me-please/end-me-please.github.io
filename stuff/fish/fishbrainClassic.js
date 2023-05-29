@@ -330,9 +330,9 @@ class FishBrain {
 }
 
 function activation(x) {
-    return Math.sign(Math.round(Math.tanh(x)));
+    //return Math.sign(Math.round(Math.tanh(x)));
 
-    //return 1 / (1 + Math.exp(-x));
+    return 1 / (1 + Math.exp(-x));
     //return Math.max(x*0.1,x);
 }
 

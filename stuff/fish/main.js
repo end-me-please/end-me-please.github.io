@@ -490,7 +490,7 @@ class Fish {
         this.targetRange += output[4]*this.maxRange*0.1;
         if(this.targetRange < 0.1) this.targetRange = 0.1;
         if(this.targetRange > this.maxRange) this.targetRange = this.maxRange;
-        if(this.targetRange > 0) this.calories -= (this.targetRange/this.maxRange)*1;
+        if(this.targetRange > 0) this.calories -= (this.targetRange/this.maxRange)*0.1;
         
         this.visionFocus += output[5]*0.03;
         if(this.visionFocus < 0.01) this.visionFocus = 0.01;
