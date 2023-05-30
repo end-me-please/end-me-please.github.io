@@ -447,7 +447,7 @@ class Fish {
         this.turnSpeed = 0.012;
         this.size = Math.random() * 5 + 5;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
-        this.brain = new FishBrain([12,9,6,5]);
+        this.brain = new FishBrain([12,9,5]);
         this.speed = 0.8; //acceleration
         this.calorieCap = 1000;
     }
@@ -550,7 +550,7 @@ class Fish {
         if(output[4] > 1) output[4] = 1;
         
         this.targetRange += output[4]*this.maxRange*0.1;
-        if(this.targetRange < 0.1) this.targetRange = 0.1;
+        if(this.targetRange < 44) this.targetRange = 44;
         if(this.targetRange > this.maxRange) this.targetRange = this.maxRange;
         if(this.targetRange > 0) this.calories -= (this.targetRange/this.maxRange)*0.01;
         
