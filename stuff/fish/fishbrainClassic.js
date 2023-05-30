@@ -11,7 +11,7 @@ class FishBrain {
             for (let j = 0; j < this.layerShape[i]; j++) {
                 this.weights[i].push([]);
                 for (let k = 0; k < this.layerShape[i + 1]; k++) {
-                    this.weights[i][j].push((Math.random() * 2 - 1)*0.4);
+                    this.weights[i][j].push((Math.random() * 2 - 1)*0.1);
                 }
             }
         }
@@ -21,17 +21,10 @@ class FishBrain {
             this.biases.push([]);
             for (let j = 0; j < this.layerShape[i]; j++) {
                 if(i==0||i==this.layerShape.length-1) this.biases[i].push(0);
-                else this.biases[i].push((Math.random() * 2 - 1)*0.15);
+                else this.biases[i].push((Math.random() * 2 - 1)*0.1);
             }
         }
-        this.memoryWeights = [];
-        //for each node one
-        for (let i = 0; i < this.layerShape.length; i++) {
-            this.memoryWeights.push([]);
-            for (let j = 0; j < this.layerShape[i]; j++) {
-                this.memoryWeights[i].push(0);
-            }
-        }
+        
         
         this.lastValues = [];
         //initialize lastValues
@@ -42,52 +35,23 @@ class FishBrain {
             }
         }
 
-        this.volatilityMap = [];
-        for (let i = 0; i < this.layerShape.length; i++) {
-            this.volatilityMap.push([]);
-            for (let j = 0; j < this.layerShape[i]; j++) {
-                this.volatilityMap[i].push(1);
-            }
-        }
 
 
     }
     mutate(factor){
-        for (let i = 0; i < this.weights.length; i++) {
-            for (let j = 0; j < this.weights[i].length; j++) {
-                for (let k = 0; k < this.weights[i][j].length; k++) {
-                    let volatility = this.volatilityMap[i][j];
-                    if(Math.random() < 0.1*volatility*factor){
-                    this.weights[i][j][k] += factor*(Math.random() * 2 - 1);
-                    }
-                    if(Math.random() < factor/100) this.weights[i][j][k] = (Math.random() * 2 - 1) * 0.5;
-                    
-                }
-            }
+        for(let i = 0; i < factor*20; i++) {
+        //select one random weight or bias and mutate it
+        let layer = Math.floor(Math.random() * (this.layerShape.length - 2)) + 1;
+        let node = Math.floor(Math.random() * this.layerShape[layer]);
+        let nextNode = Math.floor(Math.random() * this.layerShape[layer+1]);
+
+        if(Math.random() < 0.5) {
+            this.weights[layer][node][nextNode] += (Math.random() * 2 - 1) * factor;
         }
-        //bias mutation
-        for (let i = 0; i < this.biases.length; i++) {
-            for (let j = 0; j < this.biases[i].length; j++) {
-                let volatility = this.volatilityMap[i][j];
-                if(Math.random() < 0.1*factor*volatility){this.biases[i][j] += (factor)*((Math.random() * 2 - 1)*0.1);}
-                
-              
-            }
+        else {
+            this.biases[layer][node] += (Math.random() * 2 - 1) * factor;
         }
-        //memory mutation
-        for (let i = 1; i < this.memoryWeights.length-1; i++) {
-            for (let j = 0; j < this.memoryWeights[i].length; j++) {
-                let volatility = this.volatilityMap[i][j];
-                if(Math.random() < 0.1*factor*volatility){this.memoryWeights[i][j] += factor*(Math.random() * 2 - 1);}
-                if(this.memoryWeights[i][j] < 0) this.memoryWeights[i][j] = 0;
-            }
-        }
-        //volatility map mutation
-        for (let i = 0; i < this.volatilityMap.length; i++) {
-            for (let j = 0; j < this.volatilityMap[i].length; j++) {
-                if(Math.random() < factor){this.volatilityMap[i][j] += factor*(Math.random() * 2 - 1);}
-            }
-        }
+    }
 
 
     }
@@ -119,23 +83,8 @@ class FishBrain {
                 }
             }
         }
-        for (let i = 0; i < this.memoryWeights.length; i++) {
-            for (let j = 0; j < this.memoryWeights[i].length; j++) {
-                child.memoryWeights[i][j] = Math.random() < 0.5 ? this.memoryWeights[i][j] : other.memoryWeights[i][j];
-                if(Math.random() < 0.2) {
-                    child.memoryWeights[i][j] = (this.memoryWeights[i][j] + other.memoryWeights[i][j]) / 2;
-                }
-            }
-        }
-        //volatility map
-        for (let i = 0; i < this.volatilityMap.length; i++) {
-            for (let j = 0; j < this.volatilityMap[i].length; j++) {
-                child.volatilityMap[i][j] = Math.random() < 0.5 ? this.volatilityMap[i][j] : other.volatilityMap[i][j];
-                if(Math.random() < 0.2) {
-                    child.volatilityMap[i][j] = (this.volatilityMap[i][j] + other.volatilityMap[i][j]) / 2;
-                }
-            }
-        }
+       
+        
 
 
 
@@ -147,20 +96,16 @@ class FishBrain {
         //use matrix operations instead
         if(input.length != this.inputSize) throw new Error("size does not match input size: "+ input.length);
         let values = [];
+        for (let i = 0; i < this.layerShape.length; i++) {
+            values.push([]);
+            for (let j = 0; j < this.layerShape[i]; j++) {
+                //bias
+                values[i].push(this.biases[i][j]);
+            }
+        }
+
         
-        for (let i = 0; i < this.layerShape.length; i++) {
-            values[i] = [];
-            for (let j = 0; j < this.layerShape[i]; j++) {
-                values[i][j] = this.lastValues[i][j]*this.memoryWeights[i][j];
-            }
-        }
-        //apply memory, multiply lastValues with memoryWeights and add to result
-        //apply bias
-        for (let i = 0; i < this.layerShape.length; i++) {
-            for (let j = 0; j < this.layerShape[i]; j++) {
-                values[i][j] += this.biases[i][j];
-            }
-        }
+       
         values[0] = input;
         //weight array is of shape weight=[layer][node][next node]
         for (let i = 0; i < this.layerShape.length - 1; i++) {
@@ -224,8 +169,6 @@ class FishBrain {
                 //draw red or green circle in node depending on value
 
                 ctx.fillStyle = "black";
-                //slightly blueish if memory is used
-                if(this.memoryWeights[i][j] != 0) ctx.fillStyle = "rgb(0,0,"+Math.abs(2*this.memoryWeights[i][j])*255+")";
 
                 ctx.lineWidth = 1;
                 ctx.beginPath();
@@ -254,8 +197,6 @@ class FishBrain {
                     ctx.textAlign = "center";
                     ctx.fillText(j, layerX[i][j], layerY[i][j]);
                 }
-                //purple square determining volatility
-                ctx.fillStyle = "rgb("+Math.floor(255*(1-this.volatilityMap[i][j]))+","+Math.floor(255*(1-this.volatilityMap[i][j]))+","+Math.floor(255*(1-this.volatilityMap[i][j]))+")";
 
             }
         }
@@ -276,8 +217,6 @@ class FishBrain {
             layerShape: this.layerShape,
             weights: this.weights,
             biases: this.biases,
-            memoryWeights: this.memoryWeights,
-            volatilityMap: this.volatilityMap
         };
 
         return data;
@@ -290,8 +229,6 @@ class FishBrain {
         brain.layerShape = data.layerShape;
         brain.weights = data.weights;
         brain.biases = data.biases;
-        brain.memoryWeights = data.memoryWeights;
-        brain.volatilityMap = data.volatilityMap;
         return brain;
     }
     clone() {
@@ -317,12 +254,10 @@ class FishBrain {
         //add a bias to the new node
         this.biases[layer].push(0);
         //add a memory weight to the new node
-        this.memoryWeights[layer].push(0);
 
         //add a row to the lastValues array
         this.lastValues[layer].push(0);
 
-        this.volatilityMap[layer].push(1);
 
 
 
@@ -330,9 +265,9 @@ class FishBrain {
 }
 
 function activation(x) {
-    //return Math.sign(Math.round(Math.tanh(x)));
-
-    return 1 / (1 + Math.exp(-x));
+    //return x+Math.sin(x*2)*0.4;
+    return Math.sign(Math.round(Math.tanh(x)));
+    //return 1 / (1 + Math.exp(-x));
     //return Math.max(x*0.1,x);
 }
 
