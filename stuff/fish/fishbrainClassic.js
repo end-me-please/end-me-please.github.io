@@ -39,17 +39,17 @@ class FishBrain {
 
     }
     mutate(factor){
-        for(let i = 0; i < factor*20; i++) {
+        for(let i = 0; i < factor*40; i++) {
         //select one random weight or bias and mutate it
         let layer = Math.floor(Math.random() * (this.layerShape.length - 2)) + 1;
         let node = Math.floor(Math.random() * this.layerShape[layer]);
         let nextNode = Math.floor(Math.random() * this.layerShape[layer+1]);
 
-        if(Math.random() < 0.5) {
+        if(Math.random() < 0.7) {
             this.weights[layer][node][nextNode] += (Math.random() * 2 - 1) * factor;
         }
         else {
-            this.biases[layer][node] += (Math.random() * 2 - 1) * factor;
+            this.biases[layer][node] += (Math.random() * 2 - 1) * factor * 0.1;
         }
     }
 
@@ -100,7 +100,7 @@ class FishBrain {
             values.push([]);
             for (let j = 0; j < this.layerShape[i]; j++) {
                 //bias
-                values[i].push(this.biases[i][j]);
+                values[i][j]=(this.biases[i][j]);
             }
         }
 
@@ -266,9 +266,9 @@ class FishBrain {
 
 function activation(x) {
     //return x+Math.sin(x*2)*0.4;
-    return Math.sign(Math.round(Math.tanh(x)));
+    //return Math.sign(Math.round(Math.tanh(x)));
     //return 1 / (1 + Math.exp(-x));
-    //return Math.max(x*0.1,x);
+    return Math.tanh(x);
 }
 
 

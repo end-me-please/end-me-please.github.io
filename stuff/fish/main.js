@@ -19,7 +19,7 @@ class Simulation {
         
         this.fishMap = [];
         this.foodMap = [];
-        let numSquares = 5;
+        let numSquares = 9;
         this.numSquares = numSquares;
         //populate map
         for (let i = 0; i < numSquares+1; i++) {
@@ -48,10 +48,10 @@ class Simulation {
         return tmp;
     }
 
-    scan(fish,range){
+    scan(fish,range,channels){
         
 
-        //return format: [fish1angle,fish1intens,fish2angle,fish2intens,food1angle,food1intens,food2angle,food2intens]
+        
         let numSquares = this.numSquares;
         let squareWidth = this.width/numSquares;
         let squareHeight = this.height/numSquares;
@@ -61,6 +61,12 @@ class Simulation {
         y = Math.max(0,Math.min(y,numSquares-1));
         let fishArray = [];
         let foodArray = [];
+        //if range is able to leave current square from the fish's position, do the neighborhood check- otherwise, just check the current square
+        if(range > (fish.x - x*squareWidth) && range > (fish.y - y*squareHeight) && range > (squareWidth - (fish.x - x*squareWidth)) && range > (squareHeight - (fish.y - y*squareHeight))){
+            fishArray.push(...this.fishMap[x][y]);
+            foodArray.push(...this.foodMap[x][y]);
+
+        }else{
         for (let i = -1; i < 2; i++) {
             for (let j = -1; j < 2; j++){
                 if(x+i < 0 || x+i >= numSquares || y+j < 0 || y+j >= numSquares) continue;
@@ -68,36 +74,84 @@ class Simulation {
                 foodArray.push(...this.foodMap[x+i][y+j]);
             }
         }
-        //sort by distance
-        fishArray.sort((a,b) => (a.x - fish.x)**2 + (a.y - fish.y)**2 - (b.x - fish.x)**2 - (b.y - fish.y)**2);
-        foodArray.sort((a,b) => (a.x - fish.x)**2 + (a.y - fish.y)**2 - (b.x - fish.x)**2 - (b.y - fish.y)**2);
-        //filter by range and being within fov
-        //filter by range
-        fishArray = fishArray.filter(other => Math.sqrt((other.x - fish.x)**2 + (other.y - fish.y)**2) < range);
-        foodArray = foodArray.filter(other => Math.sqrt((other.x - fish.x)**2 + (other.y - fish.y)**2) < range);
+        }
+        
+        //raycast channels rays, spacing them evenly in fov
+        //exclude self
+        fishArray.splice(fishArray.indexOf(fish),1);
+        let foodView = [];
+        let fishView = [];
+        //fill with 0s
+        for (let i = 0; i < channels; i++) {
+            foodView.push(0);
+            fishView.push(0);
+        }
 
-        //return closest two fish and closest two food
-        let result = [];
-        for (let i = 0; i < 1; i++) {
-            if(i < fishArray.length){
-                let other = fishArray[i];
-                result.push(Math.atan2(other.y - fish.y, other.x - fish.x) - fish.angle);
-                result.push(1 - Math.sqrt((other.x - fish.x)**2 + (other.y - fish.y)**2) / range);
-            }else{
-                result.push(0);
-                result.push(0);
-            }
+        
+        //go through all fish and sort their angle into a channel, if intersects
+        for (let i = 0; i < fishArray.length; i++) {
+            let otherFish = fishArray[i];
+            let rayLength = Math.sqrt((otherFish.x - fish.x) ** 2 + (otherFish.y - fish.y) ** 2);
+            if(rayLength > range) continue;
+            
+            //the other fish is a circle- check if the ray intersects the circle
+
+            //get the angle of the ray
+            let angle = Math.atan2(otherFish.y - fish.y, otherFish.x - fish.x);
+            //get the angle of the ray relative to the fish's angle
+            let relativeAngle = angle - fish.angle;
+            //make sure that the angle is between -pi and pi
+            if(relativeAngle < -Math.PI) relativeAngle += 2 * Math.PI;
+            if(relativeAngle > Math.PI) relativeAngle -= 2 * Math.PI;
+            //make sure that the angle is within the fov
+            if(Math.abs(relativeAngle) > fish.fov / 2) continue;
+            //get the channel
+            let channel = Math.round((relativeAngle + fish.fov / 2) / fish.fov * channels);
+            //make sure that the channel is within the range
+            if(channel < 0) channel = 0;
+            if(channel >= channels) channel = channels - 1;
+            //add the fish's size to the channel
+            fishView[channel] += (1 - (rayLength / range)) * (otherFish.size / fish.size);
         }
-        for (let i = 0; i < 1; i++) {
-            if(i < foodArray.length){
-                let other = foodArray[i];
-                result.push(Math.atan2(other.y - fish.y, other.x - fish.x) - fish.angle);
-                result.push(1 - Math.sqrt((other.x - fish.x)**2 + (other.y - fish.y)**2) / range);
-            }else{
-                result.push(0);
-                result.push(0);
-            }
+        //go through all food and sort their angle into a channel, if intersects
+        for (let i = 0; i < foodArray.length; i++) {
+            let food = foodArray[i];
+            let rayLength = Math.sqrt((food.x - fish.x) ** 2 + (food.y - fish.y) ** 2);
+            if(rayLength > range) continue;
+            
+            //the food is a circle- check if the ray intersects the circle
+            
+            //get the angle of the ray
+            let angle = Math.atan2(food.y - fish.y, food.x - fish.x);
+            //get the angle of the ray relative to the fish's angle
+            let relativeAngle = angle - fish.angle;
+            //make sure that the angle is between -pi and pi
+            if(relativeAngle < -Math.PI) relativeAngle += 2 * Math.PI;
+            if(relativeAngle > Math.PI) relativeAngle -= 2 * Math.PI;
+            //make sure that the angle is within the fov
+            if(Math.abs(relativeAngle) > fish.fov / 2) continue;
+            //get the channel
+            let channel = Math.round((relativeAngle + fish.fov / 2) / fish.fov * channels);
+            //make sure that the channel is within the range
+            if(channel < 0) channel = 0;
+            if(channel >= channels) channel = channels - 1;
+            //add the food's size to the channel
+            foodView[channel] += (1 - (rayLength / range)) * (food.size / fish.size);
         }
+
+         
+
+
+            /*
+            if(rayHit){
+                inspectedFish = this.fishes.indexOf(fish);
+                if(rayFish != null) fishView[i] = (1 - (rayLength / range)) * (rayFish.size / fish.size);
+                if(rayFood != null) foodView[i] = (1 - (rayLength / range)) * (rayFood.size / fish.size);
+            }
+            */
+
+        let result = [...fishView,...foodView];
+
         return result;
 
 
@@ -390,10 +444,10 @@ class Fish {
         this.maxRange = this.world.width/this.world.numSquares;
         this.drag = 0.055;
         this.fov = 0.9 * Math.PI;
-        this.turnSpeed = 0.008;
+        this.turnSpeed = 0.012;
         this.size = Math.random() * 5 + 5;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
-        this.brain = new FishBrain([8,9,6,5]);
+        this.brain = new FishBrain([12,9,6,5]);
         this.speed = 0.8; //acceleration
         this.calorieCap = 1000;
     }
@@ -414,12 +468,7 @@ class Fish {
         this.vy *= 1 - this.drag;
         this.angularVelocity *= 1 - this.drag;
 
-        //speed limit, trigonometry
-        let speed = Math.sqrt(this.vx ** 2 + this.vy ** 2);
-        if(speed > this.speed*1.5){
-            this.vx *= this.speed*1.5 / speed;
-            this.vy *= this.speed*1.5 / speed;
-        }
+        
 
 
         if(this.angle < 0) this.angle += 2 * Math.PI;
@@ -447,7 +496,6 @@ class Fish {
 
         for(let i = 0; i < possibleFood.length; i++){
             let food = possibleFood[i];
-            //let distance = Math.sqrt((food.x - this.x) ** 2 + (food.y - this.y) ** 2);
             let distanceSquared = (food.x - this.x) ** 2 + (food.y - this.y) ** 2;
             if(distanceSquared < 1 * ((this.size+food.size)**2)) {
                 this.world.food.splice(this.world.food.indexOf(food),1);
@@ -474,16 +522,16 @@ class Fish {
     act(){     
         let tmp = [];
         if(this.targetRange>0){
-        tmp = this.world.scan(this,this.targetRange);
+        tmp = this.world.scan(this,this.targetRange,4);
         } else {
-            tmp = [0,0,0,0];
+            tmp = [0,0,0,0,0,0,0,0];
         }
 
 
         let inputData = [...tmp, //8
         this.calories/this.calorieCap, //1
         Math.sin(this.heartRate*this.world.tick*0.01), //1
-        this.life/100, //1
+        this.life*0.01, //1
         this.targetRange/this.maxRange, //1
         ];
         let output = this.brain.think(inputData);
@@ -504,7 +552,7 @@ class Fish {
         this.targetRange += output[4]*this.maxRange*0.1;
         if(this.targetRange < 0.1) this.targetRange = 0.1;
         if(this.targetRange > this.maxRange) this.targetRange = this.maxRange;
-        if(this.targetRange > 0) this.calories -= (this.targetRange/this.maxRange)*0.1;
+        if(this.targetRange > 0) this.calories -= (this.targetRange/this.maxRange)*0.01;
         
         this.heartRate += output[3]*0.1;
         if(this.heartRate < 0.4) this.heartRate = 0.4;
@@ -639,11 +687,23 @@ class Fish {
             ctx.fill();
 
 
-        //draw scan range circle
-        ctx.strokeStyle = "rgba(0,0,0,0.1)";
-        ctx.beginPath();
-        ctx.arc(this.x,this.y,this.targetRange,0,2 * Math.PI);
-        ctx.stroke();
+        //draw scan rays and indicate hit
+        let tmp = this.world.scan(this,this.targetRange,4);
+        //draw rays
+        for (let i = 0; i < tmp.length/2; i++) {
+            let angle = this.angle - this.fov/2 + i * this.fov / (tmp.length/2-1);
+            //color depends on tmp value
+            let color = "rgb(" + Math.floor((1-tmp[i])*255) + "," + Math.floor((1-tmp[i+tmp.length/2])*255) + ",0)";
+            ctx.strokeStyle = color;
+
+        
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(this.x,this.y);
+            ctx.lineTo(this.x + Math.cos(angle) * this.targetRange,this.y + Math.sin(angle) * this.targetRange);
+            ctx.stroke();
+        }
+
 
 
 
