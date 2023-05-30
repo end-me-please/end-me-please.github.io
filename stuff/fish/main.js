@@ -124,11 +124,13 @@ class Simulation {
             //find the square that the fish is in
             let x = Math.floor(fish.x/squareWidth);
             let y = Math.floor(fish.y/squareHeight);
-            console.log(x,y,squareWidth,squareHeight);
+            //console.log(x,y,squareWidth,squareHeight);
             //math.max/min to prevent out of bounds errors
             
             x = Math.max(0,Math.min(x,numSquares-1));
             y = Math.max(0,Math.min(y,numSquares-1));
+            //make sure that not nan
+
             this.fishMap[x][y].push(fish);
             
         }
@@ -388,7 +390,7 @@ class Fish {
         this.turnSpeed = 0.008;
         this.size = Math.random() * 5 + 5;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
-        this.brain = new FishBrain([12,7,5,5]);
+        this.brain = new GeneticNetwork([12,5]);
         this.speed = 0.8; //acceleration
         this.calorieCap = 1000;
     }
@@ -425,6 +427,7 @@ class Fish {
         let y = Math.floor(this.y/squareHeight);
         x = Math.max(0,Math.min(x,numSquares-1));
         y = Math.max(0,Math.min(y,numSquares-1));
+        
         for (let i = -1; i < 2; i++) {
             for (let j = -1; j < 2; j++){
                 if(x+i < 0 || x+i >= numSquares || y+j < 0 || y+j >= numSquares) continue;
