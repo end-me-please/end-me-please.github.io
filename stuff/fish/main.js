@@ -390,7 +390,7 @@ class Fish {
         this.turnSpeed = 0.008;
         this.size = Math.random() * 5 + 5;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
-        this.brain = new GeneticNetwork([12,5]);
+        this.brain = new FishBrain([12,9,6,5]);
         this.speed = 0.8; //acceleration
         this.calorieCap = 1000;
     }
