@@ -534,6 +534,9 @@ class Fish {
         Math.sin(this.heartRate*this.world.tick*0.01), //1
         this.life*0.01, //1
         this.targetRange/this.maxRange, //1
+        this.memory[0], //1
+        this.memory[1], //1
+        this.memory[2] //1
         ];
         let output = this.brain.think(inputData);
         
@@ -549,6 +552,10 @@ class Fish {
         if(output[3] > 1) output[3] = 1;
         if(output[4] < -1) output[4] = -1;
         if(output[4] > 1) output[4] = 1;
+        
+        this.memory[0] = Math.sin(output[5]);
+        this.memory[1] = output[6]/(0.01+output[7]);
+        this.memory[2] = output[7];
         
         this.targetRange += output[4]*this.maxRange*0.1;
         if(this.targetRange < 44) this.targetRange = 44;
