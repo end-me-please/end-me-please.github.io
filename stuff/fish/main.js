@@ -292,10 +292,10 @@ class Simulation {
         
 
         
-        if(this.generation%120==0){
+        if(this.generation%60==0){
         this.mutationFactor*=0.94;
         let layer = 1;
-        if(this.generation<750){
+        if(this.generation<400){
         topFishes.forEach(fish => fish.brain.expand(layer));
         this.mutate(0.3);    
         }
@@ -444,12 +444,13 @@ class Fish {
         this.maxRange = this.world.width/this.world.numSquares;
         this.drag = 0.055;
         this.fov = 0.9 * Math.PI;
-        this.turnSpeed = 0.012;
+        this.turnSpeed = 0.032;
         this.size = Math.random() * 5 + 5;
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
-        this.brain = new FishBrain([12,9,5]);
+        this.brain = new FishBrain([12+3,9,5+3]);
         this.speed = 0.8; //acceleration
         this.calorieCap = 1000;
+        this.memory = [0,0,0];
     }
     
     update(){
@@ -568,6 +569,8 @@ class Fish {
         let sizeSpeed = this.speed * (this.size*0.2);
 
         this.calories -= (this.heartRate**2)*sizeSpeed * (Math.abs(output[1])+Math.abs(output[0]))**2;
+
+        this.calories -= 0.1;
 
         //heal using calories if life is below max, higher heart rate means more healing
         if(this.life < 100) {
