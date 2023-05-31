@@ -11,7 +11,7 @@ class FishBrain {
             for (let j = 0; j < this.layerShape[i]; j++) {
                 this.weights[i].push([]);
                 for (let k = 0; k < this.layerShape[i + 1]; k++) {
-                    this.weights[i][j].push((Math.random() * 2 - 1)*0.1);
+                    this.weights[i][j].push((Math.random() * 2 - 1)*0.8);
                 }
             }
         }
@@ -21,7 +21,7 @@ class FishBrain {
             this.biases.push([]);
             for (let j = 0; j < this.layerShape[i]; j++) {
                 if(i==0||i==this.layerShape.length-1) this.biases[i].push(0);
-                else this.biases[i].push((Math.random() * 2 - 1)*0.1);
+                else this.biases[i].push((Math.random() * 2 - 1)*0.3);
             }
         }
         

@@ -19,6 +19,9 @@
         <canvas id="performanceGraph" width="500" height="155" style="border: 1px solid black; background-color: aliceblue;"></canvas>
         <p>speed</p>
         <canvas id="speedGraph" width="500" height="155" style="border: 1px solid black; background-color: aliceblue;"></canvas>
+        <br>
+        <p>fur</p>
+        <canvas id="furGraph" width="500" height="155" style="border: 1px solid black; background-color: aliceblue;"></canvas>
         <p>size</p>
         <canvas id="sizeGraph" width="500" height="155" style="border: 1px solid black; background-color: aliceblue;"></canvas>
         </br>
@@ -68,10 +71,12 @@
         let performanceGraphCanvas = document.getElementById("performanceGraph");
         let speedGraphCanvas= document.getElementById("speedGraph");
         let sizeGraphCanvas= document.getElementById("sizeGraph");
+        let furGraphCanvas= document.getElementById("furGraph");
 
         let performanceGraphCtx = performanceGraphCanvas.getContext("2d");
         let speedGraphCtx = speedGraphCanvas.getContext("2d");
         let sizeGraphCtx = sizeGraphCanvas.getContext("2d");
+        let furCtx = furGraphCanvas.getContext("2d");
 
         let canvas = document.getElementById("canvas");
         let ctx = canvas.getContext("2d");
@@ -83,9 +88,11 @@
         
 
         let inspectedFish = 0;
+        let inspectedFishObj = sim.fishes[inspectedFish];
         sim.update();
         function loop(){
             try {
+            inspectedFish = sim.fishes.indexOf(inspectedFishObj);
             sim.render(ctx);
             sim.fishes[inspectedFish].brain.draw(inspectCtx);
             //draw rectangle around observed fish
@@ -99,9 +106,10 @@
             inspectCtx.fillStyle = "black";
             inspectCtx.font = "15px Arial";
             //print current velocity (calculate from vx and vy)
-            inspectCtx.fillText("calories: "+Math.round(sim.fishes[inspectedFish].calories), inspectCanvas.width*0.76, inspectCanvas.height*0.9);
+            inspectCtx.fillText("calories: "+Math.round(sim.fishes[inspectedFish].calories), inspectCanvas.width*0.76, inspectCanvas.height*0.95);
             //health
-            inspectCtx.fillText("health: "+Math.round(sim.fishes[inspectedFish].life), inspectCanvas.width*0.76, inspectCanvas.height*0.85);
+            inspectCtx.fillText("health: "+Math.round(sim.fishes[inspectedFish].life), inspectCanvas.width*0.76, inspectCanvas.height*0.9);
+            inspectCtx.fillText("temp: "+Math.round(sim.fishes[inspectedFish].bodyTemperature), inspectCanvas.width*0.76, inspectCanvas.height*0.985);
             let highScore = 0;
             let lowScore = Infinity;
             let avgScore = 0;
@@ -126,6 +134,7 @@
 
         } catch (error) {
                 console.log(error);
+                inspectedFishObj = sim.fishes[0];
             }
             requestAnimationFrame(loop);
         }
@@ -145,6 +154,7 @@
                 let fish = sim.fishes[i];
                 if(x > fish.x - fish.size && x < fish.x + fish.size && y > fish.y - fish.size && y < fish.y + fish.size) {
                     inspectedFish = i;
+                    inspectedFishObj = fish;
                     break;
                 }
             }
@@ -259,7 +269,7 @@
             drawGraph(sim.fitnessHistory,performanceGraphCtx);
             drawGraph(sim.sizeHistory,sizeGraphCtx);
             drawGraph(sim.speedHistory,speedGraphCtx);
-
+            drawGraph(sim.furHistory,furCtx);
         }
 
 

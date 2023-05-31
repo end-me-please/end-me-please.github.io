@@ -12,11 +12,12 @@ class Simulation {
         this.fitnessHistory = [];
         this.speedHistory = [];
         this.sizeHistory = [];
+        this.furHistory = [];
         this.generation = 0;
         this.tick = 0;
         this.crossover = true;
         this.mutationFactor = 0.25;
-        
+        this.temperatureMap = [];
         this.fishMap = [];
         this.foodMap = [];
         let numSquares = 9;
@@ -25,9 +26,11 @@ class Simulation {
         for (let i = 0; i < numSquares+1; i++) {
             this.fishMap.push([]);
             this.foodMap.push([]);
+            this.temperatureMap.push([]);
             for (let j = 0; j < numSquares+1; j++) {
                 this.fishMap[i].push([]);
                 this.foodMap[i].push([]);
+                this.temperatureMap[i].push(10+(40/(1+i+j)));
             }
         }
         //populate food
@@ -49,8 +52,6 @@ class Simulation {
     }
 
     scan(fish,range,channels){
-        
-
         
         let numSquares = this.numSquares;
         let squareWidth = this.width/numSquares;
@@ -263,7 +264,7 @@ class Simulation {
         for (let i = 0; i < this.food.length; i++) {
             this.food[i].draw(ctx);
         }
-        /*
+        
         //draw the map
         ctx.strokeStyle = "black";
         ctx.lineWidth = 1;
@@ -271,10 +272,18 @@ class Simulation {
         let squareHeight = this.height/this.numSquares;
         for (let i = 0; i < this.numSquares; i++) {
             for (let j = 0; j < this.numSquares; j++) {
+                //faint temperature map, less than 25 is blue, more than 25 is red
+                let temperature = this.temperatureMap[i][j];
+                let color = "rgba(" + Math.floor(255 * (temperature / 40)) + ",0," + Math.floor(255 * (1 - temperature / 40)) + ",0.325)";
+                ctx.fillStyle = color;
+
+
+                ctx.fillRect(i*squareWidth,j*squareHeight,squareWidth,squareHeight);
                 ctx.strokeRect(i*squareWidth,j*squareHeight,squareWidth,squareHeight);
+
             }
         }
-        */
+        
 
 
     }
@@ -304,7 +313,7 @@ class Simulation {
         this.fitnessHistory[this.generation]=(topFishes[Math.floor(topFishes.length / 2)].score);
         this.sizeHistory[this.generation]=(topFishes[Math.floor(topFishes.length / 2)].size);
         this.speedHistory[this.generation]=(topFishes[Math.floor(topFishes.length / 2)].speed);
-
+        this.furHistory[this.generation]=(topFishes[Math.floor(topFishes.length / 2)].furThickness);
 
 
         let newFishes = [];
@@ -328,10 +337,17 @@ class Simulation {
 
         
         //spread evenly
+        /*
 
         for (let i = 0; i < this.numFish; i++) {
             newFishes[i].x = this.width / 2 + Math.cos(i / this.numFish * 2 * Math.PI) * (this.width-40) / 2;
             newFishes[i].y = this.height / 2 + Math.sin(i / this.numFish * 2 * Math.PI) * (this.height-25) / 2;
+        }
+        */
+       //spread randomly
+         for (let i = 0; i < this.numFish; i++) {
+            newFishes[i].x = Math.random() * this.width;
+            newFishes[i].y = Math.random() * this.height;
         }
         
 
@@ -372,6 +388,7 @@ class Simulation {
             food: this.food.map(food => food.serialize()),
             fitnessHistory: this.fitnessHistory,
             speedHistory: this.speedHistory,
+            furHistory: this.furHistory,
             sizeHistory: this.sizeHistory,
             mutationFactor: this.mutationFactor,
             generation: this.generation,
@@ -391,6 +408,7 @@ class Simulation {
         sim.tick = serialized.tick;
         sim.mutationFactor = serialized.mutationFactor;
         sim.speedHistory = serialized.speedHistory;
+        sim.furHistory = serialized.furHistory;
         sim.sizeHistory = serialized.sizeHistory;
         sim.fitnessHistory = serialized.fitnessHistory;
         return sim;
@@ -435,26 +453,33 @@ class Fish {
         this.vy = 0;
         this.angle = Math.random() * 2 * Math.PI;
         this.angularVelocity = 0;
-        this.score = 0;
-        this.targetRange = 0;
-        this.calories = 120;
-        this.visionFocus = 0;
-        this.heartRate = 1;
-        this.life = 100;
-        this.maxRange = this.world.width/this.world.numSquares;
         this.drag = 0.055;
-        this.fov = 0.9 * Math.PI;
         this.turnSpeed = 0.032;
-        this.size = Math.random() * 5 + 5;
-        this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
-        this.brain = new FishBrain([12+3,9,5+3]);
-        this.speed = 0.8; //acceleration
+        
+        
+        this.visionFocus = 0;
+        this.targetRange = 0;
+        this.maxRange = this.world.width/this.world.numSquares;
+        this.fov = 0.9 * Math.PI;
+        this.calories = 120;
         this.calorieCap = 1000;
-        this.memory = [0,0,0];
+        
+        this.life = 100;
+        this.targetTemperature = 37;
+        this.bodyTemperature = 37;
+        this.furThickness = 1;
+        this.heartRate = 1;
+        
+        this.size = Math.random() * 5 + 5;
+        this.brain = new FishBrain([14+3,9,5+3]);
+        this.speed = 0.8; //acceleration
+        
+        this.memory = [0,0,0]; //useless?
+        this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
+        this.score = 0;
     }
     
     update(){
-        
         
         this.x += this.vx;
         this.y += this.vy;
@@ -516,11 +541,10 @@ class Fish {
         if(this.y < 5 * this.size) {this.vy += 0.01 * (5 * this.size - this.y);}
         else if(this.y > this.world.height - 5 * this.size) {this.vy -= 0.01 * (this.y - (this.world.height - 5 * this.size));}
         
-
-
     }
 
     act(){     
+        let lastCalories = this.calories;
         let tmp = [];
         if(this.targetRange>0){
         tmp = this.world.scan(this,this.targetRange,4);
@@ -528,12 +552,16 @@ class Fish {
             tmp = [0,0,0,0,0,0,0,0];
         }
 
-
+        let ambientTemp = this.world.temperatureMap[Math.floor(this.x/this.world.width*this.world.numSquares)][Math.floor(this.y/this.world.height*this.world.numSquares)];
+        
         let inputData = [...tmp, //8
         this.calories/this.calorieCap, //1
         Math.sin(this.heartRate*this.world.tick*0.01), //1
         this.life*0.01, //1
-        this.targetRange/this.maxRange, //1
+        this.targetRange/this.maxRange, //1,
+        //body temp - target temp
+        (this.bodyTemperature - this.targetTemperature)/5, //1
+        ambientTemp/40, //1
         this.memory[0], //1
         this.memory[1], //1
         this.memory[2] //1
@@ -579,6 +607,9 @@ class Fish {
 
         this.calories -= 0.1;
 
+        //life damage from temperature
+        this.life -= Math.abs(this.bodyTemperature - this.targetTemperature) * 0.005;
+
         //heal using calories if life is below max, higher heart rate means more healing
         if(this.life < 100) {
             this.life += this.heartRate * 0.3;
@@ -592,6 +623,16 @@ class Fish {
             this.world.food.push(new Food(this.world,this.x,this.y, this.size));
         }
 
+        //get amount of calories burned, calculate body temperature
+        let caloriesBurned = (lastCalories - this.calories);
+        
+        //assume that heat capacity is area
+        let heatCapacity = Math.PI*this.size**2;
+        let surface = 2*Math.PI*this.size;
+        //increase according to burnt calories
+        this.bodyTemperature += caloriesBurned/heatCapacity;
+        let heatTransfer = (this.bodyTemperature - ambientTemp) * surface * 1/this.furThickness;
+        this.bodyTemperature -= heatTransfer/heatCapacity;
     }
     pair(other){
         let child = new Fish(this.world,this.world.width*Math.random(),this.world.height*Math.random());
@@ -610,7 +651,12 @@ class Fish {
         }else{
         child.speed = Math.random() > 0.5 ? this.speed : other.speed;
         }
-
+        //fur
+        if(Math.random()>0.7){
+        child.furThickness = (this.furThickness + other.furThickness) / 2;
+        }else{
+        child.furThickness = Math.random() > 0.5 ? this.furThickness : other.furThickness;
+        }
 
         //average color
         let color1 = this.color.match(/\d+/g).map(Number);
@@ -646,6 +692,8 @@ class Fish {
         //mutate size
         this.size += Math.random() * factor - factor / 2;
         if(this.size < 5) this.size = 5;
+        //mutate fur
+        this.furThickness += Math.random() *0.2* (factor - factor / 2);
 
         //mutate speed
         this.speed += Math.random() * factor - factor / 2;
@@ -691,10 +739,18 @@ class Fish {
             ctx.arc(this.x,this.y,this.size,0,2 * Math.PI);
             ctx.fill();
             //draw fish eye in direction it is facing
-            ctx.fillStyle = "white";
+            
+            //draw body temp vs target temp, shift eye color
+            ctx.fillStyle = "rgb(" + Math.floor((this.bodyTemperature - this.targetTemperature)/5*255) + "," + Math.floor((this.targetTemperature - this.bodyTemperature)/5*255) + ",0)";
             ctx.beginPath();
             ctx.arc(this.x + Math.cos(this.angle) * (this.size*0.6),this.y + Math.sin(this.angle) * (this.size*0.6),this.size/3,0,2 * Math.PI);
             ctx.fill();
+            //draw fur
+            ctx.fillStyle = "rgb(" + Math.floor((this.bodyTemperature - this.targetTemperature)/5*255) + "," + Math.floor((this.targetTemperature - this.bodyTemperature)/5*255) + ",0)";
+            ctx.beginPath();
+            ctx.arc(this.x + Math.cos(this.angle) * (this.size*0.6),this.y + Math.sin(this.angle) * (this.size*0.6),this.size/3*this.furThickness,0,2 * Math.PI);
+            ctx.fill();
+
 
 
         //draw scan rays and indicate hit
@@ -713,7 +769,6 @@ class Fish {
             ctx.lineTo(this.x + Math.cos(angle) * this.targetRange,this.y + Math.sin(angle) * this.targetRange);
             ctx.stroke();
         }
-
 
 
 
