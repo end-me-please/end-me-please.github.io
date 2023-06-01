@@ -279,7 +279,7 @@ class Simulation {
                         //if a bit further apart, check if they are mature enough to mate
                         if(distanceSquared < (fish1.size**2+fish2.size**2)*10){
                             
-                            if(Math.random()>0.9 && fish1.age > 35 && fish2.age > 35 && this.fishes.length+2 < this.numFish){
+                            if(Math.random()>0.9 && fish1.age > 55 && fish2.age > 55 && this.fishes.length+2 < this.numFish){
                             console.log("uwu");
                             for(let c = 0; c < 3; c++) {    
                                 let child = fish1.pair(fish2);
@@ -538,7 +538,7 @@ class Fish {
         this.heartRate = 1;
         
         this.size = Math.random() * 5 + 5;
-        this.brain = new FishBrain([14+3,9,5+3]);
+        this.brain = new FishBrain([15+3,9,5+3]);
         this.speed = 0.8; //acceleration
         
         this.memory = [0,0,0]; //useless?
@@ -641,6 +641,7 @@ class Fish {
         this.calories/this.calorieCap, //1
         Math.sin(this.heartRate*this.world.tick*0.01), //1
         this.life*0.01, //1
+        this.age/100, //1
         this.targetRange/this.maxRange, //1,
         //body temp - target temp
         (this.bodyTemperature - this.targetTemperature)/5, //1
@@ -685,13 +686,15 @@ class Fish {
 
         //depends on max speed and size, fast + big = inefficient
         let sizeSpeed = this.speed * (this.size*0.2);
-
+        
+        if(!this.generation==2){
         this.calories -= 0.2*this.heartRate*sizeSpeed * (Math.abs(output[1])+Math.abs(output[0]));
 
         this.calories -= 0.03;
+        }
 
         //life damage from temperature
-        this.life -= Math.abs(this.bodyTemperature - this.targetTemperature) * 0.002;
+        this.life -= Math.abs(this.bodyTemperature - this.targetTemperature) * 0.07;
 
         //heal using calories if life is below max, higher heart rate means more healing
         if(this.life < 100) {
@@ -707,7 +710,7 @@ class Fish {
         }
 
         //get amount of calories burned, calculate body temperature
-        let caloriesBurned = (lastCalories - this.calories);
+        let caloriesBurned = Math.max(0,(lastCalories - this.calories));
         
         //assume that heat capacity is area
         let heatCapacity = Math.PI*this.size**2;
@@ -716,7 +719,7 @@ class Fish {
         
         let heatTransfer = (this.bodyTemperature - ambientTemp) * surface * 1/(10+10*this.furThickness);
         this.bodyTemperature -= heatTransfer/heatCapacity;
-        this.bodyTemperature += 155*(caloriesBurned/heatCapacity);
+        this.bodyTemperature += 250*(caloriesBurned/heatCapacity);
         
         //increase age
         this.age += 0.1;
@@ -797,7 +800,7 @@ class Fish {
         this.size += Math.random() * factor - factor / 2;
         if(this.size < 5) this.size = 5;
         //mutate fur
-        this.furThickness += Math.random() *0.2* (factor - factor / 2);
+        this.furThickness += Math.random() * (factor - factor / 2);
 
         //mutate speed
         this.speed += Math.random() * factor - factor / 2;
