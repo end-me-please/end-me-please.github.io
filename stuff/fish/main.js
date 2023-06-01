@@ -196,6 +196,8 @@ class Simulation {
         //spawn food every 700 ticks
         if(this.tick % 500 == 0){
             this.food.push(new Food(this,Math.random() * this.width, Math.random() * this.height));
+            //mutate slightly
+            this.mutate(this.mutationFactor/2);
         }
 
 
@@ -271,19 +273,23 @@ class Simulation {
                             fish2.x -= overlap/2 * Math.cos(angle);
                             fish2.y -= overlap/2 * Math.sin(angle);
 
-                            fish1.life -= 2 * (fish2.size / fish1.size);
-                            fish2.life -= 2 * (fish1.size / fish2.size);
+                            fish1.life -= 0.5 * (fish2.size / fish1.size);
+                            fish2.life -= 0.5 * (fish1.size / fish2.size);
                         }
                         //if a bit further apart, check if they are mature enough to mate
                         if(distanceSquared < (fish1.size**2+fish2.size**2)*10){
                             
-                            if(fish1.age > 35 && fish2.age > 35 && this.fishes.length+2 < this.numFish){
+                            if(Math.random()>0.9 && fish1.age > 35 && fish2.age > 35 && this.fishes.length+2 < this.numFish){
                             console.log("uwu");
                             for(let c = 0; c < 3; c++) {    
                                 let child = fish1.pair(fish2);
                                 let angle = Math.atan2(fish1.y - fish2.y, fish1.x - fish2.x);
-                                child.x = fish1.x + Math.cos(angle) * fish1.size;
-                                child.y = fish1.y + Math.sin(angle) * fish1.size;
+                                //randomize position across map
+                                child.x = Math.random() * this.width;
+                                child.y = Math.random() * this.height;
+
+                                child.vx = Math.random() * 2 - 1;
+                                child.vy = Math.random() * 2 - 1;
                                 this.fishes.push(child);
                             }
                             fish1.age -= 25;
@@ -665,7 +671,7 @@ class Fish {
         this.targetRange += output[4]*this.maxRange*0.1;
         if(this.targetRange < 44) this.targetRange = 44;
         if(this.targetRange > this.maxRange) this.targetRange = this.maxRange;
-        if(this.targetRange > 0) this.calories -= (this.targetRange/this.maxRange)*0.01;
+        if(this.targetRange > 0) this.calories -= (this.targetRange/this.maxRange)*0.006;
         
         this.heartRate += output[3]*0.1;
         if(this.heartRate < 0.4) this.heartRate = 0.4;
@@ -680,17 +686,17 @@ class Fish {
         //depends on max speed and size, fast + big = inefficient
         let sizeSpeed = this.speed * (this.size*0.2);
 
-        this.calories -= this.heartRate*sizeSpeed * (Math.abs(output[1])+Math.abs(output[0]));
+        this.calories -= 0.2*this.heartRate*sizeSpeed * (Math.abs(output[1])+Math.abs(output[0]));
 
-        this.calories -= 0.1;
+        this.calories -= 0.03;
 
         //life damage from temperature
-        this.life -= Math.abs(this.bodyTemperature - this.targetTemperature) * 0.003;
+        this.life -= Math.abs(this.bodyTemperature - this.targetTemperature) * 0.002;
 
         //heal using calories if life is below max, higher heart rate means more healing
         if(this.life < 100) {
             this.life += this.heartRate * 0.3;
-            this.calories -= this.heartRate * 0.3;
+            this.calories -= this.heartRate * 0.2;
         }
 
 
@@ -710,7 +716,7 @@ class Fish {
         
         let heatTransfer = (this.bodyTemperature - ambientTemp) * surface * 1/(10+10*this.furThickness);
         this.bodyTemperature -= heatTransfer/heatCapacity;
-        this.bodyTemperature += 10*(caloriesBurned/heatCapacity);
+        this.bodyTemperature += 155*(caloriesBurned/heatCapacity);
         
         //increase age
         this.age += 0.1;
