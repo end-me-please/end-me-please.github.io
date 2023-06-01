@@ -35,7 +35,7 @@ class Simulation {
         }
         //populate food
         for (let i = 0; i < this.numFood; i++) {
-            this.food.push(new Food(this,Math.random() * this.width, Math.random() * this.height));
+            this.food.push(new Food(this,Math.random() * (this.width), Math.random() * this.height));
         }
         for (let i = 0; i < numFish; i++) {
             this.fishes.push(new Fish(this,Math.random() * this.width, Math.random() * this.height));
@@ -49,6 +49,39 @@ class Simulation {
         let tmp = this.tick;
         this.tick = 0;
         return tmp;
+    }
+    randomizeTepmerature(){
+    //add a few hot and cold spots, then smooth out the temperature map
+    for (let i = 0; i < 5; i++) {
+        let x = Math.floor(Math.random() * this.numSquares);
+        let y = Math.floor(Math.random() * this.numSquares);
+        let temperature = Math.random() * 90;
+        this.temperatureMap[x][y] = temperature;
+        }
+        //smooth out the temperature map without replacing the reference
+        let newTemperatureMap = [];
+        for (let i = 0; i < this.numSquares+1; i++) {
+            newTemperatureMap.push([]);
+            for (let j = 0; j < this.numSquares+1; j++) {
+                let sum = 0;
+                let count = 0;
+                for (let k = -1; k < 2; k++) {
+                    for (let l = -1; l < 2; l++) {
+                        if(i+k < 0 || i+k >= this.numSquares || j+l < 0 || j+l >= this.numSquares) continue;
+                        sum += this.temperatureMap[i+k][j+l];
+                        count++;
+                    }
+                }
+                newTemperatureMap[i].push(sum/count);
+            }
+        }
+        //transfer the new temperature map to the old one
+        for (let i = 0; i < this.numSquares+1; i++) {
+            for (let j = 0; j < this.numSquares+1; j++) {
+                this.temperatureMap[i][j] = newTemperatureMap[i][j];
+            }
+        }
+
     }
 
     scan(fish,range,channels){
@@ -240,10 +273,23 @@ class Simulation {
 
                             fish1.life -= 2 * (fish2.size / fish1.size);
                             fish2.life -= 2 * (fish1.size / fish2.size);
-
                         }
-                        //check min distance
-                       
+                        //if a bit further apart, check if they are mature enough to mate
+                        if(distanceSquared < (fish1.size**2+fish2.size**2)*10){
+                            
+                            if(fish1.age > 35 && fish2.age > 35 && this.fishes.length+2 < this.numFish){
+                            console.log("uwu");
+                            for(let c = 0; c < 3; c++) {    
+                                let child = fish1.pair(fish2);
+                                let angle = Math.atan2(fish1.y - fish2.y, fish1.x - fish2.x);
+                                child.x = fish1.x + Math.cos(angle) * fish1.size;
+                                child.y = fish1.y + Math.sin(angle) * fish1.size;
+                                this.fishes.push(child);
+                            }
+                            fish1.age -= 25;
+                            fish2.age -= 25;
+                        }
+                        }
 
                     }
                 }
@@ -314,7 +360,7 @@ class Simulation {
         this.mutationFactor*=0.94;
         let layer = 1;
         if(this.generation<400){
-        topFishes.forEach(fish => fish.brain.expand(layer));
+        //topFishes.forEach(fish => fish.brain.expand(layer));
         this.mutate(0.3);    
         }
         }
@@ -426,6 +472,12 @@ class Simulation {
 class Food {
     constructor(world,x,y, size=5){
         this.world = world;
+        //check if too close to wall
+        if(x < 5 * size) x = 5 * size;
+        if(x > this.world.width - 5 * size) x = this.world.width - 5 * size;
+        if(y < 5 * size) y = 5 * size;
+        if(y > this.world.height - 5 * size) y = this.world.height - 5 * size;
+
         this.x = x;
         this.y = y;
         this.size = size;
@@ -486,6 +538,7 @@ class Fish {
         this.memory = [0,0,0]; //useless?
         this.color = "rgb("+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+","+Math.floor(Math.random()*255)+")";
         this.score = 0;
+        this.generation = 0;
     }
     
     update(){
@@ -627,12 +680,12 @@ class Fish {
         //depends on max speed and size, fast + big = inefficient
         let sizeSpeed = this.speed * (this.size*0.2);
 
-        this.calories -= (this.heartRate**2)*sizeSpeed * (Math.abs(output[1])+Math.abs(output[0]))**2;
+        this.calories -= this.heartRate*sizeSpeed * (Math.abs(output[1])+Math.abs(output[0]));
 
         this.calories -= 0.1;
 
         //life damage from temperature
-        this.life -= Math.abs(this.bodyTemperature - this.targetTemperature) * 0.005;
+        this.life -= Math.abs(this.bodyTemperature - this.targetTemperature) * 0.003;
 
         //heal using calories if life is below max, higher heart rate means more healing
         if(this.life < 100) {
@@ -654,25 +707,21 @@ class Fish {
         let heatCapacity = Math.PI*this.size**2;
         let surface = 2*Math.PI*this.size;
         //increase according to burnt calories
-        this.bodyTemperature += caloriesBurned/heatCapacity;
-        let heatTransfer = (this.bodyTemperature - ambientTemp) * surface * 1/this.furThickness;
+        
+        let heatTransfer = (this.bodyTemperature - ambientTemp) * surface * 1/(10+10*this.furThickness);
         this.bodyTemperature -= heatTransfer/heatCapacity;
+        this.bodyTemperature += 10*(caloriesBurned/heatCapacity);
         
         //increase age
         this.age += 0.1;
 
-        //if age above 100 and space available, reproduce asexually
-        if(this.age > 100 && this.world.fishes.length+6 < this.world.numFish){
-            for (let i = 0; i < 5; i++) {
-                let child = this.clone();
-                child.mutate(this.world.mutationFactor);
-                this.world.fishes.push(child);
-            }
-        }
         //if numFish/10 are left, reproduce forcefully
-        if(this.world.fishes.length < this.world.numFish/10){
-            for (let i = 0; i < 3; i++) {
+        if(this.world.fishes.length < this.world.numFish/5){
+            for (let i = 0; i < 2; i++) {
                 let child = new Fish(this.world,this.x,this.y);
+                child.mutate(1);
+                child.mutate(1);
+                child.mutate(1);
                 //randomize xy
                 child.x = Math.random() * this.world.width;
                 child.y = Math.random() * this.world.height;
@@ -685,7 +734,7 @@ class Fish {
     
     pair(other){
         let child = new Fish(this.world,this.world.width*Math.random(),this.world.height*Math.random());
-
+        child.generation = Math.max(this.generation,other.generation) + 1;
 
         //average or select size, 0.3 chance average
         if(Math.random()>0.7){
@@ -824,6 +873,8 @@ class Fish {
     }
     serialize(){
         return {
+            generation: this.generation,
+            furThickness: this.furThickness,
             x: this.x,
             y: this.y,
             angle: this.angle,
@@ -843,6 +894,8 @@ class Fish {
     }
     static deserialize(world,serialized){
         let fish = new Fish(world,serialized.x,serialized.y);
+        fish.generation = serialized.generation;
+        fish.furThickness = serialized.furThickness;
         fish.angle = serialized.angle;
         fish.speed = serialized.speed;
         fish.turnSpeed = serialized.turnSpeed;

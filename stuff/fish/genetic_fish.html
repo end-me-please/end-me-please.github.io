@@ -1,6 +1,5 @@
 <html>
     <head>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/gpu.js/1.0.2/gpu.min.js" integrity="sha512-cr2nuynSuSV6MGtWlympE0qd1g1TKBuEhv9lcfbW8HrE9UbPPc8zMwcje1fb9w2kzxqRnsizh6c+YbE6Ab7wpg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
         <script src="./fishbrainClassic.js"></script>
         <script src="./main.js"></script>
     </head>
@@ -10,10 +9,15 @@
     <body>
         <canvas id="canvas" width="800" height="800" style="border: 1px solid red; background-color: aliceblue;"></canvas>
         <canvas id="inspect" width="400" height="400" style="border: 1px solid black; background-color: aliceblue;"></canvas>
-        <button id="extractOne" onclick="extractOne()">extract selected</button>
-        <button id="importOne" onclick="importOne()">import single fish</button>
+        </br>
+        <label id="FPS" for="FPS">FPS:</label>
+        </br>
+        <input type="range" min="1" max="50" value = "2" id="simulationSpeed" onchange="simulationSpeed = this.value">
+        </br>
         <div>
             <label id="stats">Stats:</label>
+            <button id="fastForward" onclick="fastForward(10)">fast forward 10 generations</button>
+            <button id="mutate" onclick="sim.mutate(0.3)">Mutate</button>
         </div>
         <p>fitness</p>
         <canvas id="performanceGraph" width="500" height="155" style="border: 1px solid black; background-color: aliceblue;"></canvas>
@@ -25,13 +29,14 @@
         <p>size</p>
         <canvas id="sizeGraph" width="500" height="155" style="border: 1px solid black; background-color: aliceblue;"></canvas>
         </br>
-        <button id="mutate" onclick="sim.mutate(0.3)">Mutate</button>
-        <button id="fastForward" onclick="fastForward(10)">fast forward 10 generations</button>
         
         </br>
         </br>
         <button id="save" onclick="saveAllWeights()">save all</button>
         <button id="load" onclick="loadAllWeights()">load all</button>
+        </br>
+        <button id="extractOne" onclick="extractOne()">extract selected</button>
+        <button id="importOne" onclick="importOne()">import single fish</button>
 
     </br>
     <button id="importClipboard" onclick="importClipboard()">import clipboard</button>
@@ -66,7 +71,7 @@
 
 
     <script>
-    
+        let simulationSpeed = 2;
         let autoUpdate = true;
         let performanceGraphCanvas = document.getElementById("performanceGraph");
         let speedGraphCanvas= document.getElementById("speedGraph");
@@ -94,6 +99,8 @@
             try {
             inspectedFish = sim.fishes.indexOf(inspectedFishObj);
             sim.render(ctx);
+            //if inspected fish is undefined, set it to the first fish
+            if(inspectedFish == -1) inspectedFish = 0;
             sim.fishes[inspectedFish].brain.draw(inspectCtx);
             //draw rectangle around observed fish
             ctx.strokeStyle = "red";
@@ -140,10 +147,20 @@
         }
         loop();
         let tick = 0;
+        let lastTick = 0;
+        let tps = 60;
+        //measure tps
+        setInterval(() => {
+            tps = tick - lastTick;
+            lastTick = tick;
+            document.getElementById("FPS").innerHTML = "FPS: "+tps;
+        }, 1000);
 
         setInterval(() => {
-            sim.update();
-            tick++;
+            for (let i = 0; i < simulationSpeed; i++) {
+                sim.update();
+                tick++;
+            }
         }, 5);
     
         canvas.addEventListener("click", e => {
