@@ -19,8 +19,8 @@
     <script>
         let pressedKeys = {};
         let chunks = [];
-        const chunkSize = 90;
-        const mapScale = 5;
+        const chunkSize = 150;
+        const mapScale = 1;
         const pathScale = 1;
 
         document.addEventListener('keydown', function(event){
@@ -47,15 +47,15 @@
         function setupScene() {
             let scene = new BABYLON.Scene(engine);
             let camera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 5, -10), scene);
-            camera.setTarget(BABYLON.Vector3.Zero());
+            //camera.setTarget(BABYLON.Vector3.Zero());
             camera.attachControl(canvas, false);
             let light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0, 1, 0), scene);
             //scene color to black
             scene.clearColor = new BABYLON.Color3(0, 0, 0);
             
             //generate chunks, from x=0 to x=300, 100 size
-            for(let x = 0; x < 900; x+=chunkSize){
-                    chunks.push(generateChunk(scene,0,x));
+            for(let x = 0; x < 1200; x+=chunkSize){
+                    chunks.push(generateChunk(scene,0,x*0.99));
 
             }
 
@@ -189,9 +189,9 @@
         //if camera is too far ahead, generate new chunks. read latest chunk, generate new chunk at x=latestChunk+chunkSize
         let latestChunk = chunks[chunks.length-1];
         //if less than 3 chunks ahead, generate new chunk
-        if(latestChunk.y < scene.activeCamera.position.z + chunkSize*8){
+        if(latestChunk.y < scene.activeCamera.position.z + 300){
             //generate new chunk
-            let newChunk = generateChunk(scene, 0, latestChunk.y+chunkSize);
+            let newChunk = generateChunk(scene, 0, (latestChunk.y+chunkSize-5));
             chunks.push(newChunk);
             //dispose of old chunk
             chunks[0].dispose();
@@ -228,15 +228,31 @@
 
                     //get path from fy+offYf
                     let path = getPath((fy*chunkSize)-(offYf));
+                    let path2 = getPath2((fy*chunkSize)-(offYf));
+                    let path3 = getPath3((fy*chunkSize)-(offYf));
                     let targetX = path*chunkSize/2+chunkSize/2;
+                    let targetX2 = path2*chunkSize/2+chunkSize/2;
+                    let targetX3 = path3*chunkSize/2+chunkSize/2;
                     let distance = Math.abs(targetX - (fx*chunkSize - offXf));
+                    let distance2 = Math.abs(targetX2 - (fx*chunkSize - offXf));
+                    let distance3 = Math.abs(targetX3 - (fx*chunkSize - offXf));
+                    //compare them
+                    distance = Math.min(distance, distance2, distance3);
+                    
+
+
+
 
                     //if distance is less than 10, set value to 0
                     if(distance < chunkSize/4){
-                        value *= distance/(chunkSize/4);
+                        value *= distance/(chunkSize/6);
                     }
+                    if(distance < 25){
+                        value *= 0.76;
+                    }
+
                     //if less than chunkSize/8, set value to 0
-                    if(distance < chunkSize/16){
+                    if(distance < chunkSize/24){
                         value = 0;
                     }
 
@@ -268,7 +284,12 @@
             return (Math.sin((y/chunkSize)/(1*pathScale))*Math.sin((y/chunkSize)/(3*pathScale))) * 0.65;
 
         }
-        
+        function getPath2(y){
+            return (Math.sin((y/chunkSize)/(0.5*pathScale))*Math.sin((y/chunkSize)/(5*pathScale)));
+        }
+        function getPath3(y){
+            return (Math.sin((y/chunkSize)/(7*pathScale))*Math.sin((y/chunkSize)/(2*pathScale)))*4;
+        }
         //hide scrollbars
         document.body.style.overflow = 'hidden';
         //also hide cursor
