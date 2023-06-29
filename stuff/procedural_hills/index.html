@@ -66,7 +66,16 @@
             text1.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
             advancedTexture.addControl(text1);
             scene.metadata.hud = text1;
-
+            //top right: low alpha text with controls
+            let text2 = new BABYLON.GUI.TextBlock();
+            text2.text = "Controls:\nWASD: Pitch, Yaw\nQE: Roll\nSpace: Accelerate\nB: Brake\n Angle of Attack above 15° will cause stall";
+            text2.color = "white";
+            text2.fontSize = 14;
+            text2.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+            text2.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+            text2.alpha = 0.5;
+            advancedTexture.addControl(text2);
+            
 
 
             //directional light
