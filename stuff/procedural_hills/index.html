@@ -716,6 +716,14 @@
         //hide left side image gap
         document.body.style.margin = '0px';
 
+        //loop background music "phasing_through.ogg"
+        let bgm = new Audio("phasing_through.ogg");
+        bgm.loop = true;
+        //on keypress, play bgm
+        document.addEventListener('keydown', function(){
+            bgm.play();
+        });        
+
 
 
     </script>
