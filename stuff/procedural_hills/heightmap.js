@@ -54,7 +54,7 @@ class Terrain {
         this.noiseMapRough = new NoiseMap(scale/8);
         this.rivers = [];
         //populate rivers
-        for(let i = 0; i < 15; i++){
+        for(let i = 0; i < 35; i++){
             let frequency1 = Math.random()*0.05 + 0.05;
             let frequency2 = Math.random()*0.05 + 0.05;
             let amplitude = Math.random()*0.5 + 0.5;
@@ -87,17 +87,10 @@ class Terrain {
         //add rivers
         let riverProximity = this.getRiverProximity(x,y);
         //if proximity is less than 30, slowly lower the height
-        //if less than 10, lower it a lot
-        //if less than 5, zero it out
-        if(riverProximity < 30){
-            height -= (30 - riverProximity)/30 * 0.1;
-        }
-        if(riverProximity < 10){
-            height -= (10 - riverProximity)/10 * 0.2;
-        }
-        if(riverProximity < 5){
-            height = 0;
-        }
+        
+        
+            height *= Math.min(riverProximity/50,1);
+        
         return height;
     }
 

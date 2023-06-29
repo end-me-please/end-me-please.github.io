@@ -38,8 +38,6 @@ self.onmessage = function(e) {
 
 
 async function getMap(xoff, yoff){
-    xoff = Math.abs(xoff);
-    yoff = Math.abs(yoff);
     let width=chunkSize*mapScale;
     let height=chunkSize*mapScale;
     let heightmap = new ImageData(width, height);
@@ -72,7 +70,7 @@ async function getMap(xoff, yoff){
     
     //OffscreenCanvas has no toDataURL method aaaaAAAAAAAAA
 
-    let blob = await canv.convertToBlob({type: 'image/png', quality: 1});
+    let blob = await canv.convertToBlob({type: 'image/bmp', quality: 1});
     //read blob using FileReader
     let dataUrl = await new Promise(resolve => {
         let reader = new FileReader();

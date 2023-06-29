@@ -3,6 +3,7 @@
         <script src="./heightmap.js"></script>
         <script src="https://cdn.babylonjs.com/babylon.js"></script>
         <script src="https://cdn.babylonjs.com/loaders/babylon.objFileLoader.js"></script>
+        <script src="https://cdn.babylonjs.com/gui/babylon.gui.js"></script>
     </head>
     
     <body>
@@ -48,8 +49,24 @@
         let engine = new BABYLON.Engine(canvas, true, {preserveDrawingBuffer: true, stencil: true});
 
         function setupScene() {
+            
             let scene = new BABYLON.Scene(engine);
             let camera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 5, -10), scene);
+            scene.metadata = {};
+
+            //add instrumentation- angle of attack, speed, etc
+            let advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+            let text1 = new BABYLON.GUI.TextBlock();
+            text1.text = "Angle of Attack: 0";
+            text1.color = "white";
+            text1.fontSize = 14;
+            text1.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+            text1.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+            advancedTexture.addControl(text1);
+            scene.metadata.hud = text1;
+
+
+
             //directional light
             let light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0.3, -0.45, -1), scene);
             light.intensity = 1;
@@ -59,7 +76,6 @@
 
             //scene color to black
             scene.clearColor = new BABYLON.Color3(0, 0, 0);
-            scene.metadata = {};
             scene.metadata.chunks = [];
             //generate chunks in y direction
             
@@ -92,6 +108,10 @@
                 this.rotation = mesh.rotation;
                 this.position = mesh.position;
                 this.velocity = new BABYLON.Vector3(0,0,0.8);
+                this.controls = {
+                    rotationInput: new BABYLON.Vector3(0,0,0),
+                    throttleInput: 0,
+                };
                 //use baking transform to flip ship
                 this.mesh.bakeTransformIntoVertices(BABYLON.Matrix.RotationY(Math.PI));
                 
@@ -109,28 +129,58 @@
             let chunkY = y;
             x=x*chunkSize;
             y=y*chunkSize;
+            /*
             let mountains = BABYLON.MeshBuilder.CreateGroundFromHeightMap("mountains", mapStr, {width: chunkSize, height: chunkSize, subdivisions: 60, minHeight: 0, maxHeight: 60, updatable:true}, scene);
+            let mountains2 = BABYLON.MeshBuilder.CreateGroundFromHeightMap("largeGround2", mapStr, {width: chunkSize, height: chunkSize, subdivisions: 60, minHeight: 0, maxHeight: 60}, scene);
+            */
+           //create plane
+            let mountains = BABYLON.MeshBuilder.CreateGround("mountains", {width: chunkSize, height: chunkSize, subdivisions: 60,updatable:true, maxHeight:60}, scene);
+            let mountains2 = BABYLON.MeshBuilder.CreateGround("mountains2", {width: chunkSize, height: chunkSize, subdivisions: 60, updatable:true, maxHeight:60}, scene);
+            //
+
+            
+
+
+
+            //sample map.get(x,y) and edit vertices
+            let vertices = mountains.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+            let vertices2 = mountains2.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+            //cycle through all vertices, get their world coords, and sample map (map sampling result multiplied by 70)
+            //create a heightmap manually this way
+            for(let i=0;i<vertices.length;i+=3){
+                let worldPos = new BABYLON.Vector3(vertices[i], vertices[i+1], vertices[i+2]);
+                let worldPos2 = new BABYLON.Vector3(vertices2[i], vertices2[i+1], vertices2[i+2]);
+                let mapSample = map.get((worldPos.x+x)*mapScale, (worldPos.z+y)*mapScale);
+                vertices[i+1] = mapSample*60;
+                vertices2[i+1] = mapSample*60;
+            }
+
+            mountains.updateVerticesData(BABYLON.VertexBuffer.PositionKind, vertices);
+            mountains2.updateVerticesData(BABYLON.VertexBuffer.PositionKind, vertices2);
+
+
+
+
             
             //purple wireframe for mountains
             mountains.material = new BABYLON.StandardMaterial("mountainWireframe", scene);
             mountains.material.wireframe = true;
             mountains.material.diffuseColor = new BABYLON.Color3(0.5, 0, 0.5);
             mountains.material.specularColor = new BABYLON.Color3(0, 0.13, 0);
-
             mountains.material.alpha = 1;
-            //move down
+            //backface culling
+            mountains.material.backFaceCulling = false;
             mountains.position.y = -2;
-            //second mountains, for occlusion
-            //clone mountains
 
-            let mountains2 = BABYLON.MeshBuilder.CreateGroundFromHeightMap("largeGround2", mapStr, {width: chunkSize, height: chunkSize, subdivisions: 60, minHeight: 0, maxHeight: 60}, scene);
-            //black/opaque for occlusion
+            
+            //second mountains, for occlusion
             mountains2.material = new BABYLON.StandardMaterial("mountainBlack", scene);
             mountains2.material.wireframe = false;
             mountains2.material.diffuseColor = new BABYLON.Color3(0, 0, 0);
             mountains2.material.specularColor = new BABYLON.Color3(0, 0, 0);
             mountains2.material.alpha = 1;
-            //move down
+            //backface culling
+            mountains2.material.backFaceCulling = false;
             mountains2.position.y = -2;
 
             
@@ -149,18 +199,18 @@
             ground2.material.alpha = 1;
 
 
-
+            
 
             //shift all meshes to offset
-            mountains.position.x = x;
-            mountains.position.z = y-1;
-            mountains2.position.x = x;
-            mountains2.position.z = y-1;
+            
             ground.position.x = x;
             ground.position.z = y-1;
             ground2.position.x = x;
             ground2.position.z = y-1;
-            
+            mountains.position.x = x;
+            mountains.position.z = y-1;
+            mountains2.position.x = x;
+            mountains2.position.z = y-1;
 
             //generate a function that disposes of all these
             let data = {
@@ -232,17 +282,25 @@
                 if(pressedKeys["a"]){
                     rotationInput.y -= 0.05;
                 }
+                //change thrust input (lerp)
+                let throttleInput = 0;
+                if(pressedKeys[" "]){
+                    throttleInput = 1;
+                }
+                ship.controls.throttleInput = (ship.controls.throttleInput*0.9) + (throttleInput*0.1);
+
+
+
                 //rotate ship
                 //check if metadata rotation input exists
-                if(!scene.metadata.rotationInput){
-                    scene.metadata.rotationInput = new BABYLON.Vector3(0,0,0);
-                }
+
+
                 //lerp between old rotation input and new rotation input
-                rotationInputLerp = BABYLON.Vector3.Lerp(scene.metadata.rotationInput, rotationInput, 0.12);
-                scene.metadata.rotationInput = rotationInputLerp.clone();
+                rotationInputLerp = BABYLON.Vector3.Lerp(ship.controls.rotationInput, rotationInput, 0.12);
+                ship.controls.rotationInput = rotationInputLerp.clone();
                 
                 let rotationAmount = rotationInputLerp.length()/4;
-                ship.mesh.rotate(rotationInput.normalize(), rotationAmount, BABYLON.Space.LOCAL);
+                ship.mesh.rotate(rotationInputLerp.normalize(), rotationAmount, BABYLON.Space.LOCAL);
                 
 
 
@@ -304,12 +362,8 @@
                 
 
                 
-                //move ship forward
-                let thrust = 0;
-                if(pressedKeys[" "]){
-                    thrust = 0.013;
-                }
-                ship.velocity = ship.velocity.add(ship.mesh.forward.scale(thrust));
+                
+                ship.velocity = ship.velocity.add(ship.mesh.forward.scale(ship.controls.throttleInput*0.01));
                 ship.mesh.moveWithCollisions(ship.velocity);
 
                 //draw speed and angle of attack
@@ -356,8 +410,21 @@
             cameraOffsetGlobal = BABYLON.Vector3.TransformCoordinates(cameraOffset, ship.mesh.getWorldMatrix());
             scene.activeCamera.position = BABYLON.Vector3.Lerp(scene.activeCamera.position, cameraOffsetGlobal, 0.3);
             
-            //move slightly higher
-
+            //draw flight data
+            let speed = ship.velocity.length();
+            let angleOfAttack = Math.acos(BABYLON.Vector3.Dot(ship.mesh.forward.normalize(), ship.velocity.clone().normalize()));
+            //if nan, set to 0
+            if(isNaN(angleOfAttack)){
+                angleOfAttack = 0;
+            }
+            let angleOfAttackDegrees = angleOfAttack*180/Math.PI;
+            let angleOfAttackDegreesRounded = Math.round(angleOfAttackDegrees*100)/100;
+            let speedRounded = Math.round(speed*120*100)/100;
+            let speedText = "Speed: " + speedRounded + " m/s";
+            let angleOfAttackText = "Angle of Attack: " + angleOfAttackDegreesRounded + "°";
+            let throttleInputText = "Throttle: " + Math.round(ship.controls.throttleInput*100) + "%";
+            //draw text to scene.metadata.hud   
+            scene.metadata.hud.text = speedText + "\n" + angleOfAttackText + "\n" + throttleInputText;
             }
         }
 
@@ -437,7 +504,8 @@
             //replace the placeholder chunk with the generated chunk
             //check if placeholder is disposed, if so, skip
 
-            let map = await workerGetMap(x*chunkSize,y*chunkSize);
+            //let map = await workerGetMap(x*chunkSize,y*chunkSize);
+            let map=null;
             //check if placeholder is disposed, if so, skip
             if(placeholder.deleted){
                 return;
