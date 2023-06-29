@@ -20,7 +20,8 @@
     </body>
     <script>
         let pressedKeys = {};
-        const chunkSize = 32;
+        const chunkSize = 64;
+        const renderDistance = 5;
         const mapScale = 1;
         const pathScale = 1;
         let autopilot = false;
@@ -45,13 +46,14 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        let map = new Terrain(0.31);
+        let map = new Terrain(0.17);
         let engine = new BABYLON.Engine(canvas, true, {preserveDrawingBuffer: true, stencil: true});
 
         function setupScene() {
             
             let scene = new BABYLON.Scene(engine);
             let camera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 5, -10), scene);
+            camera.minZ = 0.1;
             scene.metadata = {};
 
             //add instrumentation- angle of attack, speed, etc
@@ -94,7 +96,7 @@
 
 
                 //add to scene metadata
-                scene.metadata.ships.push(new Ship(newMeshes[0]));
+                scene.metadata.ships.push(new Ship(newMeshes[0], scene));
             });
 
 
@@ -103,7 +105,7 @@
             return scene;
         }
         class Ship {
-            constructor(mesh){
+            constructor(mesh, scene){
                 this.mesh = mesh;
                 this.rotation = mesh.rotation;
                 this.position = mesh.position;
@@ -111,7 +113,32 @@
                 this.controls = {
                     rotationInput: new BABYLON.Vector3(0,0,0),
                     throttleInput: 0,
+                    brakeInput: 0,
                 };
+                this.engineParticles = new BABYLON.GPUParticleSystem("particles", 2500, scene);
+                this.engineParticles.emitter = this.mesh;
+                //size
+                this.engineParticles.minSize = 0.02;
+                this.engineParticles.maxSize = 0.08;
+                //lifetime
+                this.engineParticles.minLifeTime = 2;
+                this.engineParticles.maxLifeTime = 6;
+                //low divergence of particles, straight beam backwards
+
+
+                //emitrate
+                this.engineParticles.emitRate = 1;
+                //texture particle.bmp
+                this.engineParticles.particleTexture = new BABYLON.Texture("particle.bmp", scene);
+                //direction
+                this.engineParticles.direction1 = new BABYLON.Vector3(-0.1, 0, -0.1);
+                this.engineParticles.direction2 = new BABYLON.Vector3(0.1, 0, 0.1);
+                //update rate
+                this.engineParticles.updateSpeed = 0.01;
+
+                this.engineParticles.start();
+
+
                 //use baking transform to flip ship
                 this.mesh.bakeTransformIntoVertices(BABYLON.Matrix.RotationY(Math.PI));
                 
@@ -287,8 +314,25 @@
                 if(pressedKeys[" "]){
                     throttleInput = 1;
                 }
-                ship.controls.throttleInput = (ship.controls.throttleInput*0.9) + (throttleInput*0.1);
+                ship.controls.throttleInput = Math.floor(255*((ship.controls.throttleInput*0.85) + (throttleInput*0.15)))/255;
+                //couple particlesystem emission rate to throttle input
+                ship.engineParticles.emitRate = ship.controls.throttleInput*120;
+                //manage start stop state
+                if(ship.controls.throttleInput > 0.1 && !ship.started){
+                    ship.started = true;
+                    ship.engineParticles.start();
+                } else if(ship.controls.throttleInput < 0.1 && ship.started){
+                    ship.started = false;
+                    ship.engineParticles.stop();
+                }
 
+                //same for brakeinput
+                let brakeInput = 0;
+                if(pressedKeys["b"]){
+                    brakeInput = 1;
+                }
+                ship.controls.brakeInput = (ship.controls.brakeInput*0.9) + (brakeInput*0.1);
+                
 
 
                 //rotate ship
@@ -337,7 +381,7 @@
                 if(ship.velocity.length() < stallSpeed){
                     strength *= ship.velocity.length()/stallSpeed;
                 }
-                strength *= 0.5;
+                strength *= 0.55;
 
 
 
@@ -347,13 +391,18 @@
                 //if that is high, rotate() ship.mesh to match velocity
                 if(angleOfAttack > 0.06){
                     let axis = BABYLON.Vector3.Cross(ship.mesh.forward, ship.velocity.clone().normalize());
-                    ship.mesh.rotate(axis, 0.00001, BABYLON.Space.WORLD);
+                    ship.mesh.rotate(axis, 0.000025, BABYLON.Space.WORLD);
                 }
                 
                 //high angle of attack = high drag
                 let drag = ((angleOfAttack**2)/3*ship.velocity.length()/5)*0.2;
+                //vertical angle of attack = high drag
 
-                if(ship.velocity.length() > 0.8){
+
+                //add brake input
+                drag += ship.controls.brakeInput*0.006;
+
+                if(ship.velocity.length() > 0.1){
                     ship.velocity = ship.velocity.scale(1-drag);
                 }
 
@@ -363,7 +412,7 @@
 
                 
                 
-                ship.velocity = ship.velocity.add(ship.mesh.forward.scale(ship.controls.throttleInput*0.01));
+                ship.velocity = ship.velocity.add(ship.mesh.forward.scale(ship.controls.throttleInput*0.015));
                 ship.mesh.moveWithCollisions(ship.velocity);
 
                 //draw speed and angle of attack
@@ -436,12 +485,26 @@
         let chunkListX = [];
         let chunkListY = [];
 
-        for(let x = camChunkX-5; x <= camChunkX+5; x++){
-            for(let y = camChunkY-5; y <= camChunkY+5; y++){
+        /*
+        for(let x = camChunkX-renderDistance; x <= camChunkX+renderDistance; x++){
+            for(let y = camChunkY-renderDistance; y <= camChunkY+renderDistance; y++){
                 chunkListX.push(x);
                 chunkListY.push(y);
             }
         }
+        */
+        //offset in the direction of the camera using angle, sin and cos
+        let camOffsetX = Math.round(Math.sin(scene.activeCamera.rotation.y)*renderDistance/2);
+        let camOffsetY = Math.round(Math.cos(scene.activeCamera.rotation.y)*renderDistance/2);
+        
+
+        for(let x = camChunkX-renderDistance+camOffsetX; x <= camChunkX+renderDistance+camOffsetX; x++){
+            for(let y = camChunkY-renderDistance+camOffsetY; y <= camChunkY+renderDistance+camOffsetY; y++){
+                chunkListX.push(x);
+                chunkListY.push(y);
+            }
+        }
+
 
         //iterate through scene.metadata.chunks, if a chunk is not in chunkList, dispose it
         for(let i = 0; i < scene.metadata.chunks.length; i++){
@@ -452,7 +515,7 @@
                 scene.metadata.chunks.splice(i,1);
                 continue;
             }
-            if(!chunkListX.includes(chunk.chunkX) || !chunkListY.includes(chunk.chunkY)){
+            if((!chunkListX.includes(chunk.chunkX) || !chunkListY.includes(chunk.chunkY)) && Math.random()>0.9){
                 chunk.dispose();
                 scene.metadata.chunks.splice(i,1);
                 i--;
@@ -470,7 +533,7 @@
                     break;
                 }
             }
-            if(!found&&Math.random()<0.1){
+            if(!found&&Math.random()>0.7){
                 generateAsync(scene,chunkX,chunkY);
             }
         }
