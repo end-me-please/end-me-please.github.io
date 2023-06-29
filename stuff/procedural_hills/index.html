@@ -109,7 +109,8 @@
             let chunkY = y;
             x=x*chunkSize;
             y=y*chunkSize;
-            let mountains = BABYLON.MeshBuilder.CreateGroundFromHeightMap("largeGround", mapStr, {width: chunkSize, height: chunkSize, subdivisions: 60, minHeight: 0, maxHeight: 60}, scene);
+            let mountains = BABYLON.MeshBuilder.CreateGroundFromHeightMap("mountains", mapStr, {width: chunkSize, height: chunkSize, subdivisions: 60, minHeight: 0, maxHeight: 60, updatable:true}, scene);
+            
             //purple wireframe for mountains
             mountains.material = new BABYLON.StandardMaterial("mountainWireframe", scene);
             mountains.material.wireframe = true;
@@ -118,12 +119,11 @@
 
             mountains.material.alpha = 1;
             //move down
-            mountains.position.y -= 2;
+            mountains.position.y = -2;
             //second mountains, for occlusion
             //clone mountains
-            let mountains2 = mountains.clone("mountains2");
 
-            //let mountains2 = BABYLON.MeshBuilder.CreateGroundFromHeightMap("largeGround", mapStr, {width: chunkSize, height: chunkSize, subdivisions: 60, minHeight: 0, maxHeight: 60}, scene);
+            let mountains2 = BABYLON.MeshBuilder.CreateGroundFromHeightMap("largeGround2", mapStr, {width: chunkSize, height: chunkSize, subdivisions: 60, minHeight: 0, maxHeight: 60}, scene);
             //black/opaque for occlusion
             mountains2.material = new BABYLON.StandardMaterial("mountainBlack", scene);
             mountains2.material.wireframe = false;
@@ -131,7 +131,7 @@
             mountains2.material.specularColor = new BABYLON.Color3(0, 0, 0);
             mountains2.material.alpha = 1;
             //move down
-            mountains2.position.y -= 2;
+            mountains2.position.y = -2;
 
             
             //add two ground planes- one wireframe, one black opaque to hide everything below
@@ -152,14 +152,14 @@
 
 
             //shift all meshes to offset
-            mountains.position.x += x;
-            mountains.position.z += y-1;
-            mountains2.position.x += x;
-            mountains2.position.z += y-1;
-            ground.position.x += x;
-            ground.position.z += y-1;
-            ground2.position.x += x;
-            ground2.position.z += y-1;
+            mountains.position.x = x;
+            mountains.position.z = y-1;
+            mountains2.position.x = x;
+            mountains2.position.z = y-1;
+            ground.position.x = x;
+            ground.position.z = y-1;
+            ground2.position.x = x;
+            ground2.position.z = y-1;
             
 
             //generate a function that disposes of all these
