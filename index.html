@@ -1,239 +1,727 @@
 <html>
     <head>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.js"></script>
-        <link rel="stylesheet" type="text/css" href="style.css">
-
+        <script src="./heightmap.js"></script>
+        <script src="https://cdn.babylonjs.com/babylon.js"></script>
+        <script src="https://cdn.babylonjs.com/loaders/babylon.objFileLoader.js"></script>
+        <script src="https://cdn.babylonjs.com/gui/babylon.gui.js"></script>
     </head>
+    
     <body>
-        <div class="title">
-        <h1>welcome</h1>
-        <h2>not much to see here</h2>
-        </div>
-        <canvas id="cubespin" width="200" height="200"></canvas>
-        <div class="list">
-        <ul>
-            <li>
-                <a href="index.html">literally this page</a>
-            </li>
-            <li>
-                <a href="stuff/gravity_sim.html">gravity thing</a>
-            </li>
-            <li>
-                <a href="stuff/turtles.html">amogus simulator</a>
-            </li>
-            <li>
-                <a href="stuff/cursor.html">mm bubbles</a>
-            </li>
-            <li>
-                <a href="games/engine/test.html">game engine test</a>
-            </li>
-            <li>
-                <a href="stuff/procedural_stuff/gpunoise.html">epilepsy</a>
-            </li>
-            <li>
-                <a href="stuff/procedural_stuff/mandelbrot.html">mandelbrot</a>
-            </li>
-            <li>
-                <a href="stuff/procedural_stuff/tree.html">tree</a>
-            <li>
-                    <a href="stuff/procedural_stuff/gpu_cgol.html">cgol</a>
-            </li>
-            </ul>
 
-        </div>
-
-        <canvas id="canvas" class="genericCanvas" width="530px" height="530px"></canvas>
-        
-        
-        <div style="position: absolute; top:6px; left:6px; margin: 10px;">
-        <input type="button" id="join" value="rename">
-        <input type="text" id="name" value="unnamed amogus">
-        </div> 
-
-<script type="importmap">
-{
-    "imports": {
-    "three": "https://unpkg.com/three/build/three.module.js"
-    }
-}
-</script>
-
-<script type="module">
-
-    import {Scene, PerspectiveCamera, WebGLRenderer, BoxGeometry, Mesh, MeshBasicMaterial} from 'three';
-
-    const scene = new Scene();
-    const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new WebGLRenderer({ canvas: document.querySelector('#cubespin') });
-
-    const geometry = new BoxGeometry(1.5,1,2);
-    const material = new MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
-    const cube = new Mesh(geometry, material);
-    scene.add(cube);
-    
-    camera.position.z = 2.6;
-
-    
-    //animate
-    const animate = () => {
-        requestAnimationFrame(animate);
-        cube.rotation.x += 0.01;
-        cube.rotation.y += 0.02;
-        renderer.render(scene, camera);
-    };
-    animate();
-
-    </script>
-    <script>
-    
-    const getUrl = async () => {
-        const response = await fetch('https://raw.githubusercontent.com/end-me-please/cursor-gaming/main/ngrok.url');
-        const text = await response.text();
-        return text;
-    }
-    //no async and no fetch
-
-    function getUrlSync(){
-        let source = "https://raw.githubusercontent.com/end-me-please/cursor-gaming/main/ngrok.url";
-        let xhr = new XMLHttpRequest();
-        xhr.open('GET', source, false);
-        xhr.send(null);
-        console.log(xhr.responseText);
-        return xhr.responseText;
-    }
-
-    //check if localstorage has a name, if so, put it in the input field
-    if(localStorage.getItem("name")){
-        document.getElementById("name").value = localStorage.getItem("name");
-    }
+        <canvas id="noisemapTest" width="512" height="512"></canvas>
 
 
 
-    let gameActive = false;
-    let cursors = [];
-    let socket = {};
-    setTimeout(()=>{
-    socket = io.connect("https://"+getUrlSync()+"/")
-    
-    socket.on('connect', function() {
-                console.log('connected');
-                gameActive = true;
-                socket.emit('join', {
-                    name: document.getElementById('name').value
-                });
-            });
-
-    socket.on("data", data=>cursors=data);
-    socket.on("disconnect", ()=>gameActive=false);
-
-    },1000);
-    
-    
-
-    var canvas = document.getElementById('canvas');
-    var ctx = canvas.getContext('2d');
-
-    //move canvas to background
-    canvas.style.position = "absolute";
-    canvas.style.top = "0px";
-    canvas.style.left = "0px";
-    canvas.style.zIndex = "-1";
-    canvas.style.width = "100%";
-    canvas.style.height = "100%";
 
 
 
-    class position{
-        constructor(x,y){
-            this.x = x;
-            this.y = y;
-        }
-    }
 
-    
-    //on aniamtion frame
-    let lastTime = Date.now();
-            function frame(time){
-                window.requestAnimationFrame(frame);
-                let delta = time - lastTime;
-                lastTime = time;
-
-                if(gameActive){
-                    //clear canvas
-                    ctx.clearRect(0,0,canvas.width,canvas.height);
-                    //draw cursor
-                    for(let i = 0; i < cursors.length; i++){
-                        let drawX = cursors[i].x*canvas.width/100;
-                        let drawY = cursors[i].y*canvas.height/100;
-
-                        ctx.beginPath();
-                        ctx.arc(drawX, drawY, 4, 0, Math.PI*2);
-                        ctx.fillStyle = '#0095DD';
-                        ctx.fill();
-                        ctx.closePath();
-                        ctx.font = "13px Arial";
-                        //black text
-                        ctx.fillStyle = "#000000";
-                        ctx.fillText(cursors[i].name, drawX, drawY);   
-                    }
-                }
-            };
-    frame(1);
-    
-
-    let clientX = 0;
-            let clientClick = false;
-            let clientY = 0;
-            //on mouse move
-            document.addEventListener('mousemove', function(e){
-                //clientx and clienty as relative positions in %
-                let adjustedX = e.clientX / window.innerWidth;
-                let adjustedY = e.clientY / window.innerHeight;
-                clientX = adjustedX*100;
-                clientY = adjustedY*100;
-            });
-
-            //on mouse click
-            canvas.addEventListener('mousedown', function(e){
-                clientClick = true;
-            } );
-            canvas.addEventListener('mouseup', function(e){
-                clientClick = false;
-            } );
-
-            function sendData(){
-                //if(gameActive&&clientClick){
-                if(gameActive){
-                    socket.emit('mouse', {
-                        x: clientX,
-                        y: clientY,
-                        click: clientClick,
-                    });
-                }
-            }
-            setInterval(sendData, 1000/20);
-
-            //on button click
-            document.getElementById('join').addEventListener('click', function(){
-                socket.emit('join', {
-                    name: document.getElementById('name').value,
-                });
-                //store name in local storage
-                localStorage.setItem('name', document.getElementById('name').value);
-            } );
-
-
-            //prevent scrolling
-            window.addEventListener('touchmove', function(e) {
-                e.preventDefault();
-            }, { passive: false });
-            //hide scrollbars
-            document.body.style.overflow = 'hidden';
-
-    
-
-
-</script>
 
     </body>
+    <script>
+        let pressedKeys = {};
+        const chunkSize = 54;
+        const renderDistance = 7;
+        const mapScale = 1;
+
+        let terrainWorker = new Worker('./terrainWorker.js');
+
+        document.addEventListener('keydown', function(event){
+            if(!event.key.startsWith('F')) event.preventDefault()
+            else return;
+            
+            pressedKeys[event.key] = true;
+            //if not a "function" key, prevent default action
+        });
+        document.addEventListener('keyup', function(event){
+            if(!event.key.startsWith('F')) event.preventDefault()
+            else return;
+            pressedKeys[event.key] = false;
+        });
+
+
+        let canvas = document.getElementById("noisemapTest");
+        //full screen canvas
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let map = new Terrain(0.17);
+        let engine = new BABYLON.Engine(canvas, true, {preserveDrawingBuffer: true, stencil: true});
+        
+        function setupScene() {
+            
+            let scene = new BABYLON.Scene(engine);
+            let camera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 5, -10), scene);
+            camera.minZ = 0.1;
+            scene.metadata = {};
+
+            //add instrumentation- angle of attack, speed, etc
+            let advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+            let text1 = new BABYLON.GUI.TextBlock();
+            text1.text = "Angle of Attack: 0";
+            text1.color = "white";
+            text1.fontSize = 14;
+            text1.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+            text1.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+            advancedTexture.addControl(text1);
+            scene.metadata.hud = text1;
+            //alpha
+            text1.alpha = 0.5;
+
+
+            //top right: low alpha text with controls
+            let text2 = new BABYLON.GUI.TextBlock();
+            text2.text = "Controls:\nWASD: Pitch, Yaw\nQE: Roll\nSpace: Accelerate\nB: Brake\n Angle of Attack above 15° will cause stall";
+            text2.color = "white";
+            text2.fontSize = 14;
+            text2.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+            text2.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+            text2.alpha = 0.5;
+            advancedTexture.addControl(text2);
+            
+            //performance gui element stored in scene.metadata.performance
+            //text element
+            let text3 = new BABYLON.GUI.TextBlock();
+            text3.text = "Performance: 0";
+            text3.color = "white";
+            text3.fontSize = 14;
+            text3.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+            text3.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+            advancedTexture.addControl(text3);
+            scene.metadata.performance = text3;
+            //alpha
+            text3.alpha = 0.5;
+
+
+
+            //directional light
+            let light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0.3, -0.45, -1), scene);
+            light.intensity = 1;
+            //hemispheric light
+            let light2 = new BABYLON.HemisphericLight("HemiLight", new BABYLON.Vector3(0, 1, 0), scene);
+            light2.intensity = 0.4;
+
+            //scene color to black
+            scene.clearColor = new BABYLON.Color3(0, 0, 0);
+            scene.metadata.chunks = [];
+            //generate chunks in y direction
+            
+            scene.metadata.ships = [];
+
+            //use objfileloader to load ship1.obj
+            BABYLON.SceneLoader.ImportMesh("", "./", "ship1.obj", scene, function(newMeshes){
+
+                //material
+                newMeshes[0].material = new BABYLON.StandardMaterial("shipMaterial", scene);
+                newMeshes[0].material.diffuseColor = new BABYLON.Color3(0.4, 0.6, 0.8);
+                newMeshes[0].material.specularColor = new BABYLON.Color3(0, 0, 0);
+                newMeshes[0].material.emissiveColor = new BABYLON.Color3(0.2, 0.4, 0.4);
+                //wireframe
+                newMeshes[0].material.wireframe = true;
+
+
+                //add to scene metadata
+                scene.metadata.ships.push(new Ship(newMeshes[0], scene));
+            });
+
+
+
+
+            return scene;
+        }
+        class Ship {
+            constructor(mesh, scene){
+                this.mesh = mesh;
+                this.rotation = mesh.rotation;
+                this.position = mesh.position;
+                this.velocity = new BABYLON.Vector3(0,0,0.8);
+                this.controls = {
+                    rotationInput: new BABYLON.Vector3(0,0,0),
+                    throttleInput: 0,
+                    brakeInput: 0,
+                };
+                this.engineParticles = new BABYLON.GPUParticleSystem("particles", 2500, scene);
+                this.engineParticles.emitter = this.mesh;
+                //size
+                this.engineParticles.minSize = 0.02;
+                this.engineParticles.maxSize = 0.08;
+                //lifetime
+                this.engineParticles.minLifeTime = 2;
+                this.engineParticles.maxLifeTime = 6;
+                //low divergence of particles, straight beam backwards
+
+
+                //emitrate
+                this.engineParticles.emitRate = 1;
+                //texture particle.bmp
+                this.engineParticles.particleTexture = new BABYLON.Texture("particle.bmp", scene);
+                //direction
+                this.engineParticles.direction1 = new BABYLON.Vector3(-0.1, 0, -0.1);
+                this.engineParticles.direction2 = new BABYLON.Vector3(0.1, 0, 0.1);
+                //update rate
+                this.engineParticles.updateSpeed = 0.01;
+
+                this.engineParticles.start();
+
+
+                //use baking transform to flip ship
+                this.mesh.bakeTransformIntoVertices(BABYLON.Matrix.RotationY(Math.PI));
+                
+                
+                //use setPivotPoint(vec3)
+                this.mesh.setPivotPoint(new BABYLON.Vector3(0,0.9,0));
+            
+
+
+            }
+        }
+
+        function generateChunk(scene,x,y,vertexSerialized){
+            let chunkX = x;
+            let chunkY = y;
+            x=x*chunkSize;
+            y=y*chunkSize;
+            /*
+            let mountains = BABYLON.MeshBuilder.CreateGroundFromHeightMap("mountains", mapStr, {width: chunkSize, height: chunkSize, subdivisions: 60, minHeight: 0, maxHeight: 60, updatable:true}, scene);
+            let mountains2 = BABYLON.MeshBuilder.CreateGroundFromHeightMap("largeGround2", mapStr, {width: chunkSize, height: chunkSize, subdivisions: 60, minHeight: 0, maxHeight: 60}, scene);
+            */
+           //create plane
+            
+            
+            let mountains = BABYLON.MeshBuilder.CreateGround("mountains", {width: chunkSize, height: chunkSize, subdivisions: 15,updatable:true, checkCollisions:true, maxHeight:60}, scene);
+            let mountains2 = BABYLON.MeshBuilder.CreateGround("mountains2", {width: chunkSize, height: chunkSize, subdivisions: 15, updatable:true, maxHeight:60}, scene);
+            
+
+
+            /*
+
+            //sample map.get(x,y) and edit vertices
+            let vertices = mountains.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+            //cycle through all vertices, get their world coords, and sample map (map sampling result multiplied by 70)
+            //create a heightmap manually this way
+            for(let i=0;i<vertices.length;i+=3){
+                let worldPos = new BABYLON.Vector3(vertices[i], vertices[i+1], vertices[i+2]);
+                let mapSample = map.get((worldPos.x+x)*mapScale, (worldPos.z+y)*mapScale);
+                vertices[i+1] = mapSample*60;
+            }
+            */
+
+            //update vertices
+            //parse vertexSerialized, its a serialized vertexData element
+            
+            let vertices = (vertexSerialized);    
+            
+            mountains.updateVerticesData(BABYLON.VertexBuffer.PositionKind, vertices);
+            mountains2.updateVerticesData(BABYLON.VertexBuffer.PositionKind, vertices);
+            mountains.convertToFlatShadedMesh();
+            mountains2.convertToFlatShadedMesh();
+
+
+
+            
+            //purple wireframe for mountains
+            mountains.material = new BABYLON.StandardMaterial("mountainWireframe", scene);
+            mountains.material.wireframe = true;
+            mountains.material.diffuseColor = new BABYLON.Color3(0.5, 0, 0.5);
+            mountains.material.specularColor = new BABYLON.Color3(0, 0.13, 0);
+            mountains.material.alpha = 1;
+            //backface culling
+            mountains.material.backFaceCulling = false;
+            mountains.position.y = -2;
+
+            
+            //second mountains, for occlusion
+            mountains2.material = new BABYLON.StandardMaterial("mountainBlack", scene);
+            mountains2.material.wireframe = false;
+            mountains2.material.diffuseColor = new BABYLON.Color3(0, 0, 0);
+            mountains2.material.specularColor = new BABYLON.Color3(0, 0, 0);
+            mountains2.material.alpha = 1;
+            //backface culling
+            mountains2.material.backFaceCulling = false;
+            mountains2.position.y = -2;
+
+            
+            //add two ground planes- one wireframe, one black opaque to hide everything below
+            let ground = BABYLON.MeshBuilder.CreateGround("ground", {width: chunkSize, height: chunkSize, subdivisions: 15}, scene);
+            ground.material = new BABYLON.StandardMaterial("groundWireframe", scene);
+            ground.material.wireframe = true;
+            ground.material.diffuseColor = new BABYLON.Color3(0.3, 0.87, 0.2);
+            ground.material.specularColor = new BABYLON.Color3(0, 0, 0);
+            ground.material.alpha = 0.5;
+            let ground2 = BABYLON.MeshBuilder.CreateGround("ground2", {width: chunkSize, height: chunkSize, subdivisions: 15}, scene);
+            ground2.material = new BABYLON.StandardMaterial("groundBlack", scene);
+            ground2.material.wireframe = false;
+            ground2.material.diffuseColor = new BABYLON.Color3(0, 0, 0);
+            ground2.material.specularColor = new BABYLON.Color3(0, 0, 0);
+            ground2.material.alpha = 1;
+
+
+            
+
+            //shift all meshes to offset
+            
+            ground.position.x = x;
+            ground.position.z = y-1;
+            ground2.position.x = x;
+            ground2.position.z = y-1;
+            mountains.position.x = x;
+            mountains.position.z = y-1;
+            mountains2.position.x = x;
+            mountains2.position.z = y-1;
+
+            //freeze world matrix
+            ground.freezeWorldMatrix();	
+            ground2.freezeWorldMatrix();
+            mountains.freezeWorldMatrix();
+            mountains2.freezeWorldMatrix();
+            
+            //mesh.doNotSyncBoundingInfo = true for all meshes
+            ground.doNotSyncBoundingInfo = true;
+            ground2.doNotSyncBoundingInfo = true;
+            mountains.doNotSyncBoundingInfo = true;
+            mountains2.doNotSyncBoundingInfo = true;
+
+            
+
+
+
+            //generate a function that disposes of all these
+            let data = {
+                x: chunkX,
+                y: chunkY,
+                dispose: function(){
+                    mountains.dispose();
+                    mountains2.dispose();
+                    ground.dispose();
+                    ground2.dispose();
+                    this.deleted = true;
+                },
+                chunkX: chunkX,
+                chunkY: chunkY,
+                placeholder: false,
+                deleted: false
+            }
+
+            return data;
+        }
+
+
+        
+
+
+        let oldX = 0;
+        let oldDiff = 0;
+        var scene = setupScene();
+        
+        let instrumentation = new BABYLON.SceneInstrumentation(scene);
+        instrumentation.captureFrameTime = true;
+        instrumentation.captureRenderTime = true;
+        instrumentation.captureInterFrameTime = true;
+        
+
+
+        
+
+
+        engine.runRenderLoop(function(){
+        
+        scene.metadata.performance.text = "FPS: " + Math.round(1000/instrumentation.interFrameTimeCounter.current * 100) / 100 + "\n" + "Frame Time: " + Math.round(instrumentation.frameTimeCounter.current * 100) / 100 + "ms" + "\n" + "Render Time: " + Math.round(instrumentation.renderTimeCounter.current * 100) / 100 + "ms" + "\n" + "Interframe Time: " + Math.round(instrumentation.interFrameTimeCounter.current * 100) / 100 + "ms";
+        
+
+
+    
+        //move all ships
+        for(let i = 0; i < scene.metadata.ships.length; i++){
+            let ship = scene.metadata.ships[i];
+            
+            
+                //wasd controls (pressedKeys["key"])
+                //adjust roll, pitch, yaw, make changes in local space
+                let rotationInput = new BABYLON.Vector3(0,0,0);
+                if(pressedKeys["q"]){
+                    rotationInput.z += 0.25;
+                }
+                if(pressedKeys["e"]){
+                    rotationInput.z -= 0.25;
+                }
+                if(pressedKeys["w"]){
+                    rotationInput.x += 0.08;
+                }
+                if(pressedKeys["s"]){
+                    rotationInput.x -= 0.08;
+                }
+                if(pressedKeys["d"]){
+                    rotationInput.y += 0.05;
+                }
+                if(pressedKeys["a"]){
+                    rotationInput.y -= 0.05;
+                }
+                //change thrust input (lerp)
+                let throttleInput = 0;
+                if(pressedKeys[" "]){
+                    throttleInput = 1;
+                }
+                ship.controls.throttleInput = Math.floor(255*((ship.controls.throttleInput*0.85) + (throttleInput*0.15)))/255;
+                //couple particlesystem emission rate to throttle input
+                ship.engineParticles.emitRate = ship.controls.throttleInput*120;
+                //manage start stop state
+                if(ship.controls.throttleInput > 0.1 && !ship.started){
+                    ship.started = true;
+                    ship.engineParticles.start();
+                } else if(ship.controls.throttleInput < 0.1 && ship.started){
+                    ship.started = false;
+                    ship.engineParticles.stop();
+                }
+
+                //same for brakeinput
+                let brakeInput = 0;
+                if(pressedKeys["b"]){
+                    brakeInput = 1;
+                }
+                ship.controls.brakeInput = (ship.controls.brakeInput*0.9) + (brakeInput*0.1);
+                
+
+
+                //rotate ship
+                //check if metadata rotation input exists
+
+
+                //lerp between old rotation input and new rotation input
+                rotationInputLerp = BABYLON.Vector3.Lerp(ship.controls.rotationInput, rotationInput, 0.12);
+                ship.controls.rotationInput = rotationInputLerp.clone();
+                
+                let rotationAmount = rotationInputLerp.length()/4;
+                ship.mesh.rotate(rotationInputLerp.normalize(), rotationAmount, BABYLON.Space.LOCAL);
+                
+
+
+                //lerp between velocity vector and rotation vector, in both ways
+                let angleOfAttack = Math.acos(BABYLON.Vector3.Dot(ship.mesh.forward.normalize(), ship.velocity.clone().normalize()));
+                //if nan, set to 0
+                if(isNaN(angleOfAttack)){
+                    angleOfAttack = 0;
+                }
+
+                let rotationVel = ship.mesh.forward.scale(ship.velocity.length());
+                
+                //wing lift is maximized at 15°, but stalls at 25°
+                let maxLiftAngle = 0.26;
+                let stallAngle = 0.35;
+                let stallSpeed = 0.4;
+                
+                //strength lerps from 0.1 to 1 (at maxLiftAngle) and then to 0.14 (at stallAngle)
+                //use linear interpolation
+                if(angleOfAttack < maxLiftAngle){
+                    //scalar lerp 1
+                    strength = 0.1 + (angleOfAttack/maxLiftAngle)*0.9;
+                } else {
+                    //scalar lerp 2
+                    strength = 1 - ((angleOfAttack-maxLiftAngle)/(stallAngle-maxLiftAngle))*0.86;
+                }
+                strength = strength*0.7;
+
+
+                if(angleOfAttack > stallAngle){
+                    strength = 0.01;
+                }
+                //stall speed is 0.4
+                if(ship.velocity.length() < stallSpeed){
+                    strength *= ship.velocity.length()/stallSpeed;
+                }
+                strength *= 0.55;
+
+
+
+                ship.velocity = BABYLON.Vector3.Lerp(ship.velocity, rotationVel, 0.2*strength);
+                
+                //get angle of attack
+                //if that is high, rotate() ship.mesh to match velocity
+                if(angleOfAttack > 0.06){
+                    let axis = BABYLON.Vector3.Cross(ship.mesh.forward, ship.velocity.clone().normalize());
+                    ship.mesh.rotate(axis, 0.000025, BABYLON.Space.WORLD);
+                }
+                
+                //high angle of attack = high drag
+                let drag = ((angleOfAttack**2)/3*ship.velocity.length()/5)*0.2;
+                //vertical angle of attack = high drag
+
+
+                //add brake input
+                drag += ship.controls.brakeInput*0.006;
+
+                if(ship.velocity.length() > 0.1){
+                    ship.velocity = ship.velocity.scale(1-drag);
+                }
+
+                //apply gravity
+                ship.velocity.y -= 0.002;
+                
+
+                
+                
+                ship.velocity = ship.velocity.add(ship.mesh.forward.scale(ship.controls.throttleInput*0.015));
+                ship.mesh.moveWithCollisions(ship.velocity);
+
+                //draw speed and angle of attack
+                
+            
+
+
+
+
+            if(i==0){
+            //point camera at ship using lookAt
+            scene.activeCamera.setTarget(ship.position);
+            
+            //move camera behind ship, smoothly
+            let cameraOffset = new BABYLON.Vector3(0, 2, -5.4);
+
+            //if camera offset metadata not set, set it
+            if(!scene.metadata.cameraOffset){
+                scene.metadata.cameraOffset = cameraOffset;
+            }
+            //modify camera offset with arrow keys
+            if(pressedKeys["ArrowUp"]){
+                cameraOffset.z += 5;
+                cameraOffset.y += 3;
+            }
+            if(pressedKeys["ArrowDown"]){
+                cameraOffset.z += 5;
+                cameraOffset.y -= 3;
+            }
+            if(pressedKeys["ArrowLeft"]){
+                cameraOffset.x -= 4;
+                cameraOffset.y += 2;
+            }
+            if(pressedKeys["ArrowRight"]){
+                cameraOffset.x += 4;
+                cameraOffset.y += 2;
+            }
+            
+            cameraOffset = BABYLON.Vector3.Lerp(scene.metadata.cameraOffset, cameraOffset, 0.08);
+            
+            scene.metadata.cameraOffset = cameraOffset.clone();
+
+
+            cameraOffsetGlobal = BABYLON.Vector3.TransformCoordinates(cameraOffset, ship.mesh.getWorldMatrix());
+            scene.activeCamera.position = BABYLON.Vector3.Lerp(scene.activeCamera.position, cameraOffsetGlobal, 0.3);
+            
+            //draw flight data
+            let speed = ship.velocity.length();
+            let angleOfAttack = Math.acos(BABYLON.Vector3.Dot(ship.mesh.forward.normalize(), ship.velocity.clone().normalize()));
+            //if nan, set to 0
+            if(isNaN(angleOfAttack)){
+                angleOfAttack = 0;
+            }
+            let angleOfAttackDegrees = angleOfAttack*180/Math.PI;
+            let angleOfAttackDegreesRounded = Math.round(angleOfAttackDegrees*100)/100;
+            let speedRounded = Math.round(speed*120*100)/100;
+            let speedText = "Speed: " + speedRounded + " m/s";
+            let angleOfAttackText = "Angle of Attack: " + angleOfAttackDegreesRounded + "°";
+            let throttleInputText = "Throttle: " + Math.round(ship.controls.throttleInput*100) + "%";
+            //draw text to scene.metadata.hud   
+            scene.metadata.hud.text = speedText + "\n" + angleOfAttackText + "\n" + throttleInputText;
+        
+        
+            //get coordinates and check map.get for collision
+            let mapHeight = 60*map.get(ship.position.x, ship.position.z)-2;
+            mapHeight = Math.max(mapHeight, 0);
+            if(ship.position.y < mapHeight){
+                ship.position.y = mapHeight;
+                ship.velocity.y = 0;
+                //apply strong drag
+                ship.velocity = ship.velocity.scale(0.5);
+                
+            }
+        
+        
+        
+        
+        
+            }
+
+
+
+
+
+        }
+
+     
+        //do the same thing as the chunkID calculations, but scan around the camera, area of 4 chunks
+        let camChunkX = Math.floor(scene.activeCamera.position.x/chunkSize);
+        let camChunkY = Math.floor(scene.activeCamera.position.z/chunkSize);
+        //generate a list of X and Y chunk coordinates that should be loaded
+        let chunkListX = [];
+        let chunkListY = [];
+
+        
+        //offset in the direction of the camera using angle, sin and cos
+        let camOffsetX = Math.round(Math.sin(scene.activeCamera.rotation.y)*renderDistance/3);
+        let camOffsetY = Math.round(Math.cos(scene.activeCamera.rotation.y)*renderDistance/3);
+        
+
+        for(let x = camChunkX-renderDistance+camOffsetX; x <= camChunkX+renderDistance+camOffsetX; x++){
+            for(let y = camChunkY-renderDistance+camOffsetY; y <= camChunkY+renderDistance+camOffsetY; y++){
+                chunkListX.push(x);
+                chunkListY.push(y);
+            }
+        }
+
+
+        //iterate through scene.metadata.chunks, if a chunk is not in chunkList, dispose it
+        for(let i = 0; i < scene.metadata.chunks.length; i++){
+            let chunk = scene.metadata.chunks[i];
+            if(chunk.deleted){
+                //call dispose, remove from array
+                chunk.dispose();
+                scene.metadata.chunks.splice(i,1);
+                continue;
+            }
+            if((!chunkListX.includes(chunk.chunkX) || !chunkListY.includes(chunk.chunkY)) && Math.random()>0.9){
+                chunk.dispose();
+                scene.metadata.chunks.splice(i,1);
+                i--;
+            }
+        }
+        //try generating chunks in chunkList, skip if already generated
+        for(let i = 0; i < chunkListX.length; i++){
+            let chunkX = chunkListX[i];
+            let chunkY = chunkListY[i];
+            let found = false;
+            for(let j = 0; j < scene.metadata.chunks.length; j++){
+                let chunk = scene.metadata.chunks[j];
+                if(chunk.chunkX == chunkX && chunk.chunkY == chunkY){
+                    found = true;
+                    break;
+                }
+            }
+            if(!found&&Math.random()>0.7){
+                generateAsync(scene,chunkX,chunkY);
+            }
+        }
+        
+
+
+
+
+        scene.render();
+        });
+        window.addEventListener('resize', function(){
+            engine.resize();
+        });
+
+        function checkChunkDuplicates(scene){
+            for(let i = 0; i < scene.metadata.chunks.length; i++){
+                let chunk = scene.metadata.chunks[i];
+                for(let j = 0; j < scene.metadata.chunks.length; j++){
+                    if(i == j){
+                        continue;
+                    }
+                    let chunk2 = scene.metadata.chunks[j];
+                    if(chunk.chunkX == chunk2.chunkX && chunk.chunkY == chunk2.chunkY){
+                        console.log("duplicate chunk found");
+                    }
+                }
+            }
+        }
+
+
+        async function generateAsync(scene,x,y){
+
+            let placeholder = {chunkX: x, chunkY: y, x: x, y: y, placeholder: true,deleted:false, dispose: function(){this.deleted = true;}};
+            scene.metadata.chunks.push(placeholder);
+            //replace the placeholder chunk with the generated chunk
+            //check if placeholder is disposed, if so, skip
+
+            let vertexMap = await workerGetMap(x,y);
+            //let map=null;
+            //check if placeholder is disposed, if so, skip
+            if(placeholder.deleted){
+                return;
+            }
+            //check if not placeholder, if so, skip
+            if(!placeholder.placeholder){
+                return;
+            }
+            //search for a chunk with the same coordinates, if its not a placeholder, skip, otherwise, set placeholder to it
+
+            let newChunk = generateChunk(scene, x, y,vertexMap);
+            //set in metadata
+            //search for a chunk with the same coordinates, if its not a placeholder, skip, otherwise, set placeholder to it
+            for(let i = 0; i < scene.metadata.chunks.length; i++){
+                let chunk = scene.metadata.chunks[i];
+                if(chunk.chunkX == x && chunk.chunkY == y){
+                    if(!chunk.placeholder){
+                        return;
+                    }
+                    //splice and delete placeholder, insert new chunk
+                    scene.metadata.chunks.splice(i,1,newChunk);
+                    return;
+
+                }
+            }
+
+        }
+        
+        let workerJobs = [];
+
+        async function workerGetMap(x,y){
+            //create a promise
+            return new Promise(function(resolve, reject){
+                //create a worker
+                //create a job object
+                let job = {x: x, y: y, worker: terrainWorker, resolve: resolve, reject: reject};
+                //push job to workerJobs
+                workerJobs.push(job);
+                //send job to worker
+                terrainWorker.postMessage({type: "map", x: x, y: y});
+            });
+        }
+
+        terrainWorker.onmessage = function(e){
+            //find the job that matches the worker
+            for(let i = 0; i < workerJobs.length; i++){
+                let job = workerJobs[i];
+
+                if(job.worker == e.target && job.x == e.data.x && job.y == e.data.y){
+                    //resolve the promise
+                    //read mapstr (its a blob)
+                    let mapBlob = e.data.mapStr;
+                    job.resolve(mapBlob);
+
+                    //remove the job from workerJobs
+                    workerJobs.splice(i, 1);
+                }
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+        
+        //hide scrollbars
+        document.body.style.overflow = 'hidden';
+        //also hide cursor
+        document.body.style.cursor = 'none';
+        //hide left side image gap
+        document.body.style.margin = '0px';
+
+        //loop background music "phasing_through.ogg"
+        let bgm = new Audio("./Phasing_through.ogg");
+        bgm.loop = true;
+        //on keypress, play bgm
+        document.addEventListener('keydown', function(){
+            bgm.play();
+        });        
+
+
+
+    </script>
 </html>
