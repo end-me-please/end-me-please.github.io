@@ -2,6 +2,7 @@
     <head>
         <script src="./heightmap.js"></script>
         <script src="https://cdn.babylonjs.com/babylon.js"></script>
+        <script src="https://cdn.babylonjs.com/loaders/babylon.objFileLoader.js"></script>
     </head>
     
     <body>
@@ -18,11 +19,12 @@
     </body>
     <script>
         let pressedKeys = {};
-        let chunks = [];
-        const chunkSize = 150;
+        const chunkSize = 32;
         const mapScale = 1;
         const pathScale = 1;
-        
+        let autopilot = false;
+        let terrainWorker = new Worker('./terrainWorker.js');
+
         document.addEventListener('keydown', function(event){
             if(!event.key.startsWith('F')) event.preventDefault()
             else return;
@@ -36,45 +38,78 @@
             pressedKeys[event.key] = false;
         });
 
+
         let canvas = document.getElementById("noisemapTest");
         //full screen canvas
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        let map = new NoiseMap(0.072);
+        let map = new Terrain(0.31);
         let engine = new BABYLON.Engine(canvas, true, {preserveDrawingBuffer: true, stencil: true});
 
         function setupScene() {
             let scene = new BABYLON.Scene(engine);
             let camera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 5, -10), scene);
-            //camera.setTarget(BABYLON.Vector3.Zero());
-            camera.attachControl(canvas, false);
-
             //directional light
-            let light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(-0.3, -0.4, -1), scene);
+            let light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0.3, -0.45, -1), scene);
             light.intensity = 1;
             //hemispheric light
             let light2 = new BABYLON.HemisphericLight("HemiLight", new BABYLON.Vector3(0, 1, 0), scene);
-            light2.intensity = 0.3;
+            light2.intensity = 0.4;
 
             //scene color to black
             scene.clearColor = new BABYLON.Color3(0, 0, 0);
+            scene.metadata = {};
+            scene.metadata.chunks = [];
+            //generate chunks in y direction
             
-            //generate chunks, from x=0 to x=300, 100 size
-            for(let x = 0; x < 1200; x+=chunkSize){
-                    chunks.push(generateChunk(scene,0,x*0.99));
+            scene.metadata.ships = [];
 
-            }
-            
+            //use objfileloader to load ship1.obj
+            BABYLON.SceneLoader.ImportMesh("", "./", "ship1.obj", scene, function(newMeshes){
+
+                //material
+                newMeshes[0].material = new BABYLON.StandardMaterial("shipMaterial", scene);
+                newMeshes[0].material.diffuseColor = new BABYLON.Color3(0.4, 0.6, 0.8);
+                newMeshes[0].material.specularColor = new BABYLON.Color3(0, 0, 0);
+                newMeshes[0].material.emissiveColor = new BABYLON.Color3(0.2, 0.4, 0.4);
+                //wireframe
+                newMeshes[0].material.wireframe = true;
+
+
+                //add to scene metadata
+                scene.metadata.ships.push(new Ship(newMeshes[0]));
+            });
+
 
 
 
             return scene;
         }
+        class Ship {
+            constructor(mesh){
+                this.mesh = mesh;
+                this.rotation = mesh.rotation;
+                this.position = mesh.position;
+                this.velocity = new BABYLON.Vector3(0,0,0.8);
+                //use baking transform to flip ship
+                this.mesh.bakeTransformIntoVertices(BABYLON.Matrix.RotationY(Math.PI));
+                
+                
+                //use setPivotPoint(vec3)
+                this.mesh.setPivotPoint(new BABYLON.Vector3(0,0.9,0));
+            
 
-        function generateChunk(scene,x,y){
 
-            let mountains = BABYLON.MeshBuilder.CreateGroundFromHeightMap("largeGround", getMap(x,y), {width: chunkSize, height: chunkSize, subdivisions: 80, minHeight: 0, maxHeight: 30}, scene);
+            }
+        }
+
+        function generateChunk(scene,x,y,mapStr){
+            let chunkX = x;
+            let chunkY = y;
+            x=x*chunkSize;
+            y=y*chunkSize;
+            let mountains = BABYLON.MeshBuilder.CreateGroundFromHeightMap("largeGround", mapStr, {width: chunkSize, height: chunkSize, subdivisions: 60, minHeight: 0, maxHeight: 60}, scene);
             //purple wireframe for mountains
             mountains.material = new BABYLON.StandardMaterial("mountainWireframe", scene);
             mountains.material.wireframe = true;
@@ -83,9 +118,12 @@
 
             mountains.material.alpha = 1;
             //move down
-            mountains.position.y -= 7;
+            mountains.position.y -= 2;
             //second mountains, for occlusion
-            let mountains2 = BABYLON.MeshBuilder.CreateGroundFromHeightMap("largeGround", getMap(x,y), {width: chunkSize, height: chunkSize, subdivisions: 80, minHeight: 0, maxHeight: 30}, scene);
+            //clone mountains
+            let mountains2 = mountains.clone("mountains2");
+
+            //let mountains2 = BABYLON.MeshBuilder.CreateGroundFromHeightMap("largeGround", mapStr, {width: chunkSize, height: chunkSize, subdivisions: 60, minHeight: 0, maxHeight: 60}, scene);
             //black/opaque for occlusion
             mountains2.material = new BABYLON.StandardMaterial("mountainBlack", scene);
             mountains2.material.wireframe = false;
@@ -93,7 +131,7 @@
             mountains2.material.specularColor = new BABYLON.Color3(0, 0, 0);
             mountains2.material.alpha = 1;
             //move down
-            mountains2.position.y -= 7;
+            mountains2.position.y -= 2;
 
             
             //add two ground planes- one wireframe, one black opaque to hide everything below
@@ -111,162 +149,364 @@
             ground2.material.alpha = 1;
 
 
-            let boulderMaterial = new BABYLON.StandardMaterial("boulderMat", scene);
-            boulderMaterial.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.5);
-            boulderMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
-            boulderMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0.1);
-            boulderMaterial.alpha = 1;
-            boulderMaterial.wireframe = true;
-            
-            let boulders = [];
-            for(let i = 0; i < 8; i++) {
-            //probe a random position to check if a boulder can be placed there
-            //mountain value at the target should be below 7
-            //placement should be at 7
-            let x = Math.random() * chunkSize;
-            let y = Math.random() * chunkSize;
-            
-
-            let z = 1;
-            let target = mountains2.getHeightAtCoordinates(x, y);
-            if(target < 0) {
-                let boulder = BABYLON.MeshBuilder.CreateSphere("boulder", {diameter: 2, segments: 2}, scene);
-                boulder.position.x = x;
-                boulder.position.y = 0.5;
-                boulder.position.z = y;
-                boulder.material = boulderMaterial;
-                boulders.push(boulder);
-                
-
-            }
-
-            }
-
 
 
             //shift all meshes to offset
             mountains.position.x += x;
-            mountains.position.z += y;
+            mountains.position.z += y-1;
             mountains2.position.x += x;
-            mountains2.position.z += y;
+            mountains2.position.z += y-1;
             ground.position.x += x;
-            ground.position.z += y;
+            ground.position.z += y-1;
             ground2.position.x += x;
-            ground2.position.z += y;
+            ground2.position.z += y-1;
             
-            //shift boulders
-            for(let i = 0; i < boulders.length; i++) {
-                boulders[i].position.x += x;
-                boulders[i].position.z += y;
-            }
-
 
             //generate a function that disposes of all these
             let data = {
-                x: x,
-                y: y,
+                x: chunkX,
+                y: chunkY,
                 dispose: function(){
                     mountains.dispose();
                     mountains2.dispose();
                     ground.dispose();
                     ground2.dispose();
-                    for(let i = 0; i < boulders.length; i++) {
-                        boulders[i].dispose();
-                    }
-                }
+                    this.deleted = true;
+                },
+                chunkX: chunkX,
+                chunkY: chunkY,
+                placeholder: false,
+                deleted: false
             }
 
             return data;
         }
 
 
-
+        
 
 
         let oldX = 0;
         let oldDiff = 0;
         var scene = setupScene();
         engine.runRenderLoop(function(){
-        /*
-        //read pressed keys, move cam
-        let horizontal = 0;
-        let vertical = 0;
-        //rewrite with switch statement
-        if(pressedKeys['a']) vertical += 1;
-        if(pressedKeys['d']) vertical -= 1;
-        if(pressedKeys['s']) horizontal -= 1;
-        if(pressedKeys['w']) horizontal += 1;
-        if(pressedKeys['q']) scene.activeCamera.position.y -= 0.1;
-        if(pressedKeys['e']) scene.activeCamera.position.y += 0.1;
-        let speed = 0.1;
-        //if shift is pressed, move faster
-        if(pressedKeys['Shift']) speed = 0.4;
         
         
-        //adjust to camera rotation
-        let cam = scene.activeCamera;
-        let camRotation = cam.rotation.y;
-        let camCos = Math.sin(camRotation);
-        let camSin = Math.cos(camRotation);
-        let adjustedHorizontal = horizontal * camCos - vertical * camSin;
-        let adjustedVertical = horizontal * camSin + vertical * camCos;
+        //move all ships
+        for(let i = 0; i < scene.metadata.ships.length; i++){
+            let ship = scene.metadata.ships[i];
+            
+            if(autopilot || i != 0) {
+            let shipY = ship.position.z;
+            let path = getPath((shipY-50));
+            //move ship to path
+            ship.position.x = path*chunkSize/2;
+            let diff = ship.position.x - oldX;
+            oldX = ship.position.x;
+            let diff2 = diff - oldDiff;
+            oldDiff = diff;
+            //adjust roll
+            ship.rotation.z = -diff2*5;
+            //adjust yaw
+            ship.rotation.y = diff/3;
+            ship.position.z += 2;
+            } else {
+                //wasd controls (pressedKeys["key"])
+                //adjust roll, pitch, yaw, make changes in local space
+                let rotationInput = new BABYLON.Vector3(0,0,0);
+                if(pressedKeys["q"]){
+                    rotationInput.z += 0.25;
+                }
+                if(pressedKeys["e"]){
+                    rotationInput.z -= 0.25;
+                }
+                if(pressedKeys["w"]){
+                    rotationInput.x += 0.08;
+                }
+                if(pressedKeys["s"]){
+                    rotationInput.x -= 0.08;
+                }
+                if(pressedKeys["d"]){
+                    rotationInput.y += 0.05;
+                }
+                if(pressedKeys["a"]){
+                    rotationInput.y -= 0.05;
+                }
+                //rotate ship
+                //check if metadata rotation input exists
+                if(!scene.metadata.rotationInput){
+                    scene.metadata.rotationInput = new BABYLON.Vector3(0,0,0);
+                }
+                //lerp between old rotation input and new rotation input
+                rotationInputLerp = BABYLON.Vector3.Lerp(scene.metadata.rotationInput, rotationInput, 0.12);
+                scene.metadata.rotationInput = rotationInputLerp.clone();
+                
+                let rotationAmount = rotationInputLerp.length()/4;
+                ship.mesh.rotate(rotationInput.normalize(), rotationAmount, BABYLON.Space.LOCAL);
+                
 
-        //move camera
-        cam.position.x += adjustedHorizontal * speed;
-        cam.position.z += adjustedVertical * speed;
 
-        */
+                //lerp between velocity vector and rotation vector, in both ways
+                let angleOfAttack = Math.acos(BABYLON.Vector3.Dot(ship.mesh.forward.normalize(), ship.velocity.clone().normalize()));
+                //if nan, set to 0
+                if(isNaN(angleOfAttack)){
+                    angleOfAttack = 0;
+                }
+
+                let rotationVel = ship.mesh.forward.scale(ship.velocity.length());
+                
+                //wing lift is maximized at 15°, but stalls at 25°
+                let maxLiftAngle = 0.26;
+                let stallAngle = 0.35;
+                let stallSpeed = 0.4;
+                
+                //strength lerps from 0.1 to 1 (at maxLiftAngle) and then to 0.14 (at stallAngle)
+                //use linear interpolation
+                if(angleOfAttack < maxLiftAngle){
+                    //scalar lerp 1
+                    strength = 0.1 + (angleOfAttack/maxLiftAngle)*0.9;
+                } else {
+                    //scalar lerp 2
+                    strength = 1 - ((angleOfAttack-maxLiftAngle)/(stallAngle-maxLiftAngle))*0.86;
+                }
+                strength = strength*0.7;
 
 
-        //increment camera y
+                if(angleOfAttack > stallAngle){
+                    strength = 0.01;
+                }
+                //stall speed is 0.4
+                if(ship.velocity.length() < stallSpeed){
+                    strength *= ship.velocity.length()/stallSpeed;
+                }
+                strength *= 0.5;
 
 
-        //get path
-        
-        let cameraY = scene.activeCamera.position.z;
-        let path = getPath((cameraY-50));
 
-        //move camera to path
-        scene.activeCamera.position.x = path*chunkSize/2;
-        let diff = scene.activeCamera.position.x - oldX;
-        oldX = scene.activeCamera.position.x;
-        let diff2 = diff - oldDiff;
-        oldDiff = diff;
-        //adjust roll
-        scene.activeCamera.rotation.z = -diff2*5;
-        //adjust yaw
-        scene.activeCamera.rotation.y = diff/3;
+                ship.velocity = BABYLON.Vector3.Lerp(ship.velocity, rotationVel, 0.2*strength);
+                
+                //get angle of attack
+                //if that is high, rotate() ship.mesh to match velocity
+                if(angleOfAttack > 0.06){
+                    let axis = BABYLON.Vector3.Cross(ship.mesh.forward, ship.velocity.clone().normalize());
+                    ship.mesh.rotate(axis, 0.00001, BABYLON.Space.WORLD);
+                }
+                
+                //high angle of attack = high drag
+                let drag = ((angleOfAttack**2)/3*ship.velocity.length()/5)*0.2;
+
+                if(ship.velocity.length() > 0.8){
+                    ship.velocity = ship.velocity.scale(1-drag);
+                }
+
+                //apply gravity
+                ship.velocity.y -= 0.002;
+                
+
+                
+                //move ship forward
+                let thrust = 0;
+                if(pressedKeys[" "]){
+                    thrust = 0.013;
+                }
+                ship.velocity = ship.velocity.add(ship.mesh.forward.scale(thrust));
+                ship.mesh.moveWithCollisions(ship.velocity);
+
+                //draw speed and angle of attack
+                
+            }
 
 
-        //if camera is too far ahead, generate new chunks. read latest chunk, generate new chunk at x=latestChunk+chunkSize
-        let latestChunk = chunks[chunks.length-1];
-        //if less than 3 chunks ahead, generate new chunk
-        if(latestChunk.y < scene.activeCamera.position.z + 300){
-            //generate new chunk
-            let newChunk = generateChunk(scene, 0, (latestChunk.y+chunkSize-5));
-            chunks.push(newChunk);
-            //dispose of old chunk
-            chunks[0].dispose();
-            chunks.shift();
+
+
+            if(i==0){
+            //point camera at ship using lookAt
+            scene.activeCamera.setTarget(ship.position);
+            
+            //move camera behind ship, smoothly
+            let cameraOffset = new BABYLON.Vector3(0, 2, -5.4);
+
+            //if camera offset metadata not set, set it
+            if(!scene.metadata.cameraOffset){
+                scene.metadata.cameraOffset = cameraOffset;
+            }
+            //modify camera offset with arrow keys
+            if(pressedKeys["ArrowUp"]){
+                cameraOffset.z += 5;
+                cameraOffset.y += 3;
+            }
+            if(pressedKeys["ArrowDown"]){
+                cameraOffset.z += 5;
+                cameraOffset.y -= 3;
+            }
+            if(pressedKeys["ArrowLeft"]){
+                cameraOffset.x -= 4;
+                cameraOffset.y += 2;
+            }
+            if(pressedKeys["ArrowRight"]){
+                cameraOffset.x += 4;
+                cameraOffset.y += 2;
+            }
+            
+            cameraOffset = BABYLON.Vector3.Lerp(scene.metadata.cameraOffset, cameraOffset, 0.08);
+            
+            scene.metadata.cameraOffset = cameraOffset.clone();
+
+
+            cameraOffsetGlobal = BABYLON.Vector3.TransformCoordinates(cameraOffset, ship.mesh.getWorldMatrix());
+            scene.activeCamera.position = BABYLON.Vector3.Lerp(scene.activeCamera.position, cameraOffsetGlobal, 0.3);
+            
+            //move slightly higher
+
+            }
         }
-        scene.activeCamera.position.z += pressedKeys['w'] ? 3 : 2;
-        //move all particle systems
-        for(let i = 0; i < scene.particleSystems.length; i++){
-            scene.particleSystems[i].worldOffset = scene.activeCamera.position.clone();
-            scene.particleSystems[i].worldOffset.z += 40;
-            scene.particleSystems[i].worldOffset.x += 13;
-            scene.particleSystems[i].worldOffset.y = 19;
+
+     
+        //do the same thing as the chunkID calculations, but scan around the camera, area of 4 chunks
+        let camChunkX = Math.floor(scene.activeCamera.position.x/chunkSize);
+        let camChunkY = Math.floor(scene.activeCamera.position.z/chunkSize);
+        //generate a list of X and Y chunk coordinates that should be loaded
+        let chunkListX = [];
+        let chunkListY = [];
+
+        for(let x = camChunkX-5; x <= camChunkX+5; x++){
+            for(let y = camChunkY-5; y <= camChunkY+5; y++){
+                chunkListX.push(x);
+                chunkListY.push(y);
+            }
+        }
+
+        //iterate through scene.metadata.chunks, if a chunk is not in chunkList, dispose it
+        for(let i = 0; i < scene.metadata.chunks.length; i++){
+            let chunk = scene.metadata.chunks[i];
+            if(chunk.deleted){
+                //call dispose, remove from array
+                chunk.dispose();
+                scene.metadata.chunks.splice(i,1);
+                continue;
+            }
+            if(!chunkListX.includes(chunk.chunkX) || !chunkListY.includes(chunk.chunkY)){
+                chunk.dispose();
+                scene.metadata.chunks.splice(i,1);
+                i--;
+            }
+        }
+        //try generating chunks in chunkList, skip if already generated
+        for(let i = 0; i < chunkListX.length; i++){
+            let chunkX = chunkListX[i];
+            let chunkY = chunkListY[i];
+            let found = false;
+            for(let j = 0; j < scene.metadata.chunks.length; j++){
+                let chunk = scene.metadata.chunks[j];
+                if(chunk.chunkX == chunkX && chunk.chunkY == chunkY){
+                    found = true;
+                    break;
+                }
+            }
+            if(!found&&Math.random()<0.1){
+                generateAsync(scene,chunkX,chunkY);
+            }
         }
         
-
         scene.render();
         });
         window.addEventListener('resize', function(){
             engine.resize();
         });
 
+        function checkChunkDuplicates(scene){
+            for(let i = 0; i < scene.metadata.chunks.length; i++){
+                let chunk = scene.metadata.chunks[i];
+                for(let j = 0; j < scene.metadata.chunks.length; j++){
+                    if(i == j){
+                        continue;
+                    }
+                    let chunk2 = scene.metadata.chunks[j];
+                    if(chunk.chunkX == chunk2.chunkX && chunk.chunkY == chunk2.chunkY){
+                        console.log("duplicate chunk found");
+                    }
+                }
+            }
+        }
+
+
+        async function generateAsync(scene,x,y){
+
+            let placeholder = {chunkX: x, chunkY: y, x: x, y: y, placeholder: true,deleted:false, dispose: function(){this.deleted = true;}};
+            scene.metadata.chunks.push(placeholder);
+            //replace the placeholder chunk with the generated chunk
+            //check if placeholder is disposed, if so, skip
+
+            let map = await workerGetMap(x*chunkSize,y*chunkSize);
+            //check if placeholder is disposed, if so, skip
+            if(placeholder.deleted){
+                return;
+            }
+            //check if not placeholder, if so, skip
+            if(!placeholder.placeholder){
+                return;
+            }
+            //search for a chunk with the same coordinates, if its not a placeholder, skip, otherwise, set placeholder to it
+
+            let newChunk = generateChunk(scene, x, y,map);
+            //set in metadata
+            //search for a chunk with the same coordinates, if its not a placeholder, skip, otherwise, set placeholder to it
+            for(let i = 0; i < scene.metadata.chunks.length; i++){
+                let chunk = scene.metadata.chunks[i];
+                if(chunk.chunkX == x && chunk.chunkY == y){
+                    if(!chunk.placeholder){
+                        return;
+                    }
+                    //splice and delete placeholder, insert new chunk
+                    scene.metadata.chunks.splice(i,1,newChunk);
+                    return;
+
+                }
+            }
+
+        }
+        
+        let workerJobs = [];
+
+        async function workerGetMap(x,y){
+            //create a promise
+            return new Promise(function(resolve, reject){
+                //create a worker
+                //create a job object
+                let job = {x: x, y: y, worker: terrainWorker, resolve: resolve, reject: reject};
+                //push job to workerJobs
+                workerJobs.push(job);
+                //send job to worker
+                terrainWorker.postMessage({type: "map", x: x, y: y});
+            });
+        }
+
+        terrainWorker.onmessage = function(e){
+            //find the job that matches the worker
+            for(let i = 0; i < workerJobs.length; i++){
+                let job = workerJobs[i];
+
+                if(job.worker == e.target){
+                    //resolve the promise
+                    //read mapstr (its a blob)
+                    let mapBlob = e.data.mapStr;
+                    job.resolve(mapBlob);
+
+                    //remove the job from workerJobs
+                    workerJobs.splice(i, 1);
+                }
+            }
+        }
+
+
+
+
+
+
 
         function getMap(xoff, yoff){
+            xoff = Math.abs(xoff);
+            yoff = Math.abs(yoff);
             let width=chunkSize*mapScale;
             let height=chunkSize*mapScale;
             let heightmap = new ImageData(width, height);
@@ -275,54 +515,13 @@
             //generate a texture with a width and height of chunkSize * mapScale, filled with noise
             for(let x = 0; x < width; x++){
                 for(let y = 0; y < height; y++){
-                    //convert to fractional chunk coordinates
-                    let fx = x / width;
-                    let fy = y / height;
-                    let offXf = xoff;
-                    let offYf = yoff;
-                    
+                    let fx = x + xoff;
+                    let fy = y + yoff;
                     //get noise value
-                    let value = map.get(fx*chunkSize - offXf, fy*chunkSize - offYf);
+                    let value = map.get(fx, fy);
                     //convert to 0-255
                     value = Math.floor(value * 255);
-                    //value = 255;
-                    //get path from fy+offYf
-                    let path = getPath((fy*chunkSize)-(offYf));
-                    let path2 = getPath2((fy*chunkSize)-(offYf));
-                    let path3 = getPath3((fy*chunkSize)-(offYf));
-                    let targetX = path*chunkSize/2+chunkSize/2;
-                    let targetX2 = path2*chunkSize/2+chunkSize/2;
-                    let targetX3 = path3*chunkSize/2+chunkSize/2;
-                    let distance = Math.abs(targetX - (fx*chunkSize - offXf));
-                    let distance2 = Math.abs(targetX2 - (fx*chunkSize - offXf));
-                    let distance3 = Math.abs(targetX3 - (fx*chunkSize - offXf));
-                    //compare them
-                    distance = Math.min(distance, distance2, distance3);
-                    
-
-
-                    //if distance is less than 10, set value to 0
-                    if(distance < chunkSize/12){
-                        value *= distance/(chunkSize/12);
-                    }
-                    if(distance < 25){
-                        value *= 0.8;
-                    }
-                    if(distance < 15){
-                        value *= 0.6;
-                    }
-
-                    //if less than chunkSize/24, set value to 0
-
-                    if(distance < chunkSize/24){
-                        //cap value to 25 max
-                        value = 0;
-                    } 
-                    
-                    let biome = 0.25+(Math.sin(yoff/2000)*0.5)+0.85;
-                    value *= biome;
-
-                    
+                    //set image data
                     let cell = (x + y * width) * 4;
                     heightmap.data[cell] = value;
                     heightmap.data[cell+1] = value;
@@ -330,20 +529,40 @@
                     heightmap.data[cell+3] = 255;
                 }
             }
-            
-
-
-
-            //append new canvas to body
+            //create offscreen canvas
             let canv = document.createElement('canvas');
             canv.width = heightmap.width;
             canv.height = heightmap.height;
             //draw heightmap to canvas
             let ctx = canv.getContext('2d');
             ctx.putImageData(heightmap, 0, 0);
-            let displacementMap = canv.toDataURL();
-            return displacementMap;
+            //return canvas todataurl
+            return canv.toDataURL("image/jpeg", 0.2);
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         
         function getPath(y){
             return (Math.sin((y/chunkSize)/(1*pathScale))*Math.sin((y/chunkSize)/(3*pathScale))) * 0.65;
