@@ -21,7 +21,7 @@
     <script>
         let pressedKeys = {};
         const chunkSize = 54;
-        const renderDistance = 7;
+        const renderDistance = 9;
         const mapScale = 1;
 
         let terrainWorker = new Worker('./terrainWorker.js');
@@ -45,7 +45,7 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        let map = new Terrain(0.17);
+        let map = new Terrain(0.2);
         let engine = new BABYLON.Engine(canvas, true, {preserveDrawingBuffer: true, stencil: true});
         
         function setupScene() {
@@ -384,7 +384,9 @@
 
                 //rotate ship
                 //check if metadata rotation input exists
-
+                
+                //yaw affects roll slightly
+                
 
                 //lerp between old rotation input and new rotation input
                 rotationInputLerp = BABYLON.Vector3.Lerp(ship.controls.rotationInput, rotationInput, 0.12);
@@ -555,13 +557,10 @@
         let chunkListY = [];
 
         
-        //offset in the direction of the camera using angle, sin and cos
-        let camOffsetX = Math.round(Math.sin(scene.activeCamera.rotation.y)*renderDistance/3);
-        let camOffsetY = Math.round(Math.cos(scene.activeCamera.rotation.y)*renderDistance/3);
-        
 
-        for(let x = camChunkX-renderDistance+camOffsetX; x <= camChunkX+renderDistance+camOffsetX; x++){
-            for(let y = camChunkY-renderDistance+camOffsetY; y <= camChunkY+renderDistance+camOffsetY; y++){
+
+        for(let x = camChunkX-renderDistance; x <= camChunkX+renderDistance; x++){
+            for(let y = camChunkY-renderDistance; y <= camChunkY+renderDistance; y++){
                 chunkListX.push(x);
                 chunkListY.push(y);
             }

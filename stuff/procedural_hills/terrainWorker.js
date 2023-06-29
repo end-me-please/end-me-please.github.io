@@ -8,7 +8,7 @@ importScripts('https://cdn.babylonjs.com/babylon.js');
 const chunkSize = 54;
 const mapScale = 1;
 
-let terrainMap = new Terrain(0.17)
+let terrainMap = new Terrain(0.2)
 
 
 
