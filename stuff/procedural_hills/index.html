@@ -188,8 +188,8 @@
            //create plane
             
             
-            let mountains = BABYLON.MeshBuilder.CreateGround("mountains", {width: chunkSize, height: chunkSize, subdivisions: 60,updatable:true, checkCollisions:true, maxHeight:60}, scene);
-            let mountains2 = BABYLON.MeshBuilder.CreateGround("mountains2", {width: chunkSize, height: chunkSize, subdivisions: 60, updatable:true, maxHeight:60}, scene);
+            let mountains = BABYLON.MeshBuilder.CreateGround("mountains", {width: chunkSize, height: chunkSize, subdivisions: 15,updatable:true, checkCollisions:true, maxHeight:60}, scene);
+            let mountains2 = BABYLON.MeshBuilder.CreateGround("mountains2", {width: chunkSize, height: chunkSize, subdivisions: 15, updatable:true, maxHeight:60}, scene);
             
 
 
@@ -213,7 +213,8 @@
             
             mountains.updateVerticesData(BABYLON.VertexBuffer.PositionKind, vertices);
             mountains2.updateVerticesData(BABYLON.VertexBuffer.PositionKind, vertices);
-
+            mountains.convertToFlatShadedMesh();
+            mountains2.convertToFlatShadedMesh();
 
 
 
@@ -241,13 +242,13 @@
 
             
             //add two ground planes- one wireframe, one black opaque to hide everything below
-            let ground = BABYLON.MeshBuilder.CreateGround("ground", {width: chunkSize, height: chunkSize, subdivisions: 35}, scene);
+            let ground = BABYLON.MeshBuilder.CreateGround("ground", {width: chunkSize, height: chunkSize, subdivisions: 15}, scene);
             ground.material = new BABYLON.StandardMaterial("groundWireframe", scene);
             ground.material.wireframe = true;
             ground.material.diffuseColor = new BABYLON.Color3(0.3, 0.87, 0.2);
             ground.material.specularColor = new BABYLON.Color3(0, 0, 0);
             ground.material.alpha = 0.5;
-            let ground2 = BABYLON.MeshBuilder.CreateGround("ground2", {width: chunkSize, height: chunkSize, subdivisions: 35}, scene);
+            let ground2 = BABYLON.MeshBuilder.CreateGround("ground2", {width: chunkSize, height: chunkSize, subdivisions: 15}, scene);
             ground2.material = new BABYLON.StandardMaterial("groundBlack", scene);
             ground2.material.wireframe = false;
             ground2.material.diffuseColor = new BABYLON.Color3(0, 0, 0);
@@ -274,7 +275,12 @@
             mountains.freezeWorldMatrix();
             mountains2.freezeWorldMatrix();
             
-            //mesh.doNotSyncBoundingInfo = true;
+            //mesh.doNotSyncBoundingInfo = true for all meshes
+            ground.doNotSyncBoundingInfo = true;
+            ground2.doNotSyncBoundingInfo = true;
+            mountains.doNotSyncBoundingInfo = true;
+            mountains2.doNotSyncBoundingInfo = true;
+
             
 
 

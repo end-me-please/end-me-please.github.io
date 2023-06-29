@@ -46,7 +46,7 @@ function getMap(chunkX, chunkY){
     
     let x = chunkX*chunkSize;
     let y = chunkY*chunkSize;
-    let mountains = BABYLON.MeshBuilder.CreateGround("mountains", {width: chunkSize, height: chunkSize, subdivisions: 60,updatable:true, maxHeight:60}, scene);
+    let mountains = BABYLON.MeshBuilder.CreateGround("mountains", {width: chunkSize, height: chunkSize, subdivisions: 15,updatable:true, maxHeight:60}, scene);
     let vertices = mountains.getVerticesData(BABYLON.VertexBuffer.PositionKind);
     for(let i=0;i<vertices.length;i+=3){
         let worldPos = new BABYLON.Vector3(vertices[i], vertices[i+1], vertices[i+2]);
