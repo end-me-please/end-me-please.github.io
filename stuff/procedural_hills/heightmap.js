@@ -32,8 +32,10 @@ class NoiseMap {
     }
 
     random(x,y){
+
         let seed = x * 10000 + y;
         let rand = Math.sin(seed) * 10000;
+        
         return rand - Math.floor(rand);
         
     }
@@ -65,6 +67,7 @@ class Terrain {
 
     }
     get(x,y){
+        //return this.noiseMapRough.get(x,y);
         //get the height at a point
         let detail = this.noiseMapDetail.get(x,y);
         let rough = this.noiseMapRough.get(x,y)**3;

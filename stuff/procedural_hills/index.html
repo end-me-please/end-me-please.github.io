@@ -21,9 +21,9 @@
     <script>
         let pressedKeys = {};
         const chunkSize = 64;
-        const renderDistance = 5;
+        const renderDistance = 8;
         const mapScale = 1;
-        const pathScale = 1;
+
         let autopilot = false;
         let terrainWorker = new Worker('./terrainWorker.js');
 
@@ -151,7 +151,7 @@
             }
         }
 
-        function generateChunk(scene,x,y,mapStr){
+        function generateChunk(scene,x,y,vertexSerialized){
             let chunkX = x;
             let chunkY = y;
             x=x*chunkSize;
@@ -161,29 +161,33 @@
             let mountains2 = BABYLON.MeshBuilder.CreateGroundFromHeightMap("largeGround2", mapStr, {width: chunkSize, height: chunkSize, subdivisions: 60, minHeight: 0, maxHeight: 60}, scene);
             */
            //create plane
-            let mountains = BABYLON.MeshBuilder.CreateGround("mountains", {width: chunkSize, height: chunkSize, subdivisions: 60,updatable:true, maxHeight:60}, scene);
+            
+            
+            let mountains = BABYLON.MeshBuilder.CreateGround("mountains", {width: chunkSize, height: chunkSize, subdivisions: 60,updatable:true, checkCollisions:true, maxHeight:60}, scene);
             let mountains2 = BABYLON.MeshBuilder.CreateGround("mountains2", {width: chunkSize, height: chunkSize, subdivisions: 60, updatable:true, maxHeight:60}, scene);
-            //
-
             
 
 
+            /*
 
             //sample map.get(x,y) and edit vertices
             let vertices = mountains.getVerticesData(BABYLON.VertexBuffer.PositionKind);
-            let vertices2 = mountains2.getVerticesData(BABYLON.VertexBuffer.PositionKind);
             //cycle through all vertices, get their world coords, and sample map (map sampling result multiplied by 70)
             //create a heightmap manually this way
             for(let i=0;i<vertices.length;i+=3){
                 let worldPos = new BABYLON.Vector3(vertices[i], vertices[i+1], vertices[i+2]);
-                let worldPos2 = new BABYLON.Vector3(vertices2[i], vertices2[i+1], vertices2[i+2]);
                 let mapSample = map.get((worldPos.x+x)*mapScale, (worldPos.z+y)*mapScale);
                 vertices[i+1] = mapSample*60;
-                vertices2[i+1] = mapSample*60;
             }
+            */
 
+            //update vertices
+            //parse vertexSerialized, its a serialized vertexData element
+            
+            let vertices = (vertexSerialized);    
+            
             mountains.updateVerticesData(BABYLON.VertexBuffer.PositionKind, vertices);
-            mountains2.updateVerticesData(BABYLON.VertexBuffer.PositionKind, vertices2);
+            mountains2.updateVerticesData(BABYLON.VertexBuffer.PositionKind, vertices);
 
 
 
@@ -273,21 +277,7 @@
         for(let i = 0; i < scene.metadata.ships.length; i++){
             let ship = scene.metadata.ships[i];
             
-            if(autopilot || i != 0) {
-            let shipY = ship.position.z;
-            let path = getPath((shipY-50));
-            //move ship to path
-            ship.position.x = path*chunkSize/2;
-            let diff = ship.position.x - oldX;
-            oldX = ship.position.x;
-            let diff2 = diff - oldDiff;
-            oldDiff = diff;
-            //adjust roll
-            ship.rotation.z = -diff2*5;
-            //adjust yaw
-            ship.rotation.y = diff/3;
-            ship.position.z += 2;
-            } else {
+            
                 //wasd controls (pressedKeys["key"])
                 //adjust roll, pitch, yaw, make changes in local space
                 let rotationInput = new BABYLON.Vector3(0,0,0);
@@ -417,7 +407,7 @@
 
                 //draw speed and angle of attack
                 
-            }
+            
 
 
 
@@ -474,7 +464,34 @@
             let throttleInputText = "Throttle: " + Math.round(ship.controls.throttleInput*100) + "%";
             //draw text to scene.metadata.hud   
             scene.metadata.hud.text = speedText + "\n" + angleOfAttackText + "\n" + throttleInputText;
+            
+        
+            //get coordinates and check map.get for collision
+            let mapHeight = 60*map.get(ship.position.x, ship.position.z)-1;
+            mapHeight = Math.max(mapHeight, 0);
+            if(ship.position.y < mapHeight){
+                ship.position.y = mapHeight;
+                ship.velocity.y = 0;
+                //apply strong drag
+                ship.velocity = ship.velocity.scale(0.5);
+                
             }
+        
+        
+        
+        
+        
+            }
+
+
+
+
+
+
+
+
+
+
         }
 
      
@@ -485,17 +502,10 @@
         let chunkListX = [];
         let chunkListY = [];
 
-        /*
-        for(let x = camChunkX-renderDistance; x <= camChunkX+renderDistance; x++){
-            for(let y = camChunkY-renderDistance; y <= camChunkY+renderDistance; y++){
-                chunkListX.push(x);
-                chunkListY.push(y);
-            }
-        }
-        */
+        
         //offset in the direction of the camera using angle, sin and cos
-        let camOffsetX = Math.round(Math.sin(scene.activeCamera.rotation.y)*renderDistance/2);
-        let camOffsetY = Math.round(Math.cos(scene.activeCamera.rotation.y)*renderDistance/2);
+        let camOffsetX = Math.round(Math.sin(scene.activeCamera.rotation.y)*renderDistance/3);
+        let camOffsetY = Math.round(Math.cos(scene.activeCamera.rotation.y)*renderDistance/3);
         
 
         for(let x = camChunkX-renderDistance+camOffsetX; x <= camChunkX+renderDistance+camOffsetX; x++){
@@ -538,6 +548,10 @@
             }
         }
         
+
+
+
+
         scene.render();
         });
         window.addEventListener('resize', function(){
@@ -567,8 +581,8 @@
             //replace the placeholder chunk with the generated chunk
             //check if placeholder is disposed, if so, skip
 
-            //let map = await workerGetMap(x*chunkSize,y*chunkSize);
-            let map=null;
+            let vertexMap = await workerGetMap(x,y);
+            //let map=null;
             //check if placeholder is disposed, if so, skip
             if(placeholder.deleted){
                 return;
@@ -579,7 +593,7 @@
             }
             //search for a chunk with the same coordinates, if its not a placeholder, skip, otherwise, set placeholder to it
 
-            let newChunk = generateChunk(scene, x, y,map);
+            let newChunk = generateChunk(scene, x, y,vertexMap);
             //set in metadata
             //search for a chunk with the same coordinates, if its not a placeholder, skip, otherwise, set placeholder to it
             for(let i = 0; i < scene.metadata.chunks.length; i++){
@@ -617,7 +631,7 @@
             for(let i = 0; i < workerJobs.length; i++){
                 let job = workerJobs[i];
 
-                if(job.worker == e.target){
+                if(job.worker == e.target && job.x == e.data.x && job.y == e.data.y){
                     //resolve the promise
                     //read mapstr (its a blob)
                     let mapBlob = e.data.mapStr;
@@ -695,16 +709,6 @@
 
 
         
-        function getPath(y){
-            return (Math.sin((y/chunkSize)/(1*pathScale))*Math.sin((y/chunkSize)/(3*pathScale))) * 0.65;
-
-        }
-        function getPath2(y){
-            return (Math.sin((y/chunkSize)/(0.5*pathScale))*Math.sin((y/chunkSize)/(5*pathScale)));
-        }
-        function getPath3(y){
-            return (Math.sin((y/chunkSize)/(7*pathScale))*Math.sin((y/chunkSize)/(2*pathScale)))*4;
-        }
         //hide scrollbars
         document.body.style.overflow = 'hidden';
         //also hide cursor
