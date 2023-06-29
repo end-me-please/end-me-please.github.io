@@ -20,11 +20,10 @@
     </body>
     <script>
         let pressedKeys = {};
-        const chunkSize = 64;
+        const chunkSize = 54;
         const renderDistance = 7;
         const mapScale = 1;
 
-        let autopilot = false;
         let terrainWorker = new Worker('./terrainWorker.js');
 
         document.addEventListener('keydown', function(event){
@@ -48,7 +47,7 @@
 
         let map = new Terrain(0.17);
         let engine = new BABYLON.Engine(canvas, true, {preserveDrawingBuffer: true, stencil: true});
-
+        
         function setupScene() {
             
             let scene = new BABYLON.Scene(engine);
@@ -66,6 +65,10 @@
             text1.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
             advancedTexture.addControl(text1);
             scene.metadata.hud = text1;
+            //alpha
+            text1.alpha = 0.5;
+
+
             //top right: low alpha text with controls
             let text2 = new BABYLON.GUI.TextBlock();
             text2.text = "Controls:\nWASD: Pitch, Yaw\nQE: Roll\nSpace: Accelerate\nB: Brake\n Angle of Attack above 15° will cause stall";
@@ -75,6 +78,19 @@
             text2.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
             text2.alpha = 0.5;
             advancedTexture.addControl(text2);
+            
+            //performance gui element stored in scene.metadata.performance
+            //text element
+            let text3 = new BABYLON.GUI.TextBlock();
+            text3.text = "Performance: 0";
+            text3.color = "white";
+            text3.fontSize = 14;
+            text3.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+            text3.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+            advancedTexture.addControl(text3);
+            scene.metadata.performance = text3;
+            //alpha
+            text3.alpha = 0.5;
 
 
 
@@ -252,6 +268,17 @@
             mountains2.position.x = x;
             mountains2.position.z = y-1;
 
+            //freeze world matrix
+            ground.freezeWorldMatrix();	
+            ground2.freezeWorldMatrix();
+            mountains.freezeWorldMatrix();
+            mountains2.freezeWorldMatrix();
+            
+            //mesh.doNotSyncBoundingInfo = true;
+            
+
+
+
             //generate a function that disposes of all these
             let data = {
                 x: chunkX,
@@ -279,9 +306,24 @@
         let oldX = 0;
         let oldDiff = 0;
         var scene = setupScene();
+        
+        let instrumentation = new BABYLON.SceneInstrumentation(scene);
+        instrumentation.captureFrameTime = true;
+        instrumentation.captureRenderTime = true;
+        instrumentation.captureInterFrameTime = true;
+        
+
+
+        
+
+
         engine.runRenderLoop(function(){
         
+        scene.metadata.performance.text = "FPS: " + Math.round(1000/instrumentation.interFrameTimeCounter.current * 100) / 100 + "\n" + "Frame Time: " + Math.round(instrumentation.frameTimeCounter.current * 100) / 100 + "ms" + "\n" + "Render Time: " + Math.round(instrumentation.renderTimeCounter.current * 100) / 100 + "ms" + "\n" + "Interframe Time: " + Math.round(instrumentation.interFrameTimeCounter.current * 100) / 100 + "ms";
         
+
+
+    
         //move all ships
         for(let i = 0; i < scene.metadata.ships.length; i++){
             let ship = scene.metadata.ships[i];
@@ -473,7 +515,7 @@
             let throttleInputText = "Throttle: " + Math.round(ship.controls.throttleInput*100) + "%";
             //draw text to scene.metadata.hud   
             scene.metadata.hud.text = speedText + "\n" + angleOfAttackText + "\n" + throttleInputText;
-            
+        
         
             //get coordinates and check map.get for collision
             let mapHeight = 60*map.get(ship.position.x, ship.position.z)-2;
