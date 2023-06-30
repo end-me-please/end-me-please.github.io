@@ -4,6 +4,7 @@
         <script src="https://cdn.babylonjs.com/babylon.js"></script>
         <script src="https://cdn.babylonjs.com/loaders/babylon.objFileLoader.js"></script>
         <script src="https://cdn.babylonjs.com/gui/babylon.gui.js"></script>
+        <script src="https://cdn.rawgit.com/BabylonJS/Extensions/master/DynamicTerrain/dist/babylon.dynamicTerrain.min.js"></script>
     </head>
     
     <body>
@@ -24,7 +25,6 @@
         const renderDistance = 9;
         const mapScale = 1;
 
-        let terrainWorker = new Worker('./terrainWorker.js');
 
         document.addEventListener('keydown', function(event){
             if(!event.key.startsWith('F')) event.preventDefault()
@@ -45,16 +45,16 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        let map = new Terrain(0.2);
+        let map = new Terrain(0.4);
         let engine = new BABYLON.Engine(canvas, true, {preserveDrawingBuffer: true, stencil: true});
         
         function setupScene() {
             
             let scene = new BABYLON.Scene(engine);
-            let camera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 5, -10), scene);
+            let camera = new BABYLON.UniversalCamera('camera1', new BABYLON.Vector3(500, 5, 500), scene);
             camera.minZ = 0.1;
             scene.metadata = {};
-            scene.debugLayer.show();
+            //scene.debugLayer.show();
 
             //add instrumentation- angle of attack, speed, etc
             let advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
@@ -118,9 +118,38 @@
             groundMaterial2.specularColor = new BABYLON.Color3(0, 0, 0);
             groundMaterial2.alpha = 1;
             let mountainMaterial = new BABYLON.StandardMaterial("mountainMaterialWireframe", scene);
-            mountainMaterial.wireframe = true;
-            mountainMaterial.diffuseColor = new BABYLON.Color3(0.5, 0, 0.5);
-            mountainMaterial.specularColor = new BABYLON.Color3(0, 0.13, 0);
+            mountainMaterial.wireframe = false;
+            mountainMaterial.diffuseColor = new BABYLON.Color3(0.8, 0.7, 0.85);
+            mountainMaterial.specularColor = new BABYLON.Color3(0, 0.03, 0);
+            //line texture (dynamic texture)
+            let textureResolution = 512;
+            let texture = new BABYLON.DynamicTexture("dynamic texture", {width: textureResolution, height: textureResolution}, scene);
+            let textureContext = texture.getContext();
+            let size = texture.getSize();
+            //draw a grid of purple lines with gray background
+            textureContext.fillStyle = "rgb(0,5,1)";
+            textureContext.fillRect(0, 0, size.width, size.height);
+            textureContext.strokeStyle = "rgb(150,60,150)";
+            textureContext.lineWidth = 1;
+            for(let i = 0; i < size.width; i += 12) {
+                textureContext.beginPath();
+                textureContext.moveTo(i, 0);
+                textureContext.lineTo(i, size.height);
+                textureContext.stroke();
+            }
+            for(let i = 0; i < size.height; i += 8) {
+                textureContext.beginPath();
+                textureContext.moveTo(0, i);
+                textureContext.lineTo(size.width, i);
+                textureContext.stroke();
+            }
+            //update texture
+
+            texture.update();
+            mountainMaterial.diffuseTexture = texture;
+
+
+
             mountainMaterial.alpha = 1;
             let mountainMaterial2 = new BABYLON.StandardMaterial("mountainMaterialBlack", scene);
             mountainMaterial2.wireframe = false;
@@ -175,9 +204,48 @@
                 scene.metadata.ships.push(new Ship(newMeshes[0], scene));
             });
 
+            
+
+
+            let params = {
+                width: 100,
+                height: 100,
+
+            }
+            let terrain = new BABYLON.DynamicTerrain("terrain", params, scene);
+            //set custom vertex update function
+            terrain.useCustomVertexFunction = true;
+            terrain.updateVertex = function(vertex, i, j) {
+
+                let mapResult = map.get(vertex.worldPosition.x,vertex.worldPosition.z);
+
+                //set position according to i, j and map(i,j)
+                vertex.position.y = mapResult*60;
+                //set color according to height
+                if(mapResult<0.005){
+                    vertex.color.r = 0.3;
+                    vertex.color.g = 1;
+                    vertex.color.b = 0.2;
+                } else {
+                    vertex.color.r = 0.8;
+                    vertex.color.g = 0.1;
+                    vertex.color.b = 0.8;
+                }
+
+
+            }
+            terrain.subToleranceX = 2;
+            terrain.subToleranceZ = 2;
+            terrain.initialLOD = 3;
+            //offset terrain, shiftFromCamera.x
+            terrain.shiftFromCamera.x = -params.width/2;
+            terrain.shiftFromCamera.z = -params.height/2;
 
 
 
+            terrain.mesh.material = mountainMaterial;
+
+            scene.metadata.terrain = terrain;
             return scene;
         }
         class Ship {
@@ -185,6 +253,9 @@
                 this.mesh = mesh;
                 this.rotation = mesh.rotation;
                 this.position = mesh.position;
+                this.position.x = 15;
+                this.position.y = 20;
+                this.position.z = 15;
                 this.velocity = new BABYLON.Vector3(0,0,0.8);
                 this.controls = {
                     rotationInput: new BABYLON.Vector3(0,0,0),
@@ -214,11 +285,8 @@
 
                 this.engineParticles.start();
 
-
                 //use baking transform to flip ship
                 this.mesh.bakeTransformIntoVertices(BABYLON.Matrix.RotationY(Math.PI));
-                
-                
                 //use setPivotPoint(vec3)
                 this.mesh.setPivotPoint(new BABYLON.Vector3(0,0.9,0));
             
@@ -227,124 +295,12 @@
             }
         }
 
-        function generateChunk(scene,x,y,vertexSerialized){
-            let chunkX = x;
-            let chunkY = y;
-            x=x*chunkSize;
-            y=y*chunkSize;
-            /*
-            let mountains = BABYLON.MeshBuilder.CreateGroundFromHeightMap("mountains", mapStr, {width: chunkSize, height: chunkSize, subdivisions: 60, minHeight: 0, maxHeight: 60, updatable:true}, scene);
-            let mountains2 = BABYLON.MeshBuilder.CreateGroundFromHeightMap("largeGround2", mapStr, {width: chunkSize, height: chunkSize, subdivisions: 60, minHeight: 0, maxHeight: 60}, scene);
-            */
-           //create plane
-            
-            
-            let mountains = BABYLON.MeshBuilder.CreateGround("mountains", {width: chunkSize, height: chunkSize, subdivisions: 15,updatable:true, checkCollisions:true, maxHeight:60}, scene);
-            let mountains2 = BABYLON.MeshBuilder.CreateGround("mountains2", {width: chunkSize, height: chunkSize, subdivisions: 15, updatable:true, maxHeight:60}, scene);
-            
-
-            //update vertices
-            //parse vertexSerialized, its a serialized vertexData element
-            
-            let vertices = (vertexSerialized);    
-            
-            mountains.updateVerticesData(BABYLON.VertexBuffer.PositionKind, vertices);
-            mountains2.updateVerticesData(BABYLON.VertexBuffer.PositionKind, vertices);
-            mountains.convertToFlatShadedMesh();
-            mountains2.convertToFlatShadedMesh();
-
-
-
-            
-
-            mountains.material = scene.metadata.materials.mountainMaterialWireframe;
-            mountains2.material = scene.metadata.materials.mountainMaterialBlack;
-            
-            
-            mountains.position.y = -2;
-            mountains2.position.y = -2;
-
-            
-            //add two ground planes- one wireframe, one black opaque to hide everything below
-            let ground = BABYLON.MeshBuilder.CreateGround("ground", {width: chunkSize, height: chunkSize, subdivisions: 15}, scene);
-            ground.material = scene.metadata.materials.groundMaterialWireframe;
-            let ground2 = BABYLON.MeshBuilder.CreateGround("ground2", {width: chunkSize, height: chunkSize, subdivisions: 15}, scene);
-            ground2.material = scene.metadata.materials.groundMaterialBlack;
-
-
-
-            
-
-            //shift all meshes to offset
-            
-            ground.position.x = x;
-            ground.position.z = y-1;
-            ground2.position.x = x;
-            ground2.position.z = y-1;
-            mountains.position.x = x;
-            mountains.position.z = y-1;
-            mountains2.position.x = x;
-            mountains2.position.z = y-1;
-
-
-
-            /*
-            //freeze world matrix
-            ground.freezeWorldMatrix();	
-            ground2.freezeWorldMatrix();
-            mountains.freezeWorldMatrix();
-            mountains2.freezeWorldMatrix();
-            
-            //mesh.doNotSyncBoundingInfo = true for all meshes
-            ground.doNotSyncBoundingInfo = true;
-            ground2.doNotSyncBoundingInfo = true;
-            mountains.doNotSyncBoundingInfo = true;
-            mountains2.doNotSyncBoundingInfo = true;
-            */
-           
-            //join all meshes
-            let meshes = [mountains, mountains2, ground, ground2];
-            let merged = BABYLON.Mesh.MergeMeshes(meshes, true, true, undefined, false, true);
-
-
-
-
-            //generate a function that disposes of all these
-            let data = {
-                x: chunkX,
-                y: chunkY,
-                dispose: function(){
-                    mountains.dispose();
-                    mountains2.dispose();
-                    ground.dispose();
-                    ground2.dispose();
-                    merged.dispose();
-                    this.deleted = true;
-                },
-                chunkX: chunkX,
-                chunkY: chunkY,
-                placeholder: false,
-                deleted: false
-            }
-
-            return data;
-        }
-
-
-        
-
-
-        let oldX = 0;
-        let oldDiff = 0;
         var scene = setupScene();
         
         let instrumentation = new BABYLON.SceneInstrumentation(scene);
         instrumentation.captureFrameTime = true;
         instrumentation.captureRenderTime = true;
         instrumentation.captureInterFrameTime = true;
-        
-
-
         
 
 
@@ -399,20 +355,7 @@
                 rotationInputLerp = BABYLON.Vector3.Lerp(ship.controls.rotationInput, rotationInput, 0.12);
                 ship.controls.rotationInput = rotationInputLerp.clone();
 
-                
-
-                //couple particlesystem emission rate to throttle input
-                ship.engineParticles.emitRate = ship.controls.throttleInput*120;
-                //manage start stop state
-                if(ship.controls.throttleInput > 0.1 && !ship.started){
-                    ship.started = true;
-                    ship.engineParticles.start();
-                } else if(ship.controls.throttleInput < 0.1 && ship.started){
-                    ship.started = false;
-                    ship.engineParticles.stop();
-                }
-
-
+            
 
 
                 let rotationAmount = rotationInputLerp.length()/4;
@@ -484,8 +427,44 @@
                 
 
                 
-                
-                ship.velocity = ship.velocity.add(ship.mesh.forward.scale(ship.controls.throttleInput*0.015));
+                //if stalled, thrust is reduced
+
+
+
+                //couple particlesystem emission rate to throttle input
+                ship.engineParticles.emitRate = ship.controls.throttleInput*120;
+                //color is blue if speed vector length is less than 0.5, red if greater than 0.5
+                if(ship.velocity.length() < 0.8){
+                    ship.engineParticles.color1 = new BABYLON.Color4(0.2, 0.2, 1, 1);
+                    ship.engineParticles.color2 = new BABYLON.Color4(0.2, 0.2, 1, 1);
+                } else {
+                    ship.engineParticles.color1 = new BABYLON.Color4(1, 0.2, 0.2, 1);
+                    ship.engineParticles.color2 = new BABYLON.Color4(1, 0.2, 0.2, 1);
+                }
+
+                //manage start stop state
+                if(ship.controls.throttleInput > 0.1 && !ship.started){
+                    ship.started = true;
+                    ship.engineParticles.start();
+                } else if(ship.controls.throttleInput < 0.1 && ship.started){
+                    ship.started = false;
+                    ship.engineParticles.stop();
+                }
+
+
+
+
+
+
+
+
+                let thrust = 0.012;
+                if(ship.velocity.length() < 0.8 && ship.velocity.length() > 0.1){
+                    thrust *= 0.55;
+                }
+                ship.velocity = ship.velocity.add(ship.mesh.forward.scale(ship.controls.throttleInput*thrust));
+
+
                 ship.mesh.moveWithCollisions(ship.velocity);
 
                 //draw speed and angle of attack
@@ -550,7 +529,10 @@
         
         
             //get coordinates and check map.get for collision
-            let mapHeight = 60*map.get(ship.position.x, ship.position.z)-2;
+            //let mapHeight = 60*map.get(ship.position.x, ship.position.z);
+            
+            let mapHeight = 0;
+
             mapHeight = Math.max(mapHeight, 0);
             if(ship.position.y < mapHeight){
                 ship.position.y = mapHeight;
@@ -572,59 +554,7 @@
 
         }
 
-     
-        //do the same thing as the chunkID calculations, but scan around the camera, area of 4 chunks
-        let camChunkX = Math.floor(scene.activeCamera.position.x/chunkSize);
-        let camChunkY = Math.floor(scene.activeCamera.position.z/chunkSize);
-        //generate a list of X and Y chunk coordinates that should be loaded
-        let chunkListX = [];
-        let chunkListY = [];
-
-        
-
-
-        for(let x = camChunkX-renderDistance; x <= camChunkX+renderDistance; x++){
-            for(let y = camChunkY-renderDistance; y <= camChunkY+renderDistance; y++){
-                chunkListX.push(x);
-                chunkListY.push(y);
-            }
-        }
-
-
-        //iterate through scene.metadata.chunks, if a chunk is not in chunkList, dispose it
-        for(let i = 0; i < scene.metadata.chunks.length; i++){
-            let chunk = scene.metadata.chunks[i];
-            if(chunk.deleted){
-                //call dispose, remove from array
-                chunk.dispose();
-                scene.metadata.chunks.splice(i,1);
-                continue;
-            }
-            if((!chunkListX.includes(chunk.chunkX) || !chunkListY.includes(chunk.chunkY)) && Math.random()>0.9){
-                chunk.dispose();
-                scene.metadata.chunks.splice(i,1);
-                i--;
-            }
-        }
-        //try generating chunks in chunkList, skip if already generated
-        for(let i = 0; i < chunkListX.length; i++){
-            let chunkX = chunkListX[i];
-            let chunkY = chunkListY[i];
-            let found = false;
-            for(let j = 0; j < scene.metadata.chunks.length; j++){
-                let chunk = scene.metadata.chunks[j];
-                if(chunk.chunkX == chunkX && chunk.chunkY == chunkY){
-                    found = true;
-                    break;
-                }
-            }
-            if(!found&&Math.random()>0.7){
-                generateAsync(scene,chunkX,chunkY);
-            }
-        }
-        
-
-
+        //render call
 
 
         scene.render();
@@ -633,97 +563,7 @@
             engine.resize();
         });
 
-        function checkChunkDuplicates(scene){
-            for(let i = 0; i < scene.metadata.chunks.length; i++){
-                let chunk = scene.metadata.chunks[i];
-                for(let j = 0; j < scene.metadata.chunks.length; j++){
-                    if(i == j){
-                        continue;
-                    }
-                    let chunk2 = scene.metadata.chunks[j];
-                    if(chunk.chunkX == chunk2.chunkX && chunk.chunkY == chunk2.chunkY){
-                        console.log("duplicate chunk found");
-                    }
-                }
-            }
-        }
-
-
-        async function generateAsync(scene,x,y){
-
-            let placeholder = {chunkX: x, chunkY: y, x: x, y: y, placeholder: true,deleted:false, dispose: function(){this.deleted = true;}};
-            scene.metadata.chunks.push(placeholder);
-            //replace the placeholder chunk with the generated chunk
-            //check if placeholder is disposed, if so, skip
-
-            let vertexMap = await workerGetMap(x,y);
-            //let map=null;
-            //check if placeholder is disposed, if so, skip
-            if(placeholder.deleted){
-                return;
-            }
-            //check if not placeholder, if so, skip
-            if(!placeholder.placeholder){
-                return;
-            }
-            //search for a chunk with the same coordinates, if its not a placeholder, skip, otherwise, set placeholder to it
-
-            let newChunk = generateChunk(scene, x, y,vertexMap);
-            //set in metadata
-            //search for a chunk with the same coordinates, if its not a placeholder, skip, otherwise, set placeholder to it
-            for(let i = 0; i < scene.metadata.chunks.length; i++){
-                let chunk = scene.metadata.chunks[i];
-                if(chunk.chunkX == x && chunk.chunkY == y){
-                    if(!chunk.placeholder){
-                        return;
-                    }
-                    //splice and delete placeholder, insert new chunk
-                    scene.metadata.chunks.splice(i,1,newChunk);
-                    return;
-
-                }
-            }
-
-        }
-        
-        let workerJobs = [];
-
-        async function workerGetMap(x,y){
-            //create a promise
-            return new Promise(function(resolve, reject){
-                //create a worker
-                //create a job object
-                let job = {x: x, y: y, worker: terrainWorker, resolve: resolve, reject: reject};
-                //push job to workerJobs
-                workerJobs.push(job);
-                //send job to worker
-                terrainWorker.postMessage({type: "map", x: x, y: y});
-            });
-        }
-
-        terrainWorker.onmessage = function(e){
-            //find the job that matches the worker
-            for(let i = 0; i < workerJobs.length; i++){
-                let job = workerJobs[i];
-
-                if(job.worker == e.target && job.x == e.data.x && job.y == e.data.y){
-                    //resolve the promise
-                    //read mapstr (its a blob)
-                    let mapBlob = e.data.mapStr;
-                    job.resolve(mapBlob);
-
-                    //remove the job from workerJobs
-                    workerJobs.splice(i, 1);
-                }
-            }
-        }
-
-
-
-
-
-
-
+      
 
 
 

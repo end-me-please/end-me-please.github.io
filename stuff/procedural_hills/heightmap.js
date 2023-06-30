@@ -41,6 +41,12 @@ class NoiseMap {
     }
 }
 
+//seedRand
+
+function seedRand(seed){
+    let rand = Math.sin(seed) * 10000;
+    return rand - Math.floor(rand);
+}
 
 
 
@@ -56,12 +62,12 @@ class Terrain {
         this.noiseMapRough = new NoiseMap(scale/8);
         this.rivers = [];
         //populate rivers
-        for(let i = 0; i < 35; i++){
-            let frequency1 = Math.random()*0.05 + 0.05;
-            let frequency2 = Math.random()*0.05 + 0.05;
-            let amplitude = Math.random()*0.5 + 0.5;
-            let offset = Math.random()*0.5 + 0.5;
-            let angle = Math.random()*Math.PI*2;
+        for(let i = 0; i < 32; i++){
+            let frequency1 = seedRand(1+i)*0.02 + 0.01;
+            let frequency2 = seedRand(2+i)*0.04 + 0.02;
+            let amplitude = seedRand(3+i)*20 + 10;
+            let offset = seedRand(4+i)*5 + 2.5;
+            let angle = seedRand(5+i)*Math.PI*4;
             this.rivers.push(new River(frequency1,frequency2,amplitude,offset,angle));
         }
 
@@ -88,12 +94,13 @@ class Terrain {
         }
 
         //add rivers
-        let riverProximity = this.getRiverProximity(x,y);
+        let riverProximity = this.getRiverProximity(x/this.scale,y/this.scale);
         //if proximity is less than 30, slowly lower the height
         
-        
             height *= Math.min(riverProximity/50,1);
-        
+            
+
+
         return height;
     }
 
@@ -120,12 +127,21 @@ class River {
     }
     get(x,y){
         //check how close the point is to the river
-        //the river's path is sin(frequency1*y)*sin(frequency2*y)*amplitude + offset, rotated by angle
-        let riverY = Math.sin(this.frequency1*y)*Math.sin(this.frequency2*y)*this.amplitude + this.offset;
-        let riverX = x;
-        let riverX2 = riverX*Math.cos(this.angle) - riverY*Math.sin(this.angle);
-        let riverY2 = riverX*Math.sin(this.angle) + riverY*Math.cos(this.angle);
-        let distance = Math.sqrt((x-riverX2)*(x-riverX2) + (y-riverY2)*(y-riverY2));
+        //the axis of the river is defined by the angle
+        //the distance is the distance from the point to the line
+        //the line is defined by the angle and the offset
+        
+        //offset from the line by distance to 0,0 plugged into sin(f1*dist0)*sin(f2*dist0)
+        //dist0 is the distance from the point to the origin
+        let dist0 = Math.sqrt(x**2 + y**2);
+        let offset = Math.sin(this.frequency1*dist0)*Math.sin(this.frequency2*dist0)*this.amplitude;
+        //distance from the line is the distance from the point to the line minus the offset
+        let dist1 = Math.abs(x*Math.sin(this.angle) - y*Math.cos(this.angle) - this.offset - offset);
+        return dist1+1;
+
+
+
+
         return distance;
     }
 }
