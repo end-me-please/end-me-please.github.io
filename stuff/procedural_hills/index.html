@@ -54,6 +54,7 @@
             let camera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 5, -10), scene);
             camera.minZ = 0.1;
             scene.metadata = {};
+            scene.debugLayer.show();
 
             //add instrumentation- angle of attack, speed, etc
             let advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
@@ -99,10 +100,60 @@
             light.intensity = 1;
             //hemispheric light
             let light2 = new BABYLON.HemisphericLight("HemiLight", new BABYLON.Vector3(0, 1, 0), scene);
-            light2.intensity = 0.4;
+            light2.intensity = 0.6;
 
             //scene color to black
             scene.clearColor = new BABYLON.Color3(0, 0, 0);
+
+
+            //only init these materials once
+            let groundMaterial = new BABYLON.StandardMaterial("groundMaterialWireframe", scene);
+            groundMaterial.wireframe = true;
+            groundMaterial.diffuseColor = new BABYLON.Color3(0.3, 0.87, 0.2);
+            groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+            groundMaterial.alpha = 0.5;
+            let groundMaterial2 = new BABYLON.StandardMaterial("groundMaterialBlack", scene);
+            groundMaterial2.wireframe = false;
+            groundMaterial2.diffuseColor = new BABYLON.Color3(0, 0, 0);
+            groundMaterial2.specularColor = new BABYLON.Color3(0, 0, 0);
+            groundMaterial2.alpha = 1;
+            let mountainMaterial = new BABYLON.StandardMaterial("mountainMaterialWireframe", scene);
+            mountainMaterial.wireframe = true;
+            mountainMaterial.diffuseColor = new BABYLON.Color3(0.5, 0, 0.5);
+            mountainMaterial.specularColor = new BABYLON.Color3(0, 0.13, 0);
+            mountainMaterial.alpha = 1;
+            let mountainMaterial2 = new BABYLON.StandardMaterial("mountainMaterialBlack", scene);
+            mountainMaterial2.wireframe = false;
+            mountainMaterial2.diffuseColor = new BABYLON.Color3(0, 0, 0);
+            mountainMaterial2.specularColor = new BABYLON.Color3(0, 0, 0);
+            mountainMaterial2.alpha = 1;
+            
+            scene.metadata.materials = {
+                groundMaterialWireframe: groundMaterial,
+                groundMaterialBlack: groundMaterial2,
+                mountainMaterialWireframe: mountainMaterial,
+                mountainMaterialBlack: mountainMaterial2
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             scene.metadata.chunks = [];
             //generate chunks in y direction
             
@@ -192,20 +243,6 @@
             let mountains2 = BABYLON.MeshBuilder.CreateGround("mountains2", {width: chunkSize, height: chunkSize, subdivisions: 15, updatable:true, maxHeight:60}, scene);
             
 
-
-            /*
-
-            //sample map.get(x,y) and edit vertices
-            let vertices = mountains.getVerticesData(BABYLON.VertexBuffer.PositionKind);
-            //cycle through all vertices, get their world coords, and sample map (map sampling result multiplied by 70)
-            //create a heightmap manually this way
-            for(let i=0;i<vertices.length;i+=3){
-                let worldPos = new BABYLON.Vector3(vertices[i], vertices[i+1], vertices[i+2]);
-                let mapSample = map.get((worldPos.x+x)*mapScale, (worldPos.z+y)*mapScale);
-                vertices[i+1] = mapSample*60;
-            }
-            */
-
             //update vertices
             //parse vertexSerialized, its a serialized vertexData element
             
@@ -219,41 +256,21 @@
 
 
             
-            //purple wireframe for mountains
-            mountains.material = new BABYLON.StandardMaterial("mountainWireframe", scene);
-            mountains.material.wireframe = true;
-            mountains.material.diffuseColor = new BABYLON.Color3(0.5, 0, 0.5);
-            mountains.material.specularColor = new BABYLON.Color3(0, 0.13, 0);
-            mountains.material.alpha = 1;
-            //backface culling
-            mountains.material.backFaceCulling = false;
-            mountains.position.y = -2;
 
+            mountains.material = scene.metadata.materials.mountainMaterialWireframe;
+            mountains2.material = scene.metadata.materials.mountainMaterialBlack;
             
-            //second mountains, for occlusion
-            mountains2.material = new BABYLON.StandardMaterial("mountainBlack", scene);
-            mountains2.material.wireframe = false;
-            mountains2.material.diffuseColor = new BABYLON.Color3(0, 0, 0);
-            mountains2.material.specularColor = new BABYLON.Color3(0, 0, 0);
-            mountains2.material.alpha = 1;
-            //backface culling
-            mountains2.material.backFaceCulling = false;
+            
+            mountains.position.y = -2;
             mountains2.position.y = -2;
 
             
             //add two ground planes- one wireframe, one black opaque to hide everything below
             let ground = BABYLON.MeshBuilder.CreateGround("ground", {width: chunkSize, height: chunkSize, subdivisions: 15}, scene);
-            ground.material = new BABYLON.StandardMaterial("groundWireframe", scene);
-            ground.material.wireframe = true;
-            ground.material.diffuseColor = new BABYLON.Color3(0.3, 0.87, 0.2);
-            ground.material.specularColor = new BABYLON.Color3(0, 0, 0);
-            ground.material.alpha = 0.5;
+            ground.material = scene.metadata.materials.groundMaterialWireframe;
             let ground2 = BABYLON.MeshBuilder.CreateGround("ground2", {width: chunkSize, height: chunkSize, subdivisions: 15}, scene);
-            ground2.material = new BABYLON.StandardMaterial("groundBlack", scene);
-            ground2.material.wireframe = false;
-            ground2.material.diffuseColor = new BABYLON.Color3(0, 0, 0);
-            ground2.material.specularColor = new BABYLON.Color3(0, 0, 0);
-            ground2.material.alpha = 1;
+            ground2.material = scene.metadata.materials.groundMaterialBlack;
+
 
 
             
@@ -269,6 +286,9 @@
             mountains2.position.x = x;
             mountains2.position.z = y-1;
 
+
+
+            /*
             //freeze world matrix
             ground.freezeWorldMatrix();	
             ground2.freezeWorldMatrix();
@@ -280,8 +300,12 @@
             ground2.doNotSyncBoundingInfo = true;
             mountains.doNotSyncBoundingInfo = true;
             mountains2.doNotSyncBoundingInfo = true;
+            */
+           
+            //join all meshes
+            let meshes = [mountains, mountains2, ground, ground2];
+            let merged = BABYLON.Mesh.MergeMeshes(meshes, true, true, undefined, false, true);
 
-            
 
 
 
@@ -294,6 +318,7 @@
                     mountains2.dispose();
                     ground.dispose();
                     ground2.dispose();
+                    merged.dispose();
                     this.deleted = true;
                 },
                 chunkX: chunkX,
@@ -362,6 +387,20 @@
                     throttleInput = 1;
                 }
                 ship.controls.throttleInput = Math.floor(255*((ship.controls.throttleInput*0.85) + (throttleInput*0.15)))/255;
+                
+                //same for brakeinput
+                let brakeInput = 0;
+                if(pressedKeys["b"]){
+                    brakeInput = 1;
+                }
+                ship.controls.brakeInput = (ship.controls.brakeInput*0.9) + (brakeInput*0.1);
+                
+                //lerp between old rotation input and new rotation input
+                rotationInputLerp = BABYLON.Vector3.Lerp(ship.controls.rotationInput, rotationInput, 0.12);
+                ship.controls.rotationInput = rotationInputLerp.clone();
+
+                
+
                 //couple particlesystem emission rate to throttle input
                 ship.engineParticles.emitRate = ship.controls.throttleInput*120;
                 //manage start stop state
@@ -373,28 +412,13 @@
                     ship.engineParticles.stop();
                 }
 
-                //same for brakeinput
-                let brakeInput = 0;
-                if(pressedKeys["b"]){
-                    brakeInput = 1;
-                }
-                ship.controls.brakeInput = (ship.controls.brakeInput*0.9) + (brakeInput*0.1);
-                
 
 
-                //rotate ship
-                //check if metadata rotation input exists
-                
-                
 
-
-                //lerp between old rotation input and new rotation input
-                rotationInputLerp = BABYLON.Vector3.Lerp(ship.controls.rotationInput, rotationInput, 0.12);
-                ship.controls.rotationInput = rotationInputLerp.clone();
-                
                 let rotationAmount = rotationInputLerp.length()/4;
                 ship.mesh.rotate(rotationInputLerp.normalize(), rotationAmount, BABYLON.Space.LOCAL);
                 
+
 
 
                 //lerp between velocity vector and rotation vector, in both ways
@@ -708,7 +732,7 @@
         //hide scrollbars
         document.body.style.overflow = 'hidden';
         //also hide cursor
-        document.body.style.cursor = 'none';
+        //document.body.style.cursor = 'none';
         //hide left side image gap
         document.body.style.margin = '0px';
 
