@@ -16,7 +16,7 @@
                 let a = 0;
                 let b = 0;
                 let n = 0;
-                while (n < 255*3){
+                while (n < 128*3){
                     let aa = a*a - b*b + x;
                     let bb = 2*a*b + y;
                     a = aa;
@@ -38,7 +38,8 @@
                 let y = (this.thread.y - this.constants.height/2);
                 x = x/zoom;
                 y = y/zoom;
-
+                x-= 0.8;
+                y-= 0.25;
                 let color = mandelbrot(x,y);
                 //the max iterations is 255*3
                 //make interesting mandelbrot colors
@@ -47,18 +48,18 @@
                 let b = 0;
 
                 //r channel is first 255 iterations, after that it overflows into g
-                if (color < 255){
+                if (color < 128){
                     r = color;
-                }else if (color < 255*2){
-                    r = 255;
-                    g = color - 255;
+                }else if (color < 128*2){
+                    r = 128;
+                    g = color - 128;
                 }else{
-                    r = 255;
-                    g = 255;
-                    b = color - 255*2;
+                    r = 128;
+                    g = 128;
+                    b = color - 128*2;
                 }
                 //max value itself is black
-                if (color == 255*3){
+                if (color == 128*3){
                     r = 30;
                     g = 0;
                     b = 0;
@@ -66,24 +67,24 @@
 
 
                 //value between 0 and 1
-                r = r/255;
-                g = g/255;
-                b = b/255;
+                r = r/128;
+                g = g/128;
+                b = b/128;
 
                 this.color(r,g,b);
 
 
 
-            }).setOutput([window.innerWidth,window.innerHeight]).setGraphical(true).setConstants({width:window.innerWidth, height:window.innerHeight, maxColor:255*3});
+            }).setOutput([window.innerWidth,window.innerHeight]).setGraphical(true).setConstants({width:window.innerWidth, height:window.innerHeight, maxColor:128*3});
             //set max iterations to 255
-            mandelbrotSet.setLoopMaxIterations(255*3);
+            mandelbrotSet.setLoopMaxIterations(128*3);
 
 
             document.body.appendChild(mandelbrotSet.canvas);
             let zoom = 5;
             function frame() {
                 mandelbrotSet(zoom);
-                zoom += 0.07;
+                zoom += 1;
                 requestAnimationFrame(frame);
             }
             frame();
