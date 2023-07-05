@@ -13,13 +13,13 @@
 
         <script>
 
-            let gpu = new GPU({mode: 'gpu'});
+            let gpu = new GPUJS({mode: 'gpu'});
 
             const renderCellSize = 10;
             let width = Math.floor(window.innerWidth/renderCellSize);
             let height = Math.floor(window.innerHeight/renderCellSize);
-            const gridWidth = 1700;
-            const gridHeight = 1700;
+            const gridWidth = 2100;
+            const gridHeight = 2000;
             let fps = 0;
 
             let cgolUpdateKernel = gpu.createKernel(function (cells) {
