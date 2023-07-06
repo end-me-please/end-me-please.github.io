@@ -58,11 +58,11 @@ function seedRand(seed){
 class Terrain {
     constructor(scale){
         this.scale = scale;
-        this.noiseMapDetail = new NoiseMap(scale/2);
-        this.noiseMapRough = new NoiseMap(scale/8);
+        this.noiseMapDetail = new NoiseMap(scale/8);
+        this.noiseMapRough = new NoiseMap(scale/16);
         this.rivers = [];
         //populate rivers
-        for(let i = 0; i < 32; i++){
+        for(let i = 0; i < 12; i++){
             let frequency1 = seedRand(1+i)*0.02 + 0.01;
             let frequency2 = seedRand(2+i)*0.04 + 0.02;
             let amplitude = seedRand(3+i)*20 + 10;
@@ -71,8 +71,18 @@ class Terrain {
             this.rivers.push(new River(frequency1,frequency2,amplitude,offset,angle));
         }
 
+        
+
+
     }
     get(x,y){
+    
+
+        //limit precision
+        x = Math.round(x*255)/255;
+        y = Math.round(y*255)/255;
+
+
         //return this.noiseMapRough.get(x,y);
         //get the height at a point
         let detail = this.noiseMapDetail.get(x,y);
@@ -80,7 +90,7 @@ class Terrain {
         
         //approx 60% of the map should be flatland- set rough to 0 there, determine biome using 2d sin wave
         let biome = Math.sin(x*0.06)*Math.sin(y*0.04);
-        if(biome > -0.4){
+        if(biome > -0.7){
             rough*=((biome+0.4)**2);
         }
 
@@ -101,13 +111,16 @@ class Terrain {
             
 
 
+        //limit precision
+        height = Math.round(height*255)/255;
+
         return height;
     }
 
 
     getRiverProximity(x,y){
         //check all rivers
-        let minDistance = 100000;
+        let minDistance = 10000;
         for(let i = 0; i < this.rivers.length; i++){
             let distance = this.rivers[i].get(x,y);
             if(distance < minDistance){
