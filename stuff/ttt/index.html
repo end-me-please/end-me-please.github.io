@@ -1,0 +1,327 @@
+<html>
+    <head>
+        <!--<script src="pongGame.js"></script>-->
+        <script src="tictactoeGame.js"></script>
+        <script src="neural.js"></script>
+
+    </head>
+    <body>
+
+        <br>
+        <br>
+        <br>
+        
+        <canvas id="functionPlot" width="400" height="400" style="outline: 7px solid green; margin: 10px;"></canvas>
+        <canvas id="combinedPlot" width="200" height="200"></canvas>
+        
+        <br>
+        <div id="performanceData">
+        </div>
+        <br>
+        <canvas id="fitness1" width="400" height="250"></canvas>
+        <canvas id="fitness2" width="400" height="250"></canvas>
+        <canvas id="netview1" width="550" height="300"></canvas>
+        
+
+        <script>
+          
+           let trainer1 = new NNTrainer(0);
+           let trainer2 = new NNTrainer(0);
+
+            let canvas = document.getElementById("functionPlot");
+            let context = canvas.getContext("2d");
+            let combinedPlot = document.getElementById("combinedPlot");
+            let combinedContext = combinedPlot.getContext("2d");
+
+            let netViewCanvas = document.getElementById("netview1");
+            let netViewContext = netViewCanvas.getContext("2d");
+
+
+            let activeGame = null;
+            let combinedGames = [];
+            let countedGenerations = 0;
+            let randomTrain = new RandomTrainer(0);
+            let bestNet1 = trainer1.evolve(randomTrain);
+            let bestNet2 = trainer2.evolve(randomTrain);
+
+            
+            let timeoutSet = false;
+            let currentPlayerActions = [0,0,0,0,0,0,0,0,0];
+            let currentPlayerActionNum = 9;
+
+
+            
+            let keystrokes = [];
+            document.addEventListener('keydown', function(event) {
+                keystrokes[event.keyCode] = true;
+            });
+            document.addEventListener('keyup', function(event) {
+                keystrokes[event.keyCode] = false;
+            });
+            let canvasMousePosition = [0,0];
+            canvas.addEventListener('mousemove', function(event) {
+                let rect = canvas.getBoundingClientRect();
+                let x = event.clientX - rect.left;
+                let y = event.clientY - rect.top;
+                canvasMousePosition = [x,y];
+            });
+
+
+
+
+            let playerNet = {
+                run: function(){
+                    //return a 3x3 board (array(9)) full of 0 except the last clicked position
+                    let board = [0,0,0,0,0,0,0,0,0];
+                    let lastClickX = lastCanvasClickPosition[0];
+                    let lastClickY = lastCanvasClickPosition[1];
+                    let boardX = Math.floor(lastClickX/(canvas.width/3));
+                    let boardY = Math.floor(lastClickY/(canvas.height/3));
+                    let boardIndex = boardX+boardY*3;
+                    board[boardIndex] = 1;
+                    return board;
+                }
+            }
+
+
+            let lastCanvasClickPosition = [0,0];
+            canvas.addEventListener('click', function(event) {
+                if(timeoutSet){
+                    return;
+                }
+                if(activeGame==null){
+                    activeGame = new tttGame(playerNet, Math.random()>0.5?bestNet1:bestNet2);
+                }
+
+                let rect = canvas.getBoundingClientRect();
+                let x = event.clientX - rect.left;
+                let y = event.clientY - rect.top;
+                lastCanvasClickPosition = [x,y];
+                //check if board is 0, if not, ignore click
+                let board = activeGame.board;
+                let boardX = Math.floor(x/(canvas.width/3));
+                let boardY = Math.floor(y/(canvas.height/3));
+                let boardIndex = boardX+boardY*3;
+                if(board[boardY][boardX] != 0){
+                    return;
+                }
+                //store the action in currentPlayerActions
+                currentPlayerActions[boardIndex] = currentPlayerActionNum;
+                currentPlayerActionNum--;
+                //push player action to RandomTrainer
+                let clonedArray = [...currentPlayerActions];
+                RandomTrainer.playerActionPool.push(clonedArray);
+
+
+
+                activeGame.step();
+                if(activeGame.dead&&!timeoutSet){
+                    timeoutSet = true;
+                    if(activeGame.winner == 1){
+                            let clonedArray = [...currentPlayerActions];
+                            RandomTrainer.playerActionPool.push(clonedArray);
+                            console.log("pushed player actions");
+                    }
+
+                    setTimeout(()=>{
+                        activeGame = new tttGame(playerNet, Math.random()>0.5?bestNet1:bestNet2);
+                        timeoutSet = false;
+
+                        
+                        //fill with Math.random() from 0 to 1
+                        currentPlayerActions = [0,0,0,0,0,0,0,0,0];
+                        for(let i = 0; i < currentPlayerActions.length; i++){
+                            currentPlayerActions[i] = Math.random();
+                        }
+                        currentPlayerActionNum = 9;
+                        activeGame.render(context);
+                    }, 100);
+                }
+                
+            });
+
+            activeGame = new tttGame(playerNet, bestNet1);
+
+            function step(){
+                countedGenerations++;                
+                //line width
+                
+                bestNet1 = trainer1.evolve(randomTrain);
+                bestNet2 = trainer2.evolve(randomTrain);
+                randomTrain.evolve(trainer2);
+
+
+
+            
+                activeGame.render(context);
+               
+                
+
+
+                
+
+                //draw the combined games
+                combinedContext.clearRect(0, 0, combinedContext.canvas.width, combinedContext.canvas.height);
+                //set alpha to evenly distribute, if only 1 game is alive, alpha is 1, if 5 games are alive, alpha is 0.2
+                let alpha = 1/combinedGames.length;
+                combinedContext.globalAlpha = alpha;
+                //combinedContext.globalAlpha = 0.3;
+                let stillAlive = 0;
+                for(let i = 0; i < combinedGames.length; i++){
+                    if(!combinedGames[i].dead){
+                    //combinedGames[i].render(combinedContext);
+                    combinedGames[i].step();
+
+                    stillAlive++;
+                    }
+                
+                }
+                if(stillAlive == 0){
+                    updateCombinedGames();
+                }
+
+            }
+
+            function updateCombinedGames(){
+                combinedGames = [];
+                //for(let i = 0; i < trainer1.nets.length; i++){
+                //let t1 = Math.random()>0.5?trainer1:trainer2;
+                let t2 = Math.random()>0.5?trainer1:trainer2;
+                
+                let t1 = randomTrain;
+                for(let i = 0; i < t1.nets.length; i++){
+                    //combinedGames.push(new PongGame(trainer1.nets[i], trainer2.nets[i]));
+                    //check bounds of trainer2, push random net if out of bounds
+                    if(i >= trainer2.nets.length){
+                        combinedGames.push(new tttGame(t1.nets[i], t2.nets[Math.floor(Math.random()*t2.nets.length)]));
+                    }else{
+                        combinedGames.push(new tttGame(t1.nets[i], t2.nets[i]));
+                    }
+
+                }
+                
+                //render trainer1.bestNet on netViewCanvas
+                netViewContext.clearRect(0, 0, netViewContext.canvas.width, netViewContext.canvas.height);
+                netViewContext.globalAlpha = 1;
+                netViewContext.fillStyle = "black";
+                trainer1.bestNet.render(netViewContext, 0, 0, netViewContext.canvas.width, netViewContext.canvas.height);
+            
+            }
+            //every 5 seconds, update the combined games
+
+            updateCombinedGames();
+
+
+
+
+            let autoPlay = false;
+            let playerController = playerNet;
+            function enableAutoPlay(){
+                autoPlay = true;
+                playerNet = randomTrain.bestNet;
+                activeGame = new tttGame(playerNet, bestNet1);
+
+            }
+            disableAutoPlay = function(){
+                autoPlay = false;
+                playerController = playerNet;
+            }
+            setInterval(()=>{
+                if(autoPlay&&timeoutSet==false){
+                    activeGame.step();
+                    if(activeGame.dead){
+                        timeoutSet = true;
+                        setTimeout(()=>{
+
+                            timeoutSet = false;
+                            activeGame = new tttGame(playerNet, bestNet1);
+                        }, 100);
+                    }
+                }
+            }, 100);
+
+
+
+
+            function animate() {
+                step();
+                //simstep active game with canvasMousePosition
+                //get mouse hover index
+                let boardX = Math.floor(canvasMousePosition[0]/(canvas.width/3));
+                let boardY = Math.floor(canvasMousePosition[1]/(canvas.height/3));
+                let boardIndex = boardX+boardY*3;
+                activeGame.nn2 = bestNet2;
+                activeGame.simStep(boardIndex);
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+            
+            //10 second timer to plot trainer.fitnessHistory
+            let fitnessCanvas1 = document.getElementById("fitness1");
+            let fitnessContext1 = fitnessCanvas1.getContext("2d");
+            let fitnessCanvas2 = document.getElementById("fitness2");
+            let fitnessContext2 = fitnessCanvas2.getContext("2d");
+
+
+            function drawFitnessGraph(trainer, fitnessContext){
+                //normalize and scale
+                let maxFitness = Math.max(...trainer.fitnessHistory);
+                let minFitness = Math.min(...trainer.fitnessHistory);
+                let fitnessRange = maxFitness-minFitness;
+                let fitnessContextWidth = fitnessContext.canvas.width;
+                let fitnessContextHeight = fitnessContext.canvas.height;
+                fitnessContext.clearRect(0, 0, fitnessContextWidth, fitnessContextHeight);
+                fitnessContext.beginPath();
+                fitnessContext.moveTo(0, fitnessContextHeight);
+                for(let i = 0; i < trainer.fitnessHistory.length; i++){
+                    let drawX = i*fitnessContextWidth/trainer.fitnessHistory.length;
+                    let drawY = (trainer.fitnessHistory[i]-minFitness)/fitnessRange*fitnessContextHeight;
+                    fitnessContext.lineTo(drawX, fitnessContextHeight-drawY);
+                }
+                fitnessContext.stroke();
+                
+                //set fps label
+                let generationsPerSecond = countedGenerations;
+                
+
+
+                let simulatedGamesPerSecond = generationsPerSecond*trainer.population;
+
+                //get div
+                let performanceData = document.getElementById("performanceData");
+                performanceData.innerHTML = "Generations per second: " + generationsPerSecond + "<br>Simulated games per second: " + simulatedGamesPerSecond + "<br>Current best fitness: " + maxFitness + "<br> generations: " + trainer.fitnessHistory.length + "<br> nets: " + trainer.population + "<br>";
+                //if generations per second is at 60, increase population size by 1
+                //if generations per second is at 40, decrease population size by 1
+                
+            }
+            
+
+            setInterval(()=>{
+                drawFitnessGraph(trainer1, fitnessContext1);
+                drawFitnessGraph(trainer2, fitnessContext2);
+                countedGenerations = 0;
+                
+            }, 1000);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        </script>
+
+    </body>
+</html>
