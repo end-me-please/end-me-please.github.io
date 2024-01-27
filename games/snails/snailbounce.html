@@ -29,14 +29,20 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 
-
+        let cursorX = 0;
+        let cursorY = 0;
+        let cursorDown = false;
+        canvas.addEventListener("mousemove", function(event) {
+            cursorX = event.clientX;
+            cursorY = event.clientY;
+        });
 
 
 
         class Snail extends SnailGen {
             constructor(){
                 super(randomColor(), randomColor(), Math.random()*20+3, randomColor(), Math.random()*32);
-                super.radius = Math.random() * 20 + 20;
+                super.radius = Math.random() * 10 + 10;
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
                 this.vx = Math.random() * 5 - 2.5;
@@ -73,13 +79,13 @@
                 this.drawX += (this.x - this.drawX) * 0.1;
                 this.drawY += (this.y - this.drawY) * 0.1;
                 let angle = Math.atan2(this.vy, this.vx);
-                this.drawAngle += (angle - this.drawAngle) * 0.05;
+                this.drawAngle += (angle - this.drawAngle) * 0.035;
 
                 //every 5 frames, add a new point to the trail
-                if (this.t % Math.pow(document.getElementById("speed").value,2)*2 == 0) this.trail.push({x: this.x, y: this.y});
+                if (this.t % (Math.pow(document.getElementById("speed").value,2)*5) == 0) this.trail.push({x: this.x, y: this.y});
 
                 //if trail longer than 500 points, remove the first point
-                if (this.trail.length > 5000) this.trail.shift();
+                if (this.trail.length > 2000) this.trail.shift();
 
             }
             draw(ctx) {
@@ -105,6 +111,7 @@
                 let dy = this.y - other.y;
                 let distance = Math.sqrt(dx*dx + dy*dy);
 
+
                 if (distance < this.radius + other.radius) {
                     this.vx *= -1;
                     this.vy *= -1;
@@ -116,6 +123,42 @@
                     this.x += overlap * Math.cos(angle);
                     this.y += overlap * Math.sin(angle);
                 }
+
+                if(distance < this.radius*16){
+                    let oldvx = this.vx;
+                    let oldvy = this.vy;
+                    //if closer than 5, repel, if not, attract
+                    if (distance < 8*this.radius) {
+                        this.vx += dx * 0.015;
+                        this.vy += dy * 0.015;
+                    } else {
+                        this.vx -= dx * 0.001;
+                        this.vy -= dy * 0.001;
+                    }
+                    //cap the speed
+                    let speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+                    if (speed > 5) {
+                        this.vx *= 5 / speed;
+                        this.vy *= 5 / speed;
+                    }
+                    //lerp the speed with other speed
+                    this.vx += (other.vx - this.vx) * 0.05;
+                    this.vy += (other.vy - this.vy) * 0.05;
+
+                    //lerp the speed
+                    this.vx += (oldvx - this.vx) * 0.0001;
+                    this.vy += (oldvy - this.vy) * 0.0001;
+
+                }
+                //attract to cursor
+                let dx2 = cursorX - this.x;
+                let dy2 = cursorY - this.y;
+                let distance2 = Math.sqrt(dx2*dx2 + dy2*dy2);
+                if (distance2 < 400) {
+                    this.vx += dx2 * 0.001;
+                    this.vy += dy2 * 0.001;
+                }
+
             }
 
         }
@@ -175,6 +218,7 @@
     return "rgb(" + r + "," + g + "," + b + ")";
 }
         
+
 
    </script>
 
