@@ -45,47 +45,69 @@
                 super.radius = Math.random() * 10 + 10;
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
-                this.vx = Math.random() * 5 - 2.5;
-                this.vy = Math.random() * 5 - 2.5;
+
+                this.speed = Math.random() * 2 + 1;
+                this.angle = Math.random() * Math.PI * 2;
+
                 this.drawX = this.x;
                 this.drawY = this.y;
-                this.drawAngle = 0;
+                this.drawAngle = this.angle;
                 this.trail = [{x: this.x, y: this.y}];
                 this.t = 0;
             }
             update() {
                 this.t++;
-                this.x += this.vx;
-                this.y += this.vy;
+                let vx = Math.cos(this.angle) * this.speed;
+                let vy = Math.sin(this.angle) * this.speed;
+                this.x += vx;
+                this.y += vy;
+
                 if (this.x < 0 || this.x > canvas.width) {
-                    this.vx *= -1;
+                    //angle of incidence = angle of reflection
+                    this.angle = Math.atan2(vy, -vx);
+
                     this.x = Math.max(0, Math.min(canvas.width, this.x));
                 }
                 if (this.y < 0 || this.y > canvas.height) {
-                    this.vy *= -1;
+                    this.angle = Math.atan2(-vy, vx);
                     this.y = Math.max(0, Math.min(canvas.height, this.y));
                 }
-
-
-
-
-
-
-
 
 
 
                 //lerp drawX and drawY to x and y
                 this.drawX += (this.x - this.drawX) * 0.1;
                 this.drawY += (this.y - this.drawY) * 0.1;
-                let angle = Math.atan2(this.vy, this.vx);
-                this.drawAngle += (angle - this.drawAngle) * 0.035;
+                this.drawAngle += (this.angle - this.drawAngle) * 0.035;
 
                 //every 5 frames, add a new point to the trail
                 if (this.t % (Math.pow(document.getElementById("speed").value,2)*5) == 0) this.trail.push({x: this.x, y: this.y});
 
                 //if trail longer than 500 points, remove the first point
                 if (this.trail.length > 2000) this.trail.shift();
+
+
+                //get angle to cursor
+                let dx = cursorX - this.x;
+                let dy = cursorY - this.y;
+                let angleToCursor = Math.atan2(dy, dx);
+                //slowly lerp towards cursor
+                //get vx and vy from angle
+                let vxToCursor = Math.cos(angleToCursor) * this.speed;
+                let vyToCursor = Math.sin(angleToCursor) * this.speed;
+                //refresh vx and vy from angle
+                vx = Math.cos(this.angle) * this.speed;
+                vy = Math.sin(this.angle) * this.speed;
+                //lerp vx and vy to vxToCursor and vyToCursor
+                vx += (vxToCursor - vx) * 0.01;
+                vy += (vyToCursor - vy) * 0.01;
+                //refresh angle from vx and vy
+                this.angle = Math.atan2(vy, vx);
+                
+
+
+                //snap angle to 2PI
+                this.angle = (this.angle + Math.PI * 2) % (Math.PI * 2);
 
             }
             draw(ctx) {
@@ -150,15 +172,7 @@
                     this.vy += (oldvy - this.vy) * 0.0001;
 
                 }
-                //attract to cursor
-                let dx2 = cursorX - this.x;
-                let dy2 = cursorY - this.y;
-                let distance2 = Math.sqrt(dx2*dx2 + dy2*dy2);
-                if (distance2 < 400) {
-                    this.vx += dx2 * 0.001;
-                    this.vy += dy2 * 0.001;
-                }
-
+             
             }
 
         }
@@ -178,11 +192,8 @@
             }
 
             for (let i = 0; i < snails.length; i++) {
-                snails[i].update();
+                
                 snails[i].draw(ctx);
-                for (let j = i + 1; j < snails.length; j++) {
-                    snails[i].collide(snails[j]);
-                }
             }
             
 
