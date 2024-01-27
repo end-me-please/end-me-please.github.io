@@ -1,0 +1,46 @@
+<HTML>
+    <head>
+        <title>Snails!</title>
+        <script src="proceduralsnails.js"></script>
+    </head>
+    <body>
+        <canvas id="canvas" width="800" height="600"></canvas>
+    </body>
+    <script>
+        let canvas = document.getElementById("canvas");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        //clears the canvas
+        let ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+
+
+
+
+        function frame() {
+            let snail = new SnailGen(randomColor(), randomColor(), Math.random()*20+3, randomColor(), Math.random()*32);
+            snail.radius = Math.random() * 100;
+            ctx.save();
+            //translate to random position after reset
+            ctx.translate(Math.random() * canvas.width, Math.random() * canvas.height);
+            snail.draw(ctx);
+            ctx.restore();
+
+
+            window.requestAnimationFrame(frame);
+        }
+        setTimeout(function() {
+            window.requestAnimationFrame(frame);
+        }, 50);
+
+        function randomColor() {
+            let r = Math.floor(Math.random() * 255);
+            let g = Math.floor(Math.random() * 255);
+            let b = Math.floor(Math.random() *255);
+            return "rgb(" + r + "," + g + "," + b + ")";
+        }
+
+   </script>
+
+</HTML>
