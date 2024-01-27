@@ -1,0 +1,181 @@
+<HTML>
+    <head>
+        <title>Snails!</title>
+        <script src="proceduralsnails.js"></script>
+    </head>
+    <body>
+        <input type="range" id="speed" min="1" max="10" value="1">Speed</range>
+        <canvas id="canvas" width="800" height="600"></canvas>
+
+    </body>
+    <script>
+        let canvas = document.getElementById("canvas");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        //remove margin and padding from the body
+        document.body.style.margin = "0px";
+        document.body.style.padding = "0px";
+        //remove scrollbars
+        document.body.style.overflow = "hidden";
+
+        //move the speed slider on top of the canvas
+        let speed = document.getElementById("speed");
+        speed.style.position = "absolute";
+        speed.style.top = "0px";
+        speed.style.left = "0px";
+        
+        //clears the canvas
+        let ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+
+
+
+
+
+        class Snail extends SnailGen {
+            constructor(){
+                super(randomColor(), randomColor(), Math.random()*20+3, randomColor(), Math.random()*32);
+                super.radius = Math.random() * 20 + 20;
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = Math.random() * 5 - 2.5;
+                this.vy = Math.random() * 5 - 2.5;
+                this.drawX = this.x;
+                this.drawY = this.y;
+                this.drawAngle = 0;
+                this.trail = [{x: this.x, y: this.y}];
+                this.t = 0;
+            }
+            update() {
+                this.t++;
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < 0 || this.x > canvas.width) {
+                    this.vx *= -1;
+                    this.x = Math.max(0, Math.min(canvas.width, this.x));
+                }
+                if (this.y < 0 || this.y > canvas.height) {
+                    this.vy *= -1;
+                    this.y = Math.max(0, Math.min(canvas.height, this.y));
+                }
+
+
+
+
+
+
+
+
+
+
+                //lerp drawX and drawY to x and y
+                this.drawX += (this.x - this.drawX) * 0.1;
+                this.drawY += (this.y - this.drawY) * 0.1;
+                let angle = Math.atan2(this.vy, this.vx);
+                this.drawAngle += (angle - this.drawAngle) * 0.05;
+
+                //every 5 frames, add a new point to the trail
+                if (this.t % Math.pow(document.getElementById("speed").value,2)*2 == 0) this.trail.push({x: this.x, y: this.y});
+
+                //if trail longer than 500 points, remove the first point
+                if (this.trail.length > 5000) this.trail.shift();
+
+            }
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.drawX, this.drawY);
+                ctx.rotate(this.drawAngle);
+                super.draw(ctx);
+                ctx.restore();
+            }
+            drawTrail(ctx){
+                ctx.beginPath();
+                ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                for (let i = 1; i < this.trail.length; i++) {
+                    ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                }
+                ctx.strokeStyle = this.footColor;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            collide(other){
+                let dx = this.x - other.x;
+                let dy = this.y - other.y;
+                let distance = Math.sqrt(dx*dx + dy*dy);
+
+                if (distance < this.radius + other.radius) {
+                    this.vx *= -1;
+                    this.vy *= -1;
+
+                    
+                    //move them apart
+                    let angle = Math.atan2(dy, dx);
+                    let overlap = this.radius + other.radius - distance;
+                    this.x += overlap * Math.cos(angle);
+                    this.y += overlap * Math.sin(angle);
+                }
+            }
+
+        }
+
+        
+
+
+        let snails = [];
+        for (let i = 0; i < 100; i++) {
+            snails.push(new Snail());
+        }
+
+        function frame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < snails.length; i++) {
+                snails[i].drawTrail(ctx);
+            }
+
+            for (let i = 0; i < snails.length; i++) {
+                snails[i].update();
+                snails[i].draw(ctx);
+                for (let j = i + 1; j < snails.length; j++) {
+                    snails[i].collide(snails[j]);
+                }
+            }
+            
+
+            
+            for (let i = 0; i < Math.pow(speed.value,2); i++) {
+                physicsFrame();
+            }
+            window.requestAnimationFrame(frame);
+            
+        }
+
+        function physicsFrame() {
+            for (let i = 0; i < snails.length; i++) {
+                snails[i].update();
+                for (let j = i + 1; j < snails.length; j++) {
+                    snails[i].collide(snails[j]);
+                }
+            }
+        }
+
+
+
+
+
+
+        setTimeout(function() {
+            window.requestAnimationFrame(frame);
+        }, 50);
+        function randomColor() {
+    let r = Math.floor(Math.random() * 255);
+    let g = Math.floor(Math.random() * 255);
+    let b = Math.floor(Math.random() *255);
+    return "rgb(" + r + "," + g + "," + b + ")";
+}
+        
+
+   </script>
+
+</HTML>
