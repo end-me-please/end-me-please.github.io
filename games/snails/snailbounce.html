@@ -54,6 +54,7 @@
                 this.drawAngle = this.angle;
                 this.trail = [{x: this.x, y: this.y}];
                 this.t = 0;
+
             }
             update() {
                 this.t++;
@@ -103,7 +104,7 @@
                 vy += (vyToCursor - vy) * 0.01;
                 //refresh angle from vx and vy
                 this.angle = Math.atan2(vy, vx);
-                
+
 
 
                 //snap angle to 2PI
@@ -163,13 +164,8 @@
                         this.vx *= 5 / speed;
                         this.vy *= 5 / speed;
                     }
-                    //lerp the speed with other speed
-                    this.vx += (other.vx - this.vx) * 0.05;
-                    this.vy += (other.vy - this.vy) * 0.05;
-
-                    //lerp the speed
-                    this.vx += (oldvx - this.vx) * 0.0001;
-                    this.vy += (oldvy - this.vy) * 0.0001;
+                    //lerp the speed with other.angle
+                    this.angle += (other.angle - this.angle) * 0.1/distance;
 
                 }
              
