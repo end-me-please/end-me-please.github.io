@@ -36,6 +36,12 @@
             cursorX = event.clientX;
             cursorY = event.clientY;
         });
+        canvas.addEventListener("mousedown", function(event) {
+            cursorDown = true;
+        });
+        canvas.addEventListener("mouseup", function(event) {
+            cursorDown = false;
+        });
 
 
 
@@ -63,16 +69,38 @@
                 this.x += vx;
                 this.y += vy;
 
-                if (this.x < 0 || this.x > canvas.width) {
-                    //angle of incidence = angle of reflection
-                    this.angle = Math.atan2(vy, -vx);
+                //wrap around the screen, and push a wrap marker to the trail
+                if (this.x < 0) {
+                    this.x = canvas.width;
 
-                    this.x = Math.max(0, Math.min(canvas.width, this.x));
+                    this.drawX = this.x;
+                    this.drawY = this.y;
+                    this.trail.push({x: this.x, y: this.y, wrap: true});
                 }
-                if (this.y < 0 || this.y > canvas.height) {
-                    this.angle = Math.atan2(-vy, vx);
-                    this.y = Math.max(0, Math.min(canvas.height, this.y));
+                if (this.x > canvas.width) {
+                    this.x = 0;
+
+                    this.drawX = this.x;
+                    this.drawY = this.y;
+                    this.trail.push({x: this.x, y: this.y, wrap: true});
                 }
+                if (this.y < 0) {
+                    this.y = canvas.height;
+
+                    this.drawX = this.x;
+                    this.drawY = this.y;
+                    this.trail.push({x: this.x, y: this.y, wrap: true});
+                }
+                if (this.y > canvas.height) {
+                    this.y = 0;
+
+                    this.drawX = this.x;
+                    this.drawY = this.y;
+                    this.trail.push({x: this.x, y: this.y, wrap: true});
+                }
+
+
+
 
 
 
@@ -88,40 +116,95 @@
                 if (this.trail.length > 2000) this.trail.shift();
 
 
+                if(cursorDown){
                 //get angle to cursor
                 let dx = cursorX - this.x;
                 let dy = cursorY - this.y;
-                let angleToCursor = Math.atan2(dy, dx);
-                //slowly lerp towards cursor
                 //get vx and vy from angle
-                let vxToCursor = Math.cos(angleToCursor) * this.speed;
-                let vyToCursor = Math.sin(angleToCursor) * this.speed;
                 //refresh vx and vy from angle
-                vx = Math.cos(this.angle) * this.speed;
-                vy = Math.sin(this.angle) * this.speed;
-                //lerp vx and vy to vxToCursor and vyToCursor
-                vx += (vxToCursor - vx) * 0.01;
-                vy += (vyToCursor - vy) * 0.01;
-                //refresh angle from vx and vy
-                this.angle = Math.atan2(vy, vx);
+                this.vx = this.vx * 0.999 + dx * 0.001;
+                this.vy = this.vy * 0.999 + dy * 0.001;
+                }
 
 
 
                 //snap angle to 2PI
                 this.angle = (this.angle + Math.PI * 2) % (Math.PI * 2);
 
+
+
+                //cap speed
+                let speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+                if (speed > 5) {
+                    this.vx *= 5 / speed;
+                    this.vy *= 5 / speed;
+                }
+
             }
+            get vx() {
+                return Math.cos(this.angle) * this.speed;
+            }
+            get vy() {
+                return Math.sin(this.angle) * this.speed;
+            }
+            set vx(vx) {
+                this.angle = Math.atan2(this.vy, vx);
+                this.speed = Math.sqrt(vx*vx + this.vy*this.vy);
+            }
+            set vy(vy) {
+                this.angle = Math.atan2(vy, this.vx);
+                this.speed = Math.sqrt(this.vx*this.vx + vy*vy);
+            }
+
             draw(ctx) {
                 ctx.save();
                 ctx.translate(this.drawX, this.drawY);
                 ctx.rotate(this.drawAngle);
                 super.draw(ctx);
                 ctx.restore();
+
+                //if within radius of wall, draw twice/slightly out of frame
+                if (this.x < 2*this.radius) {
+                    ctx.save();
+                    ctx.translate(this.drawX + canvas.width, this.drawY);
+                    ctx.rotate(this.drawAngle);
+                    super.draw(ctx);
+                    ctx.restore();
+                }
+                if (this.x > canvas.width - 2*this.radius) {
+                    ctx.save();
+                    ctx.translate(this.drawX - canvas.width, this.drawY);
+                    ctx.rotate(this.drawAngle);
+                    super.draw(ctx);
+                    ctx.restore();
+                }
+                if (this.y < 2*this.radius) {
+                    ctx.save();
+                    ctx.translate(this.drawX, this.drawY + canvas.height);
+                    ctx.rotate(this.drawAngle);
+                    super.draw(ctx);
+                    ctx.restore();
+                }
+                if (this.y > canvas.height - 2*this.radius) {
+                    ctx.save();
+                    ctx.translate(this.drawX, this.drawY - canvas.height);
+                    ctx.rotate(this.drawAngle);
+                    super.draw(ctx);
+                    ctx.restore();
+                }
+
+
             }
             drawTrail(ctx){
                 ctx.beginPath();
                 ctx.moveTo(this.trail[0].x, this.trail[0].y);
                 for (let i = 1; i < this.trail.length; i++) {
+                    if (this.trail[i].wrap) {
+                        ctx.strokeStyle = this.footColor;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        ctx.beginPath();
+                    }
                     ctx.lineTo(this.trail[i].x, this.trail[i].y);
                 }
                 ctx.strokeStyle = this.footColor;
@@ -165,7 +248,7 @@
                         this.vy *= 5 / speed;
                     }
                     //lerp the speed with other.angle
-                    this.angle += (other.angle - this.angle) * 0.1/distance;
+                    this.angle += (other.angle - this.angle) * 1/(distance+1);
 
                 }
              
