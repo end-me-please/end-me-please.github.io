@@ -59,10 +59,10 @@
         
 
 
-        class Snail extends SnailGen {
+        class Snail extends RandomSnail {
             constructor(){
-                super(randomColor(), randomColor(), Math.random()*20+3, randomColor(), Math.random()*32);
-                super.radius = Math.random() * 10 + 10;
+                super(Math.random()*32, Math.random()*256);
+                super.radius = Math.random() * 7 + 7;
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
 
@@ -140,8 +140,8 @@
                 if (this.t % (Math.pow(document.getElementById("speed").value,2)*8) == 0) this.trail.push({x: this.x, y: this.y, wrap: false});
 
                 //if avg frame time is higher than 15ms, remove a point from the trail
-                console.log(avgFrameTime);
-                if (avgFrameTime > 15 && this.trail.length > 50) this.trail.shift();
+                
+                if (avgFrameTime > 15 && this.trail.length > 50 && Math.random()>0.8) this.trail.shift();
 
 
 
@@ -149,12 +149,11 @@
                 //get angle to cursor
                 let dx = cursorX - this.x;
                 let dy = cursorY - this.y;
-                //get vx and vy from angle
-                //refresh vx and vy from angle
-                this.vx = this.vx * 0.999 + dx * 0.001;
-                this.vy = this.vy * 0.999 + dy * 0.001;
+                if(Math.sqrt(dx*dx + dy*dy) < 256){
+                this.vx+=dx*0.01;
+                this.vy+=dy*0.01;
                 }
-
+                }
 
 
                 //snap angle to 2PI
@@ -264,20 +263,20 @@
                     this.y += overlap * Math.sin(angle);
                 }
 
-                if(distance < this.radius*17){
+                if(distance < this.radius*25){
                     let oldvx = this.vx;
                     let oldvy = this.vy;
                     //if closer than 5, repel, if not, attract
-                    if (distance < 10*this.radius) {
-                        this.vx += dx * 0.004;
-                        this.vy += dy * 0.004;
+                    if (distance < 6*this.radius) {
+                        this.vx += dx * 0.0002;
+                        this.vy += dy * 0.0002;
                     } else {
                         this.vx -= dx * 0.0001;
                         this.vy -= dy * 0.0001;
                     }
            
                     //lerp the speed with other.angle
-                    this.angle += (other.angle - this.angle) * 1/(distance+1);
+                    this.angle += (other.drawAngle - this.angle) * 1/(0.5*distance+1);
 
                 }
              
@@ -289,7 +288,7 @@
 
 
         let snails = [];
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 150; i++) {
             snails.push(new Snail());
         }
 
@@ -313,7 +312,7 @@
             let frameTime = Date.now()-t;
             let newAvgFrameTime = (frameTime) * 0.05 + avgFrameTime * 0.95;
             avgFrameTime = newAvgFrameTime;
-
+            console.log(avgFrameTime);
             window.requestAnimationFrame(frame);
             
         }

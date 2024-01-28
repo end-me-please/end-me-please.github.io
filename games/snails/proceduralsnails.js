@@ -8,7 +8,9 @@ class SnailGen {
         this.radius = 32;
         this.randomSeed = Math.random();
         this.cracks = 0;
-    }
+        this.dead = false;
+    }    
+
     draw(ctx){
         let rng = seedRandom(this.randomSeed);
 
@@ -147,13 +149,22 @@ class SnailGen {
             }
 
         }
-
-        
-
-
-
     }
     
+}
+
+class RandomSnail extends SnailGen {
+    constructor(radius, seed){
+        let rng = seedRandom(seed);
+        let shellC1 = "rgb(" + Math.floor(rng.next().value * 255) + "," + Math.floor(rng.next().value * 255) + "," + Math.floor(rng.next().value * 255) + ")";
+        let shellC2 = "rgb(" + Math.floor(rng.next().value * 255) + "," + Math.floor(rng.next().value * 255) + "," + Math.floor(rng.next().value * 255) + ")";
+        let footColor = "rgb(" + Math.floor(rng.next().value * 255) + "," + Math.floor(rng.next().value * 255) + "," + Math.floor(rng.next().value * 255) + ")";
+        let spiralPitch = Math.floor(rng.next().value * 10) + 3;
+        let eyeLength = Math.floor(rng.next().value * 10) + 3;
+        super(shellC1, shellC2, spiralPitch, footColor, eyeLength);
+        this.radius = radius;
+        this.randomSeed = seed;
+    }
 }
 
 function* seedRandom(seed) {
