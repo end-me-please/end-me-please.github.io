@@ -38,6 +38,17 @@
         });
         canvas.addEventListener("mousedown", function(event) {
             cursorDown = true;
+
+            //check position of cursor, if within a snail, add a crack
+            for (let i = 0; i < snails.length; i++) {
+                let dx = cursorX - snails[i].x;
+                let dy = cursorY - snails[i].y;
+                let distance = Math.sqrt(dx*dx + dy*dy);
+                if (distance < snails[i].radius) {
+                    snails[i].health--;
+                }
+            }
+
         });
         canvas.addEventListener("mouseup", function(event) {
             cursorDown = false;
@@ -60,14 +71,28 @@
                 this.drawAngle = this.angle;
                 this.trail = [{x: this.x, y: this.y}];
                 this.t = 0;
-
+                this.health = 2;
+                this.maxHealth = 2;
+                this.dead=false;
             }
             update() {
+                
                 this.t++;
+
+                if(this.health <= 0){
+                    this.dead=true;
+                }
+
+                if(!this.dead){
+
+                
                 let vx = Math.cos(this.angle) * this.speed;
                 let vy = Math.sin(this.angle) * this.speed;
                 this.x += vx;
                 this.y += vy;
+                this.drawAngle += (this.angle - this.drawAngle) * 0.035;
+
+                }
 
                 //wrap around the screen, and push a wrap marker to the trail
                 if (this.x < 0) {
@@ -107,7 +132,6 @@
                 //lerp drawX and drawY to x and y
                 this.drawX += (this.x - this.drawX) * 0.1;
                 this.drawY += (this.y - this.drawY) * 0.1;
-                this.drawAngle += (this.angle - this.drawAngle) * 0.035;
 
                 //every 5 frames, add a new point to the trail
                 if (this.t % (Math.pow(document.getElementById("speed").value,2)*5) == 0) this.trail.push({x: this.x, y: this.y});
@@ -139,6 +163,11 @@
                     this.vx *= 5 / speed;
                     this.vy *= 5 / speed;
                 }
+                //set this.cracks to maxhealth-health
+                this.cracks = this.maxHealth - this.health;
+                //if health is 0, die
+
+
 
             }
             get vx() {

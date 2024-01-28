@@ -7,9 +7,11 @@ class SnailGen {
         this.eyeLength = eyeLength;
         this.radius = 32;
         this.randomSeed = Math.random();
+        this.cracks = 0;
     }
     draw(ctx){
-        
+        let rng = seedRandom(this.randomSeed);
+
         let color1 = this.shellC1;
         let color2 = this.shellC2;
         let footColor = this.footColor;
@@ -53,6 +55,8 @@ class SnailGen {
         ctx.stroke();
         ctx.closePath();
 
+
+
         ctx.beginPath();
         ctx.moveTo(headX+radius/3.2, bottomY-radius/4);
         let eyeAngle = Math.PI/4;
@@ -62,16 +66,28 @@ class SnailGen {
         ctx.lineWidth = radius/6;
         ctx.stroke();
         ctx.closePath();
+
+        if(!this.dead){
         ctx.beginPath();
         ctx.moveTo(headX+radius/3 + eyelengthX, bottomY-radius/2 - eyelengthY);
         ctx.arc(headX+radius/3 + eyelengthX, bottomY-radius/2 - eyelengthY, radius/10, 0, 2*Math.PI);
         ctx.fillStyle = "black";
         ctx.fill();
         ctx.closePath();
+        } else {
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = radius/10;
+            ctx.moveTo(headX+radius/3 + eyelengthX - radius/10, bottomY-radius/2 - eyelengthY - radius/10);
+            ctx.lineTo(headX+radius/3 + eyelengthX + radius/10, bottomY-radius/2 - eyelengthY + radius/10);
+            ctx.moveTo(headX+radius/3 + eyelengthX + radius/10, bottomY-radius/2 - eyelengthY - radius/10);
+            ctx.lineTo(headX+radius/3 + eyelengthX - radius/10, bottomY-radius/2 - eyelengthY + radius/10);
+            ctx.stroke();
+            ctx.closePath();
+        }
 
+        
         ctx.beginPath();
         ctx.moveTo(headX+radius/3.7, bottomY-radius/4);
-
         eyeAngle = Math.PI/8;
         eyelengthX = Math.cos(eyeAngle)*eyeLength;
         eyelengthY = Math.sin(eyeAngle)*eyeLength;
@@ -81,12 +97,59 @@ class SnailGen {
         ctx.closePath();
         ctx.beginPath();
         ctx.moveTo(headX+radius/3 + eyelengthX, bottomY-radius/2 - eyelengthY);
+        if(this.dead==false){
         ctx.arc(headX+radius/3 + eyelengthX, bottomY-radius/2 - eyelengthY, radius/10, 0, 2*Math.PI);
         ctx.fillStyle = "black";
         ctx.fill();
         ctx.closePath();
+        } else {
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = radius/10;
+            ctx.moveTo(headX+radius/3 + eyelengthX - radius/10, bottomY-radius/2 - eyelengthY - radius/10);
+            ctx.lineTo(headX+radius/3 + eyelengthX + radius/10, bottomY-radius/2 - eyelengthY + radius/10);
+            ctx.moveTo(headX+radius/3 + eyelengthX + radius/10, bottomY-radius/2 - eyelengthY - radius/10);
+            ctx.lineTo(headX+radius/3 + eyelengthX - radius/10, bottomY-radius/2 - eyelengthY + radius/10);
+            ctx.stroke();
+            ctx.closePath();
+        }
+
 
         
+        if(this.cracks > 0) {
+            for(let i = 0; i < this.cracks*3; i++) {
+                ctx.beginPath();
+                //get a random angle for the crack to start on the outside of the shell
+                let angle = rng.next().value * 2 * Math.PI;
+                //get a random length for the crack to be
+                let length = rng.next().value * radius;
+                //get a second random angle for the crack to end on the inside of the shell
+                let angle2 = rng.next().value * 2 * Math.PI;
+                //get a second random length for the crack to be
+                let length2 = rng.next().value * radius/2;
+                
+                //get the x and y coordinates for the start of the crack
+                let x = length * Math.cos(angle);
+                let y = length * Math.sin(angle);
+                //get the x and y coordinates for the end of the crack
+                let x2 = length2 * Math.cos(angle2);
+                let y2 = length2 * Math.sin(angle2);
+                //draw the crack
+                ctx.moveTo(x, y);
+                ctx.lineTo(x2, y2);
+                
+
+
+
+                ctx.lineWidth = radius/9;
+                ctx.strokeStyle = "black";
+                ctx.stroke();
+                ctx.closePath();
+            }
+
+        }
+
+        
+
 
 
     }
