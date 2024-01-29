@@ -1,16 +1,89 @@
 class SnailGen {
     constructor(shellC1, shellC2, spiralPitch, skinC, eyeLength) {
-        this.shellC1 = shellC1;
-        this.shellC2 = shellC2;
-        this.footColor = skinC;
-        this.spiralPitch = spiralPitch;
-        this.eyeLength = eyeLength;
-        this.radius = 32;
-        this.randomSeed = Math.random();
-        this.cracks = 0;
-        this.dead = false;
-        //this.imageCache = this.cacheImg();
+        this.needRefresh = false;
+        this._shellC1 = shellC1;
+        this._shellC2 = shellC2;
+        this._footColor = skinC;
+        this._spiralPitch = spiralPitch;
+        this._eyeLength = eyeLength;
+        this._radius = 32;
+        this._randomSeed = Math.random();
+        this._cracks = 0;
+        this._dead = false;
+        this.imageCache = this.cacheImg();
     }    
+    checkIfRefreshNeeded() {
+        if(this.needRefresh) {
+            this.refreshCache();
+            this.needRefresh = false;
+        }
+    }
+    get shellC1() {
+        return this._shellC1;
+    }
+    set shellC1(value) {
+        this._shellC1 = value;
+        this.needRefresh = true;
+    }
+    get shellC2() {
+        return this._shellC2;
+    }
+    set shellC2(value) {
+        this._shellC2 = value;
+        this.needRefresh = true;
+    }
+    get footColor() {
+        return this._footColor;
+    }
+    set footColor(value) {
+        this._footColor = value;
+        this.needRefresh = true;
+    }
+    get spiralPitch() {
+        return this._spiralPitch;
+    }
+    set spiralPitch(value) {
+        this._spiralPitch = value;
+        this.needRefresh = true;
+    }
+    get eyeLength() {
+        return this._eyeLength;
+    }
+    set eyeLength(value) {
+        this._eyeLength = value;
+        this.needRefresh = true;
+    }
+    get radius() {
+        return this._radius;
+    }
+    set radius(value) {
+        this._radius = value;
+        this.needRefresh = true;
+    }
+    get randomSeed() {
+        return this._randomSeed;
+    }
+    set randomSeed(value) {
+        this._randomSeed = value;
+        this.needRefresh = true;
+    }
+    get cracks() {
+        return this._cracks;
+    }
+    set cracks(value) {
+        if(this._cracks!=value) { this.needRefresh = true; };    
+        this._cracks = value;
+        
+    }
+    get dead() {
+        return this._dead;
+    }
+    set dead(value) {
+        this._dead = value;
+        this.needRefresh = true;
+    }
+
+
 
     draw(ctx){
         let rng = seedRandom(this.randomSeed);
@@ -152,8 +225,9 @@ class SnailGen {
         }
     }
     cacheImg(){
-        let canvas = new OffscreenCanvas(this.radius*2, this.radius*2);
+        let canvas = new OffscreenCanvas(this.radius*4, this.radius*4);
         let ctx = canvas.getContext('2d');
+        ctx.translate(this.radius, this.radius);
         this.draw(ctx);
         this.img = canvas.transferToImageBitmap();
         return this.img;
@@ -162,9 +236,10 @@ class SnailGen {
         this.imageCache = this.cacheImg();
     }
     
-    drawCached(ctx,x,y,rot) {
-        //rot unused for now
-        ctx.drawImage(this.imageCache, x-this.radius, y-this.radius);
+    drawCached(ctx) {
+        this.checkIfRefreshNeeded();
+
+        ctx.drawImage(this.img, -this.radius, -this.radius);
     }
 
 

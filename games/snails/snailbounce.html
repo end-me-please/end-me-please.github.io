@@ -261,11 +261,11 @@
                 this.vy = Math.sin(angle) * speed;
             }
 
-            draw(ctx) {
+            render(ctx) {
                 ctx.save();
                 ctx.translate(this.drawX, this.drawY);
                 ctx.rotate(this.drawAngle);
-                super.draw(ctx);
+                super.drawCached(ctx);
                 ctx.restore();
 
                 //if within radius of wall, draw twice/slightly out of frame
@@ -390,7 +390,7 @@
             ctx.save();
             for (let i = 0; i < snails.length; i++) {
                 
-                snails[i].draw(ctx);
+                snails[i].render(ctx);
             
             }
             ctx.restore();
