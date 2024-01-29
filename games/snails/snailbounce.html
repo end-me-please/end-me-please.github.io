@@ -346,11 +346,11 @@
                     let oldvy = this.vy;
                     //if closer than 5, repel, if not, attract
                     if (distance < 7*this.radius) {
-                        this.vx += dx * 0.0004;
-                        this.vy += dy * 0.0004;
+                        this.vx += 1/(dx/this.radius+1) * 0.0004;
+                        this.vy += 1/(dy/this.radius+1) * 0.0004;
                     } else {
-                        this.vx -= dx * 0.00001;
-                        this.vy -= dy * 0.00001;
+                        this.vx -= 1/(dx/this.radius+1) * 0.00001;
+                        this.vy -= 1/(dy/this.radius+1) * 0.00001;
                     }
            
                     //lerp the speed with other.drawAngle
