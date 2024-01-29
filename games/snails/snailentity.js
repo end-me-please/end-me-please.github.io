@@ -1,8 +1,11 @@
 
 class Snail extends RandomSnail {
-    constructor(){
+    constructor(id){
         super(Math.random()*32, Math.random()*256);
+        this.id = id;
+
         super.radius = Math.random() * 5 + 4;
+
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
 
@@ -87,7 +90,7 @@ class Snail extends RandomSnail {
         this.drawY += (this.y - this.drawY) * 0.1;
 
         //every 5 frames, add a new point to the trail
-        if (this.t % (Math.pow(document.getElementById("speed").value,2)*3) == 0) this.trail.push({x: this.x, y: this.y, wrap: false});
+        if (this.t % 3 == 0) this.trail.push({x: this.x, y: this.y, wrap: false});
 
         //if avg frame time is higher than 15ms, remove a point from the trail
         
@@ -281,7 +284,24 @@ class Snail extends RandomSnail {
         }
      
     }
-
+    serialize(){
+        let obj = {
+            id: this.id,
+            x: this.drawX,
+            y: this.drawY,
+            angle: this.drawAngle,
+            trail: this.trail,
+        }
+        return obj;
+    }
+    deserialize(obj){
+        this.id = obj.id;
+        this.drawX = obj.x;
+        this.drawY = obj.y;
+        this.drawAngle = obj.angle;
+        //this.trail = obj.trail;
+        //console.log("deserialized");
+    }
 
 }
 

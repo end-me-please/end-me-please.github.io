@@ -14,6 +14,9 @@
     <script>
 
         
+        //spawn snailsimWorker.js
+        let snailSimWorker = new Worker("./snailsimWorker.js");
+        snailSimWorker.postMessage({type: "setup", width: window.innerWidth, height: window.innerHeight});
 
 
         let canvas = document.getElementById("canvas");
@@ -27,6 +30,10 @@
 
         //move the speed slider on top of the canvas
         let speed = document.getElementById("speed");
+        speed.onchange = function() {
+            snailSimWorker.postMessage({type: "speedupdate", speed: speed.value});
+        }
+
         speed.style.position = "absolute";
         speed.style.top = "0px";
         speed.style.left = "0px";
@@ -79,13 +86,17 @@
 
         let snails = [];        
         
-        for (let i = 0; i < 1000; i++) {
-            snails.push(new Snail());
+        for (let i = 0; i < 10000; i++) {
+            snails.push(new Snail(i));
+            snails[i].randomSeed = i;
             grid.addEntity(snails[i]);
+
         }
         
 
         function frame() {
+            snailSimWorker.postMessage({type: "requestframe"});
+
             let t = Date.now();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             //put imagedata
@@ -107,7 +118,7 @@
 
             
             for (let i = 0; i < Math.pow(speed.value,2); i++) {
-                physicsFrame();
+                //physicsFrame();
             }
             let frameTime = Date.now()-t;
             let newAvgFrameTime = (frameTime) * 0.05 + avgFrameTime * 0.95;
@@ -115,6 +126,24 @@
             window.requestAnimationFrame(frame);
             
         }
+
+        snailSimWorker.onmessage = function(event) {
+            //console.log(event.data);
+            let data = event.data;
+            if (data.type == "frame") {
+                //frame is an array of serialized snails, find the IDs and update them
+                for (let i = 0; i < data.frame.length; i++) {
+                        //console.log(data.frame[i]);
+
+                        snails[i].deserialize(data.frame[i]);
+                }
+            }
+        }
+
+
+
+
+
 
         let lastUpdated = false;
         function physicsFrame() {
