@@ -1,4 +1,4 @@
-<HTML>
+    <HTML>
     <head>
         <title>Snails!</title>
         <script src="proceduralsnails.js"></script>
@@ -67,7 +67,7 @@
         class Snail extends RandomSnail {
             constructor(){
                 super(Math.random()*32, Math.random()*256);
-                super.radius = Math.random() * 5 + 5;
+                super.radius = Math.random() * 3 + 3;
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
 
@@ -356,11 +356,13 @@
 
 
 
-        let grid = new Grid(canvas.width, canvas.height, 6);
+
+
+        let grid = new Grid(canvas.width, canvas.height, 9);
 
         let snails = [];        
         
-        for (let i = 0; i < 350; i++) {
+        for (let i = 0; i < 900; i++) {
             snails.push(new Snail());
             grid.addEntity(snails[i]);
         }
@@ -438,6 +440,17 @@
     return "rgb(" + r + "," + g + "," + b + ")";
 }
         
+
+
+
+
+
+
+
+
+
+
+
 
 
    </script>
