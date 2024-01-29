@@ -225,7 +225,7 @@ class SnailGen {
         }
     }
     cacheImg(){
-        let canvas = new OffscreenCanvas(this.radius*4, this.radius*4);
+        let canvas = new OffscreenCanvas(this.radius*2, this.radius*2);
         let ctx = canvas.getContext('2d');
         ctx.translate(this.radius, this.radius);
         this.draw(ctx);
