@@ -2,6 +2,7 @@
     <head>
         <title>Snails!</title>
         <script src="proceduralsnails.js"></script>
+        <script src="proceduralfruit.js"></script>
     </head>
     <body>
         <input type="range" id="speed" min="1" max="10" value="1">Speed</range>
@@ -96,7 +97,13 @@
                 let vy = Math.sin(this.drawAngle) * this.speed;
                 this.x += vx;
                 this.y += vy;
-                this.drawAngle += (this.angle - this.drawAngle) * 0.05;
+                //lerp drawangle to angle, respecting wraparound
+                let diff = this.angle - this.drawAngle;
+                if (diff > Math.PI) diff -= Math.PI * 2;
+                if (diff < -Math.PI) diff += Math.PI * 2;
+                this.drawAngle += diff * 0.1;
+
+
 
                 }
 
@@ -169,7 +176,8 @@
 
 
                 //snap angle to 2PI
-                if (this.angle > Math.PI * 2) this.angle -= Math.PI * 2;
+                if (this.angle > Math.PI * 2) this.angle -= Math.PI * 2; 
+                if (this.angle < 0) this.angle += Math.PI * 2;
 
 
                 //cap speed
