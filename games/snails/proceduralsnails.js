@@ -11,9 +11,10 @@ class SnailGen {
         this._cracks = 0;
         this._dead = false;
         this.imageCache = this.cacheImg();
+        this.ready = false;
     }    
     checkIfRefreshNeeded() {
-        if(this.needRefresh) {
+        if(this.needRefresh&&this.ready) {
             this.refreshCache();
             this.needRefresh = false;
         }
