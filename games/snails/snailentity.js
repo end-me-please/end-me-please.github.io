@@ -4,7 +4,7 @@ class Snail extends RandomSnail {
         super(Math.random()*32, Math.random()*256);
         this.id = id;
 
-        super.radius = Math.random() * 5 + 4;
+        super.radius = Math.random() * 2 + 2;
 
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
@@ -289,7 +289,7 @@ class Snail extends RandomSnail {
             id: this.id,
             x: this.drawX,
             y: this.drawY,
-            angle: this.drawAngle,
+            drawAngle: this.drawAngle,
             trail: this.trail,
         }
         return obj;
@@ -298,7 +298,8 @@ class Snail extends RandomSnail {
         this.id = obj.id;
         this.drawX = obj.x;
         this.drawY = obj.y;
-        this.drawAngle = obj.angle;
+        this.trail = obj.trail||[{x: this.x, y: this.y}];
+        this.drawAngle = obj.drawAngle;
         //this.trail = obj.trail;
         //console.log("deserialized");
     }
