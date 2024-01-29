@@ -298,12 +298,12 @@
                     let oldvx = this.vx;
                     let oldvy = this.vy;
                     //if closer than 5, repel, if not, attract
-                    if (distance < 6*this.radius) {
-                        this.vx += dx * 0.0002;
-                        this.vy += dy * 0.0002;
+                    if (distance < 7*this.radius) {
+                        this.vx += dx * 0.0004;
+                        this.vy += dy * 0.0004;
                     } else {
-                        this.vx -= dx * 0.0001;
-                        this.vy -= dy * 0.0001;
+                        this.vx -= dx * 0.00001;
+                        this.vy -= dy * 0.00001;
                     }
            
                     //lerp the speed with other.drawAngle
@@ -319,7 +319,7 @@
 
 
         let snails = [];
-        for (let i = 0; i < 150; i++) {
+        for (let i = 0; i < 350; i++) {
             snails.push(new Snail());
         }
 
