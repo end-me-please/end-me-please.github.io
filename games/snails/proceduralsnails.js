@@ -9,6 +9,7 @@ class SnailGen {
         this.randomSeed = Math.random();
         this.cracks = 0;
         this.dead = false;
+        //this.imageCache = this.cacheImg();
     }    
 
     draw(ctx){
@@ -150,7 +151,23 @@ class SnailGen {
 
         }
     }
+    cacheImg(){
+        let canvas = new OffscreenCanvas(this.radius*2, this.radius*2);
+        let ctx = canvas.getContext('2d');
+        this.draw(ctx);
+        this.img = canvas.transferToImageBitmap();
+        return this.img;
+    }
+    refreshCache(){
+        this.imageCache = this.cacheImg();
+    }
     
+    drawCached(ctx,x,y,rot) {
+        //rot unused for now
+        ctx.drawImage(this.imageCache, x-this.radius, y-this.radius);
+    }
+
+
 }
 
 class RandomSnail extends SnailGen {

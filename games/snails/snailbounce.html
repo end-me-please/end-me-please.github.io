@@ -386,10 +386,14 @@
                 snails[i].drawTrail(trailCtx);
             }
 
+            //save
+            ctx.save();
             for (let i = 0; i < snails.length; i++) {
                 
                 snails[i].draw(ctx);
+            
             }
+            ctx.restore();
             
 
             
