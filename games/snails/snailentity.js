@@ -280,8 +280,8 @@ class Snail extends RandomSnail {
                 this.vx += 1/(dx/this.radius+this.radius) * 0.01;
                 this.vy += 1/(dy/this.radius+this.radius) * 0.01;
             } else {
-                this.vx -= 1/(dx/this.radius+this.radius) * 0.031;
-                this.vy -= 1/(dy/this.radius+this.radius) * 0.031;
+                this.vx -= 1/(dx/this.radius+this.radius) * 0.01;
+                this.vy -= 1/(dy/this.radius+this.radius) * 0.01;
             
                 
                 this.lerpAngle(other.drawAngle, 1/((distance/this.radius)+this.radius));
