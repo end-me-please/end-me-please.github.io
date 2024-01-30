@@ -4,7 +4,7 @@ class Snail extends RandomSnail {
         super(Math.random()*32, Math.random()*256);
         this.id = id;
 
-        super.radius = Math.random() * 4 + 3;
+        super.radius = Math.random() * 4 + 4;
 
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
@@ -273,10 +273,10 @@ class Snail extends RandomSnail {
             this.y += overlap * Math.sin(angle);
         }
 
-        if(distance < this.radius*12){
+        if(distance < this.radius*8){
 
             //if closer than 5, repel, if not, attract
-            if (distance < 5*this.radius) {
+            if (distance < 4*this.radius) {
                 this.vx += 1/(dx/this.radius+this.radius) * 0.01;
                 this.vy += 1/(dy/this.radius+this.radius) * 0.01;
             } else {

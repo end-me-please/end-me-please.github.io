@@ -44,7 +44,7 @@ onmessage = function(e) {
         if(cframe!=undefined){
             postMessage({type:"frame",frame:cframe});
         }
-        if(frameQueue.length<2){
+        if(frameQueue.length<3){
             frame();
         }
     }
@@ -115,7 +115,7 @@ function physicsFrame() {
 
     for (let i = 0; i < snails.length; i++) {
         snails[i].update();
-        let potentialPartners = grid.getEntitiesInCircle(snails[i].x, snails[i].y, 9*snails[i].radius);
+        let potentialPartners = grid.getEntitiesInCircle(snails[i].x, snails[i].y, 8*snails[i].radius);
         //draw a line to each partner
         if(debug==true){
         for (let j = 0; j < potentialPartners.length; j++) {
