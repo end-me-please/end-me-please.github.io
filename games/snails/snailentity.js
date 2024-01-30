@@ -4,7 +4,7 @@ class Snail extends RandomSnail {
         super(Math.random()*32, Math.random()*256);
         this.id = id;
 
-        super.radius = Math.random() * 3 + 3;
+        super.radius = Math.random() * 4 + 3;
 
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
@@ -123,9 +123,9 @@ class Snail extends RandomSnail {
         //slight attraction to center
         let dx = canvas.width/2 - this.x;
         let dy = canvas.height/2 - this.y;
-        this.vx += 1/dx * 0.001;
-        this.vy += 1/dy * 0.001;
-        
+        this.vx += dx * 0.000001;
+        this.vy += dy * 0.000001;
+
         
 
 
@@ -280,8 +280,8 @@ class Snail extends RandomSnail {
                 this.vx += 1/(dx/this.radius+this.radius) * 0.01;
                 this.vy += 1/(dy/this.radius+this.radius) * 0.01;
             } else {
-                this.vx -= 1/(dx/this.radius+this.radius) * 0.001;
-                this.vy -= 1/(dy/this.radius+this.radius) * 0.001;
+                this.vx -= 1/(dx/this.radius+this.radius) * 0.031;
+                this.vy -= 1/(dy/this.radius+this.radius) * 0.031;
             
                 
                 this.lerpAngle(other.drawAngle, 1/((distance/this.radius)+this.radius));
