@@ -16,6 +16,8 @@ let speed = 1;
 let cursorDown = false;
 let cursorX = 0;
 let cursorY = 0;
+let cursorvx = 0;
+let cursorvy = 0;
 let debug = false;
 
 
@@ -28,7 +30,7 @@ let frameQueue = [];
 
 
 
-
+let toSkip = 0;
 
 
 
@@ -55,6 +57,18 @@ onmessage = function(e) {
         cursorDown = e.data.down;
         cursorX = e.data.x;
         cursorY = e.data.y;
+        cursorvx = e.data.vx;
+        cursorvy = e.data.vy;
+    }
+    if(e.data.type=="addsnails"){
+        for(let i=0;i<e.data.amount;i++){
+            snails.push(new Snail(snails.length));
+            snails[i].randomSeed = i;
+            grid.addEntity(snails[i]);
+        }
+    }
+    if(e.data.type=="skip"){
+        toSkip = e.data.amount;
     }
 
 }
@@ -78,7 +92,7 @@ function setup(width, height){
     isSetup = true;
 
 
-    for(let i=0;i<600;i++){
+    for(let i=0;i<400;i++){
         snails.push(new Snail(i));
         snails[i].randomSeed = i;
         grid.addEntity(snails[i]);
@@ -95,6 +109,10 @@ let snails = [];
 
 function frame(){
     for(let t = 0; t < speed; t++){
+        if(toSkip>0){
+            toSkip--;
+            continue;
+        }
         physicsFrame();
     }
     let frame = [];

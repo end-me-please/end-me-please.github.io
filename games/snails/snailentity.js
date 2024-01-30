@@ -13,7 +13,7 @@ class Snail extends RandomSnail {
         //this.angle = Math.random() * Math.PI * 2;
         this.vx = Math.random() * 2 - 1;
         this.vy = Math.random() * 2 - 1;
-        this.maxSpeed = Math.random() * 2 + 3;
+        this.maxSpeed = Math.random() * 1 + 2;
         this.drawX = this.x;
         this.drawY = this.y;
         this.drawAngle = this.angle;
@@ -102,7 +102,7 @@ class Snail extends RandomSnail {
         //get angle to cursor
         let dx = cursorX - this.x;
         let dy = cursorY - this.y;
-        if(Math.sqrt(dx*dx + dy*dy) < 350){
+        if(Math.sqrt(dx*dx + dy*dy) < 256){
             if(debug==true) {
                 //draw a line to the cursor in green
                 ctx.beginPath();
@@ -113,10 +113,16 @@ class Snail extends RandomSnail {
                 ctx.stroke();
 
             }
-            this.vx += 6/(dx * 0.1);
-            this.vy += 6/(dy * 0.1);
-            let cursorAngle = Math.atan2(dy, dx);
+            //this.vx += 6/(dx * 0.1);
+            //this.vy += 6/(dy * 0.1);
+            //let cursorAngle = Math.atan2(dy, dx);
             //this.lerpAngle(cursorAngle, 1);
+            
+            //align with cursor movement vector
+            this.vx = cursorvx/5;
+            this.vy = cursorvy/5;
+
+            
         }
         }
 
@@ -190,7 +196,8 @@ class Snail extends RandomSnail {
 
     render(ctx) {
         ctx.save();
-        ctx.translate(Math.floor(this.drawX), Math.floor(this.drawY));
+        //ctx.translate(Math.floor(this.drawX), Math.floor(this.drawY));
+        ctx.translate(this.drawX, this.drawY);
         ctx.rotate(this.drawAngle);
         super.drawCached(ctx);
         ctx.restore();

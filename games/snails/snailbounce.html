@@ -49,8 +49,24 @@
         let cursorX = 0;
         let cursorY = 0;
         let cursorDown = false;
+        let cursorvx = 0;
+        let cursorvy = 0;
+
+
         let debug = false;
         canvas.addEventListener("mousemove", function(event) {
+            //lerp the cursor movement
+
+            if(cursorDown){
+            cursorvx += (event.clientX - cursorX);
+            cursorvy += (event.clientY - cursorY);
+            } else {
+                cursorvx = 0;
+                cursorvy = 0;
+            }
+            cursorvx *= 0.99;
+            cursorvy *= 0.99;
+
             cursorX = event.clientX;
             cursorY = event.clientY;
             updateCursor();
@@ -77,7 +93,8 @@
         let avgFrameTime = 5;
         
         function updateCursor() {
-            snailSimWorker.postMessage({type: "cursorupdate", x: cursorX, y: cursorY, down: cursorDown});
+            
+            snailSimWorker.postMessage({type: "cursorupdate", x: cursorX, y: cursorY, down: cursorDown, vx: cursorvx, vy: cursorvy});
         }
 
         
@@ -90,7 +107,7 @@
 
         let snails = [];        
         
-        for (let i = 0; i < 600; i++) {
+        for (let i = 0; i < 400; i++) {
             snails.push(new Snail(i));
             snails[i].randomSeed = i;
             grid.addEntity(snails[i]);
@@ -128,8 +145,12 @@
             let newAvgFrameTime = (frameTime) * 0.05 + avgFrameTime * 0.95;
             avgFrameTime = newAvgFrameTime;
             window.requestAnimationFrame(frame);
+            toDisplay--;
             
         }
+
+
+        let toDisplay = 0;
 
         snailSimWorker.onmessage = function(event) {
             //console.log(event.data);
@@ -141,6 +162,14 @@
 
                         snails[i].deserialize(data.frame[i]);
                 }
+            }
+            toDisplay++;
+            if(toDisplay>25){
+                console.log("dropped frames");
+            }
+            if(toDisplay<-25){
+                console.log("skipping physics frames");
+                snailSimWorker.postMessage({type:"skip", amount: 25});
             }
         }
 
@@ -185,17 +214,17 @@
         setTimeout(function() {
             window.requestAnimationFrame(frame);
         }, 50);
-        function randomColor() {
-    let r = Math.floor(Math.random() * 255);
-    let g = Math.floor(Math.random() * 255);
-    let b = Math.floor(Math.random() *255);
-    return "rgb(" + r + "," + g + "," + b + ")";
-}
-        
 
 
-
-
+        function addSnails(amount) {
+            snailSimWorker.postMessage({type: "addsnails", amount: amount});
+            for (let i = 0; i < amount; i++) {
+                snails.push(new Snail(snails.length));
+                snails[snails.length-1].randomSeed = snails.length-1;
+                grid.addEntity(snails[snails.length-1]);
+            }
+            return snails.length;
+        }
 
 
 
