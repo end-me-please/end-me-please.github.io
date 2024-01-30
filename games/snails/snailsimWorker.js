@@ -133,7 +133,7 @@ function physicsFrame() {
 
     for (let i = 0; i < snails.length; i++) {
         snails[i].update();
-        let potentialPartners = grid.getEntitiesInCircle(snails[i].x, snails[i].y, 15*snails[i].radius);
+        let potentialPartners = grid.getEntitiesInCircle(snails[i].x, snails[i].y, 12*snails[i].radius);
         //draw a line to each partner
         if(debug==true){
         for (let j = 0; j < potentialPartners.length; j++) {

@@ -9,12 +9,13 @@
     <body>
         <input type="range" id="speed" min="1" max="15" value="2">Speed</range>
         <input type="button" id="addsnails" value="Add Snails" onclick="addSnails(25)"></input>
+        <label id="snailcount">400 snels</label>
         <canvas id="canvas" width="800" height="600"></canvas>
 
     </body>
     <script>
 
-        
+    
         //spawn snailsimWorker.js
         let snailSimWorker = new Worker("./snailsimWorker.js");
         snailSimWorker.postMessage({type: "setup", width: window.innerWidth, height: window.innerHeight});
@@ -31,13 +32,29 @@
 
         //move the speed slider on top of the canvas
         let speed = document.getElementById("speed");
+        let addsnailButton = document.getElementById("addsnails");
+        let snailcountLabel = document.getElementById("snailcount");
+        
+        snailcountLabel.style.position = "absolute";
+        snailcountLabel.style.top = "15px";
+        snailcountLabel.style.left = "250px";
+
+
+        //place slider and button on top of canvas
+        addsnailButton.style.position = "absolute";
+        addsnailButton.style.top = "0px";
+        addsnailButton.style.left = "100px";
+        addsnailButton.style.zIndex = "100";
+
+    
+    
         speed.onchange = function() {
             snailSimWorker.postMessage({type: "speedupdate", speed: speed.value});
         }
 
         speed.style.position = "absolute";
-        speed.style.top = "0px";
-        speed.style.left = "0px";
+        speed.style.top = "15px";
+        speed.style.left = "15px";
         
         let trailCanvas = new OffscreenCanvas(canvas.width, canvas.height);
         let trailCtx = trailCanvas.getContext("2d");
@@ -165,12 +182,12 @@
                 }
             }
             toDisplay++;
-            if(toDisplay>25){
+            if(toDisplay>6){
                 console.log("dropped frames");
             }
-            if(toDisplay<-25){
+            if(toDisplay<-6){
                 console.log("skipping physics frames");
-                snailSimWorker.postMessage({type:"skip", amount: 25});
+                snailSimWorker.postMessage({type:"skip", amount:6});
             }
         }
 
@@ -224,6 +241,7 @@
                 snails[snails.length-1].randomSeed = snails.length-1;
                 grid.addEntity(snails[snails.length-1]);
             }
+            document.getElementById("snailcount").innerHTML = snails.length + " snels";
             return snails.length;
         }
 
