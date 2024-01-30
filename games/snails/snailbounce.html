@@ -135,7 +135,7 @@
 
         function frame() {
             snailSimWorker.postMessage({type: "requestframe"});
-
+      
             let t = Date.now();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             //put imagedata
@@ -185,9 +185,9 @@
             if(toDisplay>6){
                 console.log("dropped frames");
             }
-            if(toDisplay<-6){
+            if(toDisplay<-10){
                 console.log("skipping physics frames");
-                snailSimWorker.postMessage({type:"skip", amount:6});
+                snailSimWorker.postMessage({type:"skip", amount:10});
             }
         }
 
