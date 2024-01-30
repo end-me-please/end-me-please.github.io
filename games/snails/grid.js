@@ -48,6 +48,7 @@ class Grid {
             if(y < 0) {
                 y = 0;
             }
+            //check bounds
             this.grid[x][y].push(entity);
         }
     }

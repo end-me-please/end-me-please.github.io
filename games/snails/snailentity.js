@@ -120,6 +120,11 @@ class Snail extends RandomSnail {
         }
         }
 
+        //slight attraction to center
+        let dx = canvas.width/2 - this.x;
+        let dy = canvas.height/2 - this.y;
+        this.vx += 1/dx * 0.001;
+        this.vy += 1/dy * 0.001;
         
         
 
