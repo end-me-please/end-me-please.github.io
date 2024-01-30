@@ -4,7 +4,7 @@ class Snail extends RandomSnail {
         super(Math.random()*32, Math.random()*256);
         this.id = id;
 
-        super.radius = Math.random() * 4 + 4;
+        super.radius = Math.random() * 10 + 4;
 
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
@@ -113,18 +113,13 @@ class Snail extends RandomSnail {
                 ctx.stroke();
 
             }
-            this.vx += 1/dx * 0.06;
-            this.vy += 1/dy * 0.06;
+            this.vx += 6/(dx * 0.1);
+            this.vy += 6/(dy * 0.1);
             let cursorAngle = Math.atan2(dy, dx);
-            this.lerpAngle(cursorAngle, 1);
+            //this.lerpAngle(cursorAngle, 1);
         }
         }
 
-        //slight attraction to center
-        let dx = canvas.width/2 - this.x;
-        let dy = canvas.height/2 - this.y;
-        this.vx += dx * 0.000001;
-        this.vy += dy * 0.000001;
 
         
 
@@ -273,19 +268,24 @@ class Snail extends RandomSnail {
             this.y += overlap * Math.sin(angle);
         }
 
-        if(distance < this.radius*8){
+        if(distance < this.radius*12){
 
             //if closer than 5, repel, if not, attract
-            if (distance < 4*this.radius) {
-                this.vx += 1/(dx/this.radius+this.radius) * 0.01;
-                this.vy += 1/(dy/this.radius+this.radius) * 0.01;
+            if (distance < 8*this.radius) {
+                this.vx += 1/(dx/this.radius+this.radius) * 0.001;
+                this.vy += 1/(dy/this.radius+this.radius) * 0.001;
             } else {
-                this.vx -= 1/(dx/this.radius+this.radius) * 0.01;
-                this.vy -= 1/(dy/this.radius+this.radius) * 0.01;
+                this.vx -= 1/(dx/this.radius+this.radius) * 0.001;
+                this.vy -= 1/(dy/this.radius+this.radius) * 0.001;
             
                 
-                this.lerpAngle(other.drawAngle, 1/((distance/this.radius)+this.radius));
+                this.lerpAngle(other.drawAngle, 1/((distance/this.radius)+this.radius*1.2));
             }
+        } else {
+            //repel
+            this.vx += dx * 0.00001;
+            this.vy += dy * 0.00001;
+
         }
      
     }

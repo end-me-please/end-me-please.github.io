@@ -78,7 +78,7 @@ function setup(width, height){
     isSetup = true;
 
 
-    for(let i=0;i<2000;i++){
+    for(let i=0;i<600;i++){
         snails.push(new Snail(i));
         snails[i].randomSeed = i;
         grid.addEntity(snails[i]);
@@ -115,7 +115,7 @@ function physicsFrame() {
 
     for (let i = 0; i < snails.length; i++) {
         snails[i].update();
-        let potentialPartners = grid.getEntitiesInCircle(snails[i].x, snails[i].y, 8*snails[i].radius);
+        let potentialPartners = grid.getEntitiesInCircle(snails[i].x, snails[i].y, 15*snails[i].radius);
         //draw a line to each partner
         if(debug==true){
         for (let j = 0; j < potentialPartners.length; j++) {
