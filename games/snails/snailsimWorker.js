@@ -12,7 +12,7 @@ importScripts('snailentity.js');
 //on message, run update
 
 
-let speed = 1;
+let speed = 2;
 let cursorDown = false;
 let cursorX = 0;
 let cursorY = 0;
