@@ -51,6 +51,12 @@ onmessage = function(e) {
     if(e.data.type=="setup"){
         setup(e.data.width, e.data.height);
     }
+    if(e.data.type=="cursorupdate"){
+        cursorDown = e.data.down;
+        cursorX = e.data.x;
+        cursorY = e.data.y;
+    }
+
 }
 
 
@@ -72,7 +78,7 @@ function setup(width, height){
     isSetup = true;
 
 
-    for(let i=0;i<10000;i++){
+    for(let i=0;i<2000;i++){
         snails.push(new Snail(i));
         snails[i].randomSeed = i;
         grid.addEntity(snails[i]);
