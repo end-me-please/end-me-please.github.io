@@ -295,13 +295,26 @@ class Snail extends RandomSnail {
         return obj;
     }
     deserialize(obj){
+        let oldDrawX = this.drawX;
+        let oldDrawY = this.drawY;
         this.id = obj.id;
-        this.drawX = obj.x;
-        this.drawY = obj.y;
-        this.trail = obj.trail||[{x: this.x, y: this.y}];
+        this.drawX = obj.drawX;
+        this.drawY = obj.drawY;
+        //this.trail = obj.trail||[{x: this.x, y: this.y}];
         this.drawAngle = obj.drawAngle;
         //this.trail = obj.trail;
         //console.log("deserialized");
+    
+        //add the difference between the old and new drawX and drawY to the trail unless step is too big, add a wrap marker
+        let dx = this.drawX - oldDrawX;
+        let dy = this.drawY - oldDrawY;
+        let distance = Math.sqrt(dx*dx + dy*dy);
+        if(distance > 20){
+            this.trail.push({x: this.drawX, y: this.drawY, wrap: true});
+        } else {
+            this.trail.push({x: this.drawX, y: this.drawY, wrap: false});
+        }
+        if(this.trail.length > 5) this.trail.shift();
     }
 
 }

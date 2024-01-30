@@ -99,7 +99,7 @@ function frame(){
     }
     let frame = [];
     for(let i=0;i<snails.length;i++){
-        frame.push({x:snails[i].x, y:snails[i].y, radius:snails[i].radius, angle:snails[i].angle,drawAngle:snails[i].drawAngle, speed:snails[i].speed, dead:snails[i].dead});
+        frame.push({drawX:snails[i].drawX, drawY:snails[i].drawY, radius:snails[i].radius, angle:snails[i].angle,drawAngle:snails[i].drawAngle, speed:snails[i].speed, dead:snails[i].dead});
     }
     frameQueue.push(frame);
 }
