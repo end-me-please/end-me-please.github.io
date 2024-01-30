@@ -13,7 +13,7 @@ class Snail extends RandomSnail {
         //this.angle = Math.random() * Math.PI * 2;
         this.vx = Math.random() * 2 - 1;
         this.vy = Math.random() * 2 - 1;
-        this.maxSpeed = Math.random() * 3 + 3;
+        this.maxSpeed = Math.random() * 2 + 3;
         this.drawX = this.x;
         this.drawY = this.y;
         this.drawAngle = this.angle;
