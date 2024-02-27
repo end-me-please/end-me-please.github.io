@@ -89,7 +89,7 @@ class BaseParticle {
         if(this.type.liquid == true&&this.sim.getParticle(this.x,this.y-1) != null){ //is liquid
             
             //if water is below 
-            if(this.sim.getParticle(this.x,this.y-1).type.name == "water"){
+            if(this.sim.getParticle(this.x,this.y-1).type.liquid){
                 //if water on one side but not the other, apply force to move
                 let waterLeft = this.sim.getParticle(this.x-1,this.y-1) != null && this.sim.getParticle(this.x-1,this.y-1).type.name == "water";
                 let waterRight = this.sim.getParticle(this.x+1,this.y-1) != null && this.sim.getParticle(this.x+1,this.y-1).type.name == "water";
@@ -121,11 +121,11 @@ class BaseParticle {
                 //check mass of all particles above this until a null particle is found
                 let mass = 0;
                 let currentY = Math.floor(this.y);
-                while(this.sim.getParticle(this.x,currentY) != null && mass < this.type.maxSupportMass && this.sim.getParticle(this.x,currentY).type.moveable==true){
+                while(this.sim.getParticle(this.x,currentY) != null && (this.sim.getParticle(this.x,currentY).type.moveable==true)){
                     mass += this.sim.getParticle(this.x,currentY).type.density;
                     currentY++;
                 }
-                if(mass < this.type.maxSupportMass){
+                if(mass > this.type.maxSupportMass){
                     //check if cell left or right is empty
                     let xDir = Math.random() < 0.5 ? -1 : 1;
                     if(this.sim.getParticle(this.x-xDir,this.y) == null){
@@ -134,9 +134,6 @@ class BaseParticle {
                         this.x += xDir;
                     }
                 }
-                
-
-        
         }
 
         //console.log("x: " + this.x + " y: " + this.y);
@@ -227,8 +224,14 @@ class BaseParticle {
                 
             }   
             else {
-                this.vx = 0;
-                this.vy = 0;
+                //bounce, depending on sum of bouncinesses
+                let bounciness = (this.type.bounciness + newCell.particle.type.bounciness)/2;
+                let vx = -this.vx*bounciness;
+                let vy = -this.vy*bounciness;
+
+
+                this.vx = vx;
+                this.vy = vy;
             }         
             }
             this.type.update(this);
@@ -263,6 +266,7 @@ class BaseParticleType {
         this.gaseous = false;
         this.gravity = 0.1;
         this.drag=0.001;
+        this.bounciness = 0.03;
     }
     update(particle){
         //do nothing
@@ -305,10 +309,13 @@ class CombustibleParticleType extends BaseParticleType {
 
 let particleTypes = [];
 particleTypes["sand"] = new CombustibleParticleType("sand", "rgb(225,225,77)");
+particleTypes.sand.slipperiness = 0.1;
+particleTypes.sand.density = 1;
+particleTypes.sand.maxSupportMass = 12;
 
 particleTypes["water"] = new BaseParticleType("water", "rgb(0,0,255)");
 particleTypes.water.slipperiness = 1;
-particleTypes.water.density = 1;
+particleTypes.water.density = 0.4;
 particleTypes.water.maxSupportMass = 1;
 particleTypes.water.liquid = true;
 
