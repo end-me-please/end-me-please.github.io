@@ -12,21 +12,39 @@ class GridCell {
         this.y = y;
         this.particle = null;
     }
+    swapParticle(cell){
+        let tmp = cell.particle;
+        cell.particle = this.particle;
+        this.particle = tmp;
+        this.particle.cell = this;
+        cell.particle.cell = cell;
+    }
 
 }
 
 class BaseParticle {
+    static ID = 0;
     constructor(parent,type,x,y){
         this.sim = parent;
         //get the cell of the initial position
         let cell = this.sim.grid[Math.floor(x)][Math.floor(y)];
         this.cell = cell;
+
         this.type = type;
         this.vx = 0;
         this.vy = 0;
         this.x = x;
         this.y = y;
+        this.id = BaseParticle.ID++;
     }
+    setCell(cell){
+        this.grid[this.cell.x][this.cell.y].particle = null;
+        this.grid[cell.x][cell.y].particle = this;
+        this.cell = cell;
+        
+    }
+
+
     update(){
         let oldX = this.x;
         let oldY = this.y;
@@ -164,7 +182,10 @@ class BaseParticle {
         for(let i = 0; i < steps; i++){
             newCell = this.sim.getCell(oldCellX+xStep*i,oldCellY+yStep*i);
             if(newCell.particle != null&&newCell!=this.cell){
+                //compare densities
+                if(newCell.particle.type.density > this.type.density){
                 break;
+                }
             }
 
         }
@@ -176,11 +197,21 @@ class BaseParticle {
 
         if(newCell.particle == null){
             let tmp = newCell.particle;
+            //tmp.setCell(this.cell);
+            this.cell.particle = null;
             newCell.particle = this;
-            this.cell.particle = tmp;
             this.cell = newCell;
+            //this.setCell(newCell);
         } else {
-        
+            
+            //if this cell is denser than the new cell, swap
+            if(this.type.density > newCell.particle.type.density){
+                this.cell.swapParticle(newCell);
+            }
+
+
+
+
             //console.log(newCell);
             this.x = this.cell.x;
             this.y = this.cell.y;
@@ -225,10 +256,10 @@ class BaseParticleType {
     constructor(name, color){
         this.name = name;
         this.color = color;
-        this.density = 2;
+        this.density = 3;
         this.moveable = true;
         this.slipperiness = 0.1;
-        this.maxSupportMass = 4;
+        this.maxSupportMass = 9;
         this.solid = true;
     }
 }
@@ -316,10 +347,46 @@ class ParticleSim{
             for(let j = 0; j < this.height; j++){
                 if(this.grid[i][j].particle != null){
                     this.grid[i][j].particle.update();
+                    
+                    /*
+                    let x = i;
+                    let y = j;
+                    let y2 = i+1;
+                    if(y2 >= this.height){ continue; }
+
+                    let p1 = this.grid[x][y].particle;
+                    let p2 = this.grid[x][y2].particle;
+                    if(p1 == null || p2 == null){ continue; }
+        
+                    if(p1.type.density < p2.type.density){
+                        this.grid[x][y].particle = p2;
+                        this.grid[x][y2].particle = p1;
+                        p1.y++;
+                        p2.y--;
+                    }
+                    */
+
                 }
             }
         }
         
+
+        /*
+        //pick some random cell pairs (vertical) and swap them according to their densities
+        let numSwaps = 4000;
+        for(let i = 0; i < numSwaps; i++){
+            let x = Math.floor(Math.random()*this.width);
+            let y = Math.floor(Math.random()*(this.height-1));
+            let y2 = y+1;
+
+            
+        }
+        */
+       
+
+
+
+
         //randomize order of update but update all particles
         /*
         let order = [];
@@ -342,6 +409,10 @@ class ParticleSim{
     }
 
     addParticle(type,x,y){
+        //check bounds
+        if(x < 0 || x >= this.width || y < 0 || y >= this.height){
+            return;
+        }
         this.grid[x][y].particle = new BaseParticle(this,type,x,y);
     }
 

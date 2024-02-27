@@ -89,6 +89,11 @@
                     }
 
                     cellSystem.addParticle(particleTypes[selectedType],crossedCells[i][0], crossedCells[i][1]);
+                    cellSystem.addParticle(particleTypes[selectedType],crossedCells[i][0]+1, crossedCells[i][1]);
+                    cellSystem.addParticle(particleTypes[selectedType],crossedCells[i][0]-1, crossedCells[i][1]);
+                    cellSystem.addParticle(particleTypes[selectedType],crossedCells[i][0], crossedCells[i][1]+1);
+                    cellSystem.addParticle(particleTypes[selectedType],crossedCells[i][0], crossedCells[i][1]-1);
+                    
                 }
                 
             
