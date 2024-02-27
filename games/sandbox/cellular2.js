@@ -51,8 +51,10 @@ class BaseParticle {
         if(this.type.moveable == false){ return; };
         //apply gravity if cell below is empty
         if(this.sim.getParticle(this.x,this.y-1) == null){
-            this.vy -= 0.1;
+            this.vy -= this.type.gravity;
         }
+        this.vx *= 1-this.type.drag;
+        this.vy *= 1-this.type.drag;
         this.x += this.vx;
         this.y += this.vy;
 
@@ -77,9 +79,14 @@ class BaseParticle {
             this.vx = 0;
         }
 
-        if(this.type.solid == false&&this.sim.getParticle(this.x,this.y-1) != null){
-            
+        if(this.type.gaseous == true){
+            //random movement based on slipperiness
+            this.vx += (Math.random()-0.5)*this.type.slipperiness;
+            this.vy += (Math.random()-0.5)*this.type.slipperiness;
+        }
 
+
+        if(this.type.liquid == true&&this.sim.getParticle(this.x,this.y-1) != null){ //is liquid
             
             //if water is below 
             if(this.sim.getParticle(this.x,this.y-1).type.name == "water"){
@@ -98,7 +105,7 @@ class BaseParticle {
 
             //try move left or right, randomly, if touching another non-solid particle
             let particlesSurrounding = [this.sim.getParticle(this.x-1,this.y),this.sim.getParticle(this.x+1,this.y),this.sim.getParticle(this.x,this.y+1),this.sim.getParticle(this.x,this.y-1)];
-            let moveableParticles = particlesSurrounding.filter(p => p != null && p.type.solid == false);
+            let moveableParticles = particlesSurrounding.filter(p => p != null && p.type.liquid == true);
             if(moveableParticles.length > 0){
             let xDir = Math.random() < 0.5 ? -1 : 1;
             if(this.sim.getParticle(this.x-xDir,this.y) == null){
@@ -132,12 +139,6 @@ class BaseParticle {
         
         }
 
-
-
-
-
-
-
         //console.log("x: " + this.x + " y: " + this.y);
         //check bounds before setting new cell
         //check x
@@ -159,10 +160,6 @@ class BaseParticle {
             this.vy = 0;
         }
 
-
-        
-        
-        
         //let newCell = this.sim.grid[Math.floor(this.x)][Math.floor(this.y)];
 
         //get newCell by raycasting from old xy to new xy
@@ -234,7 +231,9 @@ class BaseParticle {
                 this.vy = 0;
             }         
             }
+            this.type.update(this);
         }
+
     }
     
     render(ctx,x,y){
@@ -260,22 +259,78 @@ class BaseParticleType {
         this.moveable = true;
         this.slipperiness = 0.1;
         this.maxSupportMass = 9;
-        this.solid = true;
+        this.liquid = false;
+        this.gaseous = false;
+        this.gravity = 0.1;
+        this.drag=0.001;
+    }
+    update(particle){
+        //do nothing
     }
 }
+
+
+class CombustibleParticleType extends BaseParticleType {
+    constructor(name, color){
+        super(name,color);
+        this.combustible = true;
+    }
+    update(particle){
+        //if touching fire, set on fire
+        let touchingFire = false;
+        let x = particle.x;
+        let y = particle.y;
+        let particlesSurrounding = [particle.sim.getParticle(x-1,y),particle.sim.getParticle(x+1,y),particle.sim.getParticle(x,y+1),particle.sim.getParticle(x,y-1)];
+        for(let i = 0; i < particlesSurrounding.length; i++){
+            if(particlesSurrounding[i] != null && particlesSurrounding[i].type.name == "fire"){
+                touchingFire = true;
+                break;
+            }
+        }
+        if(touchingFire){
+            //particle.sim.addParticle(particleTypes.fire,particle.x,particle.y+1);
+            //particle.sim.addParticle(null,particle.x,particle.y);
+            particle.type = particleTypes.fire;
+            setTimeout(function(){
+                particle.sim.grid[particle.cell.x][particle.cell.y].particle = null;
+            },5000);
+        }
+
+        super.update();
+    }
+}
+
+
+
+
 let particleTypes = [];
-particleTypes["sand"] = new BaseParticleType("sand", "rgb(125,105,0)");
+particleTypes["sand"] = new CombustibleParticleType("sand", "rgb(225,225,77)");
 
 particleTypes["water"] = new BaseParticleType("water", "rgb(0,0,255)");
-particleTypes.water.slipperiness = 3;
+particleTypes.water.slipperiness = 1;
 particleTypes.water.density = 1;
 particleTypes.water.maxSupportMass = 1;
-particleTypes.water.solid = false;
+particleTypes.water.liquid = true;
 
 particleTypes["wall"] = new BaseParticleType("stone", "rgb(100,100,100)");
 particleTypes.wall.moveable = false;
 particleTypes.wall.density = 10;
-particleTypes.wall.solid = true;
+
+particleTypes["gas"] = new CombustibleParticleType("gas", "rgb(255,255,255)");
+particleTypes.gas.slipperiness = 0.17;
+particleTypes.gas.moveable = true;
+particleTypes.gas.density = 0.1;
+particleTypes.gas.gaseous = true;
+particleTypes.gas.gravity = 0.01;
+particleTypes.gas.drag = 0.1;
+
+particleTypes["fire"] = new BaseParticleType("fire", "rgb(255,0,0)");
+particleTypes.fire.moveable = true;
+particleTypes.fire.density = 0.1;
+particleTypes.fire.gaseous = true;
+particleTypes.fire.gravity = -0.03;
+particleTypes.fire.drag = 0.02;
+
 
 
 
