@@ -1,0 +1,126 @@
+<html>
+    <head>
+        <script src="cellular2.js"></script>
+    </head>
+    <body>
+        <canvas id="canvas" width="800" height="800"></canvas>
+
+        
+    </body>
+
+
+    <script>
+        let cellSystem = new ParticleSim(800,800);
+
+        let canvas = document.getElementById('canvas');
+        let gamectx = canvas.getContext('2d');
+
+
+        let mouseX = 0;
+        let mouseY = 0;
+        let mouseDown = false;
+        let crossedCells = [];
+        let selectedType="sand";
+
+        canvas.addEventListener('mousemove', (e) => {
+            //go in a line from the last mouse position to the current one
+            let newX = e.clientX;
+            let newY = canvas.height-e.clientY;
+            newX = newX/canvas.width*cellSystem.width;
+            newY = newY/canvas.height*cellSystem.height;
+            newX = Math.floor(newX);
+            newY = Math.floor(newY);
+
+
+            if(mouseDown){
+            let dx = newX - mouseX;
+            let dy = newY - mouseY;
+            let length = Math.sqrt(dx*dx + dy*dy);
+            let steps = Math.floor(length);
+            for(let i = 0; i < steps; i++){
+                let x = mouseX + (dx/steps)*i;
+                let y = mouseY + (dy/steps)*i;
+                crossedCells.push([Math.floor(x),Math.floor(y)]);
+            }
+            }
+            mouseX = newX;
+            mouseY = newY;
+            
+
+
+
+
+        });
+        canvas.addEventListener('mousedown', (e) => {
+            mouseDown = true;
+        });
+        canvas.addEventListener('mouseup', (e) => {
+            mouseDown = false;
+        });       
+
+
+
+        //map number keys to select types
+        let keymap = {
+            1:"sand",
+            2:"water",
+            3:"wall",
+        }
+        document.addEventListener('keydown', (e) => {
+            if(keymap[e.key]){
+                selectedType = keymap[e.key];
+            }
+        });
+        
+
+
+        function animate() {
+            cellSystem.renderHeight = window.innerHeight;
+            cellSystem.renderWidth = window.innerWidth;
+            if(mouseDown){
+                if(crossedCells.length == 0){
+                    crossedCells.push([mouseX,mouseY]);
+
+                }
+                for(let i = 0; i < crossedCells.length; i++){
+                    //check if the cell is in bounds
+                    if(crossedCells[i][0] < 0 || crossedCells[i][0] >= cellSystem.width || crossedCells[i][1] < 0 || crossedCells[i][1] >= cellSystem.height){
+                        continue;
+                    }
+
+                    cellSystem.addParticle(particleTypes[selectedType],crossedCells[i][0], crossedCells[i][1]);
+                }
+                
+            
+            }
+            crossedCells = [];
+
+
+            cellSystem.update();
+            //clear the canvas
+            //black background
+            gamectx.fillStyle = 'black';
+            gamectx.fillRect(0, 0, canvas.width, canvas.height);
+            cellSystem.renderImageData(gamectx);
+            //cellSystem.render(ctx);
+            requestAnimationFrame(animate);
+
+        }
+        requestAnimationFrame(animate);
+        
+        //remove margins
+        document.body.style.margin = 0;
+        
+        //stretch the canvas display to the window size
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        window.addEventListener('resize', (e) => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+        });
+
+
+    </script>
+
+</html>
