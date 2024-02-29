@@ -191,7 +191,8 @@ class BaseParticle {
 
 
         if(raycast==false){
-        newCell = this.sim.grid[Math.floor(this.x)][Math.floor(this.y)];
+        //newCell = this.sim.grid[Math.floor(this.x)][Math.floor(this.y)];
+        newCell = this.sim.getCell(this.x,this.y);
         } else {
 
 
@@ -210,7 +211,7 @@ class BaseParticle {
         let steps = Math.abs(dx)+Math.abs(dy);
         let xStep = dx/steps;
         let yStep = dy/steps;
-        newCell = this.sim.getCell(oldCellX,oldCellY);
+        newCell = this.cell;
         for(let i = 0; i < steps; i++){
             newCell = this.sim.getCell(oldCellX+xStep*i,oldCellY+yStep*i);
             if(newCell.particle != null&&newCell!=this.cell){
@@ -385,17 +386,11 @@ class ParticleSim{
         this.renderWidth = 800;
         this.renderHeight = 800;
 
-
-
         this.imageData = offscreenCtx.createImageData(this.width,this.height);
-
 
         //information required by a particle: type, x, y, vx, vy (all are doubles)
         //use a shared array buffer to store this information
         //let dataBuffer = new ArrayBuffer(5*Float64Array.BYTES_PER_ELEMENT*this.width*this.height);
-
-
-
 
 
     }
@@ -493,7 +488,6 @@ class ParticleSim{
         }
         return this.grid[Math.floor(x)][Math.floor(y)];
     }
-
 
 }
 
