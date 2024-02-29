@@ -13,6 +13,7 @@ class GridCell {
         this.x = x;
         this.y = y;
         this._particle = null;
+        this.parentDataIndex = (this.parent.width*this.y+this.x)*5;
     }
     swapParticle(cell){
         let tmp = cell.particle;
@@ -61,14 +62,8 @@ class BaseParticle {
         this.x = x;
         this.y = y;
         this.id = BaseParticle.ID++;
-        
     }
-    setCell(cell){
-        this.grid[this.cell.x][this.cell.y].particle = null;
-        this.grid[cell.x][cell.y].particle = this;
-        this.cell = cell;
-        
-    }
+    
 
 
     update(){
@@ -76,10 +71,23 @@ class BaseParticle {
         let oldY = this.y;
 
 
+        //if 4 neighbors are all equal and velocity 0, skip update
+        let neighbors = [this.sim.getParticle(this.x-1,this.y),this.sim.getParticle(this.x+1,this.y),this.sim.getParticle(this.x,this.y+1),this.sim.getParticle(this.x,this.y-1)];
+        let allEqual = true;
+        for(let i = 0; i < neighbors.length; i++){
+            if(neighbors[i] == null || Math.abs(neighbors[i].vx)+Math.abs(neighbors[i].vy) > 0.01){
+                allEqual = false;
+                break;
+            }
+        }
+        if(allEqual && Math.abs(this.vx)+Math.abs(this.vy) < 0.01){
+            return;
+        }
+
 
         if(this.type.moveable == false){ return; };
         //apply gravity if cell below is empty
-        if(this.sim.getParticle(this.x,this.y-1) == null){
+        if(this.sim.getParticle(this.cell.x,this.cell.y-1) == null){
             this.vy -= this.type.gravity;
         }
         this.vx *= 1-this.type.drag;
@@ -296,7 +304,7 @@ class BaseParticleType {
         this.gaseous = false;
         this.gravity = 0.1;
         this.drag=0.001;
-        this.bounciness = 0.03;
+        this.bounciness = 0.003;
     }
     update(particle){
         //do nothing
@@ -390,7 +398,7 @@ class ParticleSim{
 
         //information required by a particle: type, x, y, vx, vy (all are doubles)
         //use a shared array buffer to store this information
-        //let dataBuffer = new ArrayBuffer(5*Float64Array.BYTES_PER_ELEMENT*this.width*this.height);
+        this.dataBuffer = new ArrayBuffer(5*Float64Array.BYTES_PER_ELEMENT*this.width*this.height);
 
 
     }
@@ -458,8 +466,6 @@ class ParticleSim{
             for(let j = 0; j < this.height; j++){
                 if(this.grid[i][j].particle != null){
                     this.grid[i][j].particle.update();
-                    
-
                 }
             }
         }
