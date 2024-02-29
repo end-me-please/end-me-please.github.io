@@ -1,16 +1,18 @@
 
-let offscreenCanvas = document.createElement('canvas');
-offscreenCanvas.width = 800;
-offscreenCanvas.height = 800;
-        
+//let offscreenCanvas = document.createElement('canvas');
+let offscreenCanvas = new OffscreenCanvas(800,800);
+
 let offscreenCtx = offscreenCanvas.getContext('2d');
+offscreenCtx.fillStyle = "black";
+offscreenCtx.fillRect(0,0,offscreenCanvas.width,offscreenCanvas.height);
+
 
 class GridCell {
     constructor(parent,x,y){
         this.parent = parent;
         this.x = x;
         this.y = y;
-        this.particle = null;
+        this._particle = null;
     }
     swapParticle(cell){
         let tmp = cell.particle;
@@ -18,6 +20,29 @@ class GridCell {
         this.particle = tmp;
         this.particle.cell = this;
         cell.particle.cell = cell;
+    }
+    get particle(){
+        return this._particle;
+    }
+    set particle(particle){
+        this._particle = particle;
+        
+        //access parent sim's imageData and set pixel to particle color, or black if null
+        let imageData = this.parent.imageData;
+        let index = ((this.parent.height-this.y)*this.parent.width+this.x)*4;
+        if(particle == null){
+            imageData.data[index] = 0;
+            imageData.data[index+1] = 0;
+            imageData.data[index+2] = 0;
+            imageData.data[index+3] = 255;
+        } else {
+            let rgb = particle.type.rgbColor;
+            imageData.data[index] = rgb[0];
+            imageData.data[index+1] = rgb[1];
+            imageData.data[index+2] = rgb[2];
+            imageData.data[index+3] = 255;
+        }
+
     }
 
 }
@@ -36,6 +61,7 @@ class BaseParticle {
         this.x = x;
         this.y = y;
         this.id = BaseParticle.ID++;
+        
     }
     setCell(cell){
         this.grid[this.cell.x][this.cell.y].particle = null;
@@ -48,6 +74,9 @@ class BaseParticle {
     update(){
         let oldX = this.x;
         let oldY = this.y;
+
+
+
         if(this.type.moveable == false){ return; };
         //apply gravity if cell below is empty
         if(this.sim.getParticle(this.x,this.y-1) == null){
@@ -121,7 +150,7 @@ class BaseParticle {
                 //check mass of all particles above this until a null particle is found
                 let mass = 0;
                 let currentY = Math.floor(this.y);
-                while(this.sim.getParticle(this.x,currentY) != null && (this.sim.getParticle(this.x,currentY).type.moveable==true)){
+                while(this.sim.getParticle(this.x,currentY) != null && (mass < (this.type.maxSupportMass+1)) &&(this.sim.getParticle(this.x,currentY).type.moveable==true)){
                     mass += this.sim.getParticle(this.x,currentY).type.density;
                     currentY++;
                 }
@@ -157,9 +186,18 @@ class BaseParticle {
             this.vy = 0;
         }
 
-        //let newCell = this.sim.grid[Math.floor(this.x)][Math.floor(this.y)];
+        let newCell=null;
+        let raycast = true;
+
+
+        if(raycast==false){
+        newCell = this.sim.grid[Math.floor(this.x)][Math.floor(this.y)];
+        } else {
+
 
         //get newCell by raycasting from old xy to new xy
+
+
 
         let newCellX = Math.floor(this.x);
         let newCellY = Math.floor(this.y);
@@ -172,7 +210,7 @@ class BaseParticle {
         let steps = Math.abs(dx)+Math.abs(dy);
         let xStep = dx/steps;
         let yStep = dy/steps;
-        let newCell = this.sim.getCell(oldCellX,oldCellY);
+        newCell = this.sim.getCell(oldCellX,oldCellY);
         for(let i = 0; i < steps; i++){
             newCell = this.sim.getCell(oldCellX+xStep*i,oldCellY+yStep*i);
             if(newCell.particle != null&&newCell!=this.cell){
@@ -183,14 +221,14 @@ class BaseParticle {
             }
 
         }
-
+        }
         
         if(newCell!==this.cell){
 
 
 
         if(newCell.particle == null){
-            let tmp = newCell.particle;
+
             //tmp.setCell(this.cell);
             this.cell.particle = null;
             newCell.particle = this;
@@ -202,9 +240,6 @@ class BaseParticle {
             if(this.type.density > newCell.particle.type.density){
                 this.cell.swapParticle(newCell);
             }
-
-
-
 
             //console.log(newCell);
             this.x = this.cell.x;
@@ -229,7 +264,6 @@ class BaseParticle {
                 let vx = -this.vx*bounciness;
                 let vy = -this.vy*bounciness;
 
-
                 this.vx = vx;
                 this.vy = vy;
             }         
@@ -242,13 +276,6 @@ class BaseParticle {
     render(ctx,x,y){
         ctx.fillStyle = this.type.color;
         ctx.fillRect(x,y,1,1);
-        
-        //draw a line for velocity
-        ctx.strokeStyle = "rgb(255,0,0)";
-        ctx.beginPath();
-        ctx.moveTo(x,y);
-        ctx.lineTo(x+this.vx*0.5,y+this.vy*0.5);
-        ctx.stroke();
 
     }
 }
@@ -258,6 +285,8 @@ class BaseParticleType {
     constructor(name, color){
         this.name = name;
         this.color = color;
+        this.rgbColor = color.match(/\d+/g);
+
         this.density = 3;
         this.moveable = true;
         this.slipperiness = 0.1;
@@ -355,6 +384,31 @@ class ParticleSim{
         }
         this.renderWidth = 800;
         this.renderHeight = 800;
+
+
+
+        this.imageData = offscreenCtx.createImageData(this.width,this.height);
+
+
+        //information required by a particle: type, x, y, vx, vy (all are doubles)
+        //use a shared array buffer to store this information
+        //let dataBuffer = new ArrayBuffer(5*Float64Array.BYTES_PER_ELEMENT*this.width*this.height);
+
+
+
+
+
+    }
+    get particleCount(){
+        let count = 0;
+        for(let i = 0; i < this.width; i++){
+            for(let j = 0; j < this.height; j++){
+                if(this.grid[i][j].particle != null){
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     render(ctx){
@@ -374,17 +428,17 @@ class ParticleSim{
             }
         }
     }
-    renderImageData(ctxmain){
-        let ctx = offscreenCtx;
-        
-        let imageData = ctx.createImageData(this.width,this.height);
+    renderImageData(ctx){
+        let imageData = this.imageData;
+        /*
         for(let i = 0; i < this.width; i++){
             for(let j = 0; j < this.height; j++){
                 if(this.grid[i][j].particle != null){
                     let index = ((this.height-j)*this.width+i)*4;
                     //get rgb from color string/name
-                    let color = this.grid[i][j].particle.type.color; //rgb string
-                    let rgb = color.match(/\d+/g);
+                    //let color = this.grid[i][j].particle.type.color; //rgb string
+                    //let rgb = color.match(/\d+/g);
+                    let rgb = this.grid[i][j].particle.type.rgbColor;
                     imageData.data[index] = rgb[0];
                     imageData.data[index+1] = rgb[1];
                     imageData.data[index+2] = rgb[2];
@@ -393,80 +447,27 @@ class ParticleSim{
                 }
                 }
             }
+        */
 
-        //ctx.putImageData(imageData,0,0);
-        ctxmain.setTransform(1,0,0,1,0,0);
+        ctx.setTransform(1,0,0,1,0,0);
+        
         offscreenCtx.putImageData(imageData,0,0);
-        ctxmain.scale(this.renderWidth/this.width,this.renderHeight/this.height);
-        ctxmain.drawImage(offscreenCanvas,0,0,ctx.canvas.width,ctx.canvas.height);
+        ctx.scale(this.renderWidth/this.width,this.renderHeight/this.height);
+        ctx.drawImage(offscreenCanvas,0,0,offscreenCtx.canvas.width,offscreenCtx.canvas.height);
 
         }
 
 
     update(){
-        
         for(let i = 0; i < this.width; i++){
             for(let j = 0; j < this.height; j++){
                 if(this.grid[i][j].particle != null){
                     this.grid[i][j].particle.update();
                     
-                    /*
-                    let x = i;
-                    let y = j;
-                    let y2 = i+1;
-                    if(y2 >= this.height){ continue; }
-
-                    let p1 = this.grid[x][y].particle;
-                    let p2 = this.grid[x][y2].particle;
-                    if(p1 == null || p2 == null){ continue; }
-        
-                    if(p1.type.density < p2.type.density){
-                        this.grid[x][y].particle = p2;
-                        this.grid[x][y2].particle = p1;
-                        p1.y++;
-                        p2.y--;
-                    }
-                    */
 
                 }
             }
         }
-        
-
-        /*
-        //pick some random cell pairs (vertical) and swap them according to their densities
-        let numSwaps = 4000;
-        for(let i = 0; i < numSwaps; i++){
-            let x = Math.floor(Math.random()*this.width);
-            let y = Math.floor(Math.random()*(this.height-1));
-            let y2 = y+1;
-
-            
-        }
-        */
-       
-
-
-
-
-        //randomize order of update but update all particles
-        /*
-        let order = [];
-        for(let i = 0; i < this.width; i++){
-            for(let j = 0; j < this.height; j++){
-                if(this.grid[i][j].particle != null){
-                    order.push(this.grid[i][j].particle);
-                }
-            }
-        }
-        order.sort(function(a,b){
-            return 0.5 - Math.random();
-        });
-        for(let i = 0; i < order.length; i++){
-            order[i].update();
-        }
-        */
-
 
     }
 
@@ -492,6 +493,7 @@ class ParticleSim{
         }
         return this.grid[Math.floor(x)][Math.floor(y)];
     }
+
 
 }
 

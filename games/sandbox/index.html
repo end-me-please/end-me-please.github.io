@@ -12,7 +12,7 @@
 
     <script>
         let cellSystem = new ParticleSim(800,800);
-
+        
         let canvas = document.getElementById('canvas');
         let gamectx = canvas.getContext('2d');
 
@@ -76,8 +76,15 @@
         });
         
 
+        let lastTime = 0;
+        function animate(newTime) {
+            if(lastTime == 0){
+                lastTime = newTime;
+            }
+            let deltaTime = newTime - lastTime;
+            lastTime = newTime;
 
-        function animate() {
+
             cellSystem.renderHeight = window.innerHeight;
             cellSystem.renderWidth = window.innerWidth;
             if(mouseDown){
@@ -102,14 +109,33 @@
             
             }
             crossedCells = [];
-
-
+            let startTime = performance.now();
+            
+            
             cellSystem.update();
             //clear the canvas
             //black background
             gamectx.fillStyle = 'black';
             gamectx.fillRect(0, 0, canvas.width, canvas.height);
             cellSystem.renderImageData(gamectx);
+            let endTime = performance.now();
+            
+            //draw fps counter and particle count
+            let particles = cellSystem.particleCount;
+
+            let processingTime = endTime - startTime;
+            gamectx.fillStyle = 'white';
+            gamectx.font = '30px Arial';
+            gamectx.fillText('Particles: ' + particles, 10, 30);
+            //gamectx.fillText('FPS: ' + Math.floor(1000/deltaTime), 10, 60);
+            //milliseconds per tick
+            gamectx.fillText('mSPT: ' + Math.floor(processingTime*100)/100, 10, 60);
+            //microseconds per particle
+            gamectx.fillText('nSPP: ' + Math.floor((processingTime*1000*1000)/particles), 10, 90);
+            //fps
+            gamectx.fillText('FPS: ' + Math.floor(1000/processingTime), 10, 120);
+
+
             //cellSystem.render(ctx);
             requestAnimationFrame(animate);
 
