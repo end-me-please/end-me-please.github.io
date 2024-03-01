@@ -22,7 +22,7 @@ class ParticleSim{
         }
 
         this.particleData = new ArrayBuffer(width*height*Float32Array.BYTES_PER_ELEMENT*8);
-        this.dataViewer = new Float32Array(this.particleData);
+        this.dataView = new Float32Array(this.particleData);
         //this.particleData = new ArrayBuffer(80000);
         this.cheatParticles = [];
     }
@@ -52,22 +52,10 @@ class ParticleSim{
 
 
     getParticle(id){
-        //return this.cheatParticles[id];
-
         let start = id*8*Float32Array.BYTES_PER_ELEMENT;
         let end = start + 8*Float32Array.BYTES_PER_ELEMENT;
-        /*
-        let data = new Float32Array(this.particleData.slice(start,end));
-        let identifier = data[0];
-        let x = data[1];
-        let y = data[2];
-        let vx = data[3];
-        let vy = data[4];
-        let type = data[5];
-        let state = data[6];
-        let dead = data[7];
-        */
-       let buffer = this.dataViewer;
+   
+        let buffer = this.dataView;
         let identifier = buffer[start];
         let x = buffer[start+1];
         let y = buffer[start+2];
@@ -81,14 +69,13 @@ class ParticleSim{
         return {x:x,y:y,vx:vx,vy:vy,type:type,id:identifier,state:state, dead:dead};
     }
     setParticle(data){
-        //this.cheatParticles[data.id] = data;
         
         let id = data.id;
         let start = id*8*Float32Array.BYTES_PER_ELEMENT;
-        //console.log(data,start);
         let end = start + 8*Float32Array.BYTES_PER_ELEMENT;
-        //let buffer = new Float32Array(this.particleData);
-        let buffer = this.dataViewer;
+        let buffer = this.dataView;
+        let oldX = buffer[start+1];
+        let oldY = buffer[start+2];
         if(data.id!=null) buffer[start] = data.id;
         if(data.x!=null) buffer[start+1] = data.x;
         if(data.y!=null) buffer[start+2] = data.y;
@@ -97,16 +84,22 @@ class ParticleSim{
         if(data.type!=null) buffer[start+5] = data.type;
         if(data.state!=null) buffer[start+6] = data.state;
         if(data.dead!=null) buffer[start+7] = data.dead;
+
+        //move from collision map if needed
+        if(oldX!=null&&oldY!=null){
+            this.collisionMap[Math.floor(oldX)][Math.floor(oldY)] = 0;
+        }
+
+        //update collision map
+        if(data.x!=null&&data.y!=null){
+            this.collisionMap[Math.floor(data.x)][Math.floor(data.y)] = id;
+        }
+
+
     }
     getId(){
 
-        //get an empty id slot
-        for(let id=0;id<this.particleId;id++){
-            let particle = this.getParticle(id);
-            if(particle.dead==1 || particle.type==0){
-                return id;
-            }
-        }
+
         this.particleId++;
         return this.particleId;
     }
@@ -147,7 +140,8 @@ class ParticleSim{
         //scale back
     };
     update(){
-        this.calculateCollisionMap();
+        //this.calculateCollisionMap();
+        
         //go through all id's and update the particles
         for(let id=0;id<this.particleId;id++){
             let particle = this.getParticle(id);
@@ -226,10 +220,36 @@ class ParticleSim{
         }
         return count;
     }
-
+    getParticleAt(x,y){
+        //check bounds
+        if(x<0||x>=this.width||y<0||y>=this.height) {return null;};
+        let id = this.collisionMap[Math.floor(x)][Math.floor(y)];
+        if(id==0) return null;
+        return this.getParticle(id);
+    }
 
     updateParticle(particle){
         
+        //get particle at own position, move out if there is a collision
+        let existingId = this.getParticleAt(particle.x,particle.y);
+        if(existingId!=null&&existingId.id!=particle.id&&existingId.id!=0&&existingId.dead==0){
+            //console.log("Collision",existingId,particle.id);
+            //randomly move to the left or right, or up or down
+            let dx = Math.random()>0.5?1:-1;
+            let dy = Math.random()>0.5?1:-1;
+            let newX = particle.x+dx;
+            let newY = particle.y+dy;
+            particle.x = newX;
+            particle.y = newY;
+            particle.vx = dx;
+            particle.vy = dy;
+            this.setParticle(particle);
+            return;
+        }
+
+
+
+
         let oldX = particle.x;
         let oldY = particle.y;
 
@@ -256,25 +276,22 @@ class ParticleSim{
         let dy = newY-oldY;
         let steps = Math.max(Math.abs(dx),Math.abs(dy));
         for(let i=0;i<steps;i++){
-            x = Math.floor(oldX+dx*i/steps);
-            y = Math.floor(oldY+dy*i/steps);
-            if(x<0||x>=this.width||y<0||y>=this.height) {
-                //check collision map
-                let existingId = this.collisionMap[Math.floor(x)][Math.floor(y)];
-                if(existingId!=0&&existingId!=particle.id){
-                    //go one step back
-                    //x = Math.floor(oldX+dx*(i-1)/steps);
-                    //y = Math.floor(oldY+dy*(i-1)/steps);
-                    break;
-                }
-                continue;
+            x = (oldX+dx*i/steps);
+            y = (oldY+dy*i/steps);
+            let existingId = this.getParticleAt(x,y);
+            if(existingId!=null&&existingId.id!=particle.id&&existingId.id!=0){
+                particle.vx = 0;
+                particle.vy = 0;
+                //step backwards
+                x = (oldX+dx*(i-1)/steps);
+                y = (oldY+dy*(i-1)/steps);
+                break;
             }
         }
 
+
         particle.x = x;
         particle.y = y;
-
-
 
         this.setParticle(particle);
 
@@ -324,3 +341,71 @@ waterType.moveable = true;
 waterType.state = "liquid";
 
 let particleTypes = {0: emptyType, 1: sandType, 2: waterType, 3: wallType};
+
+
+
+
+
+
+let gpu = new GPUJS({mode: 'webgl2'});
+let renderKernel = gpu.createKernel(function(collisionData){
+//get id from 2d collision map
+let type = collisionData[this.thread.x][this.thread.y];
+
+function typeToColor(type){
+let color = [0,0,0];
+if(type==0) color = [0,0,0];
+if(type==1) color = [190,170,0];
+if(type==2) color = [10,15,255];
+if(type==3) color = [68,121,89];
+return color;
+}
+
+let color = typeToColor(type);
+
+let astigmatismOffsetX = 4;
+let astigmatismOffsetY = 6;
+//check bounds
+let astigX = this.thread.x+astigmatismOffsetX;
+let astigY = this.thread.y+astigmatismOffsetY;
+//if in bounds, get color
+let astigColor = [0,0,0];
+if(astigX>=0&&astigX<800&&astigY>=0&&astigY<800){
+    astigColor = typeToColor(collisionData[astigX][astigY]);
+}
+
+color[0] += astigColor[0]/2;
+color[1] += astigColor[1]/2;
+color[2] += astigColor[2];
+
+this.color(color[0]/255,color[1]/255,color[2]/255);
+
+}).setOutput([800,800]).setGraphical(true);
+
+
+
+//appends the canvas to the body
+function renderGPU(particlesim){
+    //translate the collision map to a 2d array of types
+    let cmap = new Array(particlesim.width);
+    for (let i = 0; i < particlesim.width; i++) {
+        cmap[i] = new Array(particlesim.height);
+        for (let j = 0; j < particlesim.height; j++) {
+            //check if null else set to 0
+            //cmap[i][j] = particlesim.getParticleAt(i,j).type;
+            //avoid null
+            if(particlesim.getParticleAt(i,j)==null){
+                cmap[i][j] = 0;
+            } else {
+                cmap[i][j] = particlesim.getParticleAt(i,j).type;
+            }
+        }
+    }
+
+
+    renderKernel(cmap);
+    //print that onto gamectx
+    let canvas = renderKernel.canvas;
+    gamectx.drawImage(canvas,0,0);
+
+}

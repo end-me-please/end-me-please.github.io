@@ -4,8 +4,8 @@
         <script src="cellular3.js"></script>
     </head>
     <body>
-        <canvas id="canvas" width="800" height="800"></canvas>
-
+    <canvas id="canvas" width="800" height="800"></canvas>
+    
         
     </body>
 
@@ -16,7 +16,7 @@
         let canvas = document.getElementById('canvas');
         let gamectx = canvas.getContext('2d');
 
-
+        useGpu = true;
         let mouseX = 0;
         let mouseY = 0;
         let mouseDown = false;
@@ -103,7 +103,7 @@
                     cellSystem.addParticle(selectedType,crossedCells[i][0]-1, crossedCells[i][1]);
                     cellSystem.addParticle(selectedType,crossedCells[i][0], crossedCells[i][1]+1);
                     cellSystem.addParticle(selectedType,crossedCells[i][0], crossedCells[i][1]-1);
-                    
+
                 }
                 
             
@@ -117,7 +117,12 @@
             //black background
             gamectx.fillStyle = 'black';
             gamectx.fillRect(0, 0, canvas.width, canvas.height);
+            if(useGpu==true){
+
+                renderGPU(cellSystem);            
+            } else {
             cellSystem.renderImageData(gamectx);
+            }
             let endTime = performance.now();
             
             //draw fps counter and particle count
@@ -153,6 +158,7 @@
             canvas.height = window.innerHeight;
 
         });
+        //hide the normal canvas
 
 
     </script>
