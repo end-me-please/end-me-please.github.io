@@ -378,6 +378,34 @@ color[0] += astigColor[0]/2;
 color[1] += astigColor[1]/2;
 color[2] += astigColor[2];
 
+
+
+let sandCount = 0;
+let waterCount = 0;
+for(let i = -5;i<5;i++){
+    for(let j = -5;j<5;j++){
+        let x = this.thread.x+i;
+        let y = this.thread.y+j;
+        if(x<0||x>=800||y<0||y>=800) continue;
+        let type = collisionData[x][y];
+        if(type==1) sandCount++;
+        if(type==2) waterCount++;
+    }
+}
+
+
+color[0]+=Math.random()*sandCount*25;
+color[1]+=Math.random()*waterCount*25;
+
+
+if(sandCount>0&&waterCount>0){
+    color[0] += sandCount/waterCount;
+    color[1] += waterCount/sandCount;
+}
+
+
+
+
 this.color(color[0]/255,color[1]/255,color[2]/255);
 
 }).setOutput([800,800]).setGraphical(true);
