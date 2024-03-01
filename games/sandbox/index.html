@@ -1,7 +1,7 @@
 <html>
     <head>
         <script src="gpu-browser.js"></script>
-        <script src="cellular2.js"></script>
+        <script src="cellular3.js"></script>
     </head>
     <body>
         <canvas id="canvas" width="800" height="800"></canvas>
@@ -12,7 +12,7 @@
 
     <script>
         let cellSystem = new ParticleSim(800,800);
-        
+
         let canvas = document.getElementById('canvas');
         let gamectx = canvas.getContext('2d');
 
@@ -21,7 +21,7 @@
         let mouseY = 0;
         let mouseDown = false;
         let crossedCells = [];
-        let selectedType="sand";
+        let selectedType=1;
 
         canvas.addEventListener('mousemove', (e) => {
             //go in a line from the last mouse position to the current one
@@ -63,16 +63,16 @@
 
         //map number keys to select types
         let keymap = {
-            1:"sand",
-            2:"water",
-            3:"wall",
-            4:"gas",
-            5:"fire",
+            1:1,
+            2:2,
+            3:3,
+            4:4,
+            5:5,
         }
         document.addEventListener('keydown', (e) => {
-            if(keymap[e.key]){
-                selectedType = keymap[e.key];
-            }
+            if(keymap[e.key] != undefined) {
+            selectedType = keymap[e.key];
+        }
         });
         
 
@@ -98,12 +98,12 @@
                         continue;
                     }
 
-                    cellSystem.addParticle(particleTypes[selectedType],crossedCells[i][0], crossedCells[i][1]);
-                    cellSystem.addParticle(particleTypes[selectedType],crossedCells[i][0]+1, crossedCells[i][1]);
-                    cellSystem.addParticle(particleTypes[selectedType],crossedCells[i][0]-1, crossedCells[i][1]);
-                    cellSystem.addParticle(particleTypes[selectedType],crossedCells[i][0], crossedCells[i][1]+1);
-                    cellSystem.addParticle(particleTypes[selectedType],crossedCells[i][0], crossedCells[i][1]-1);
-
+                    cellSystem.addParticle(selectedType,crossedCells[i][0], crossedCells[i][1]);
+                    cellSystem.addParticle(selectedType,crossedCells[i][0]+1, crossedCells[i][1]);
+                    cellSystem.addParticle(selectedType,crossedCells[i][0]-1, crossedCells[i][1]);
+                    cellSystem.addParticle(selectedType,crossedCells[i][0], crossedCells[i][1]+1);
+                    cellSystem.addParticle(selectedType,crossedCells[i][0], crossedCells[i][1]-1);
+                    
                 }
                 
             
